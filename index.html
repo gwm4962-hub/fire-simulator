@@ -937,8 +937,39 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
         </div>
       </div>
 
-    </div><!-- /results-area -->
-  </div><!-- /layout -->
+<!-- レジーム別の実質リターン計算表 -->
+<div class="regime-summary-table" style="margin-bottom: 24px;">
+    <div style="font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; color: var(--accent); display: flex; align-items: center; gap: 8px;">
+        <span style="width: 12px; height: 1px; background: var(--accent); opacity: 0.6;"></span>
+        Regime Performance Matrix
+    </div>
+    
+    <div style="overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); box-shadow: inset 0 0 20px rgba(0,0,0,0.2);">
+        <table style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; color: var(--text); min-width: 500px;">
+            <thead>
+                <tr style="background: rgba(0, 212, 255, 0.05); border-bottom: 1px solid var(--border);">
+                    <th style="padding: 12px 10px; text-align: left; color: var(--text-dim); font-size: 14px; letter-spacing: 1px; font-weight: 400;">レジーム</th>
+                    <th style="padding: 12px 10px; text-align: right; color: var(--text-dim); font-size: 14px; letter-spacing: 1px; font-weight: 400;">株式算術平均 (μs)</th>
+                    <th style="padding: 12px 10px; text-align: right; color: var(--text-dim); font-size: 14px; letter-spacing: 1px; font-weight: 400;">株式幾何平均 (Gs)</th>
+                    <th style="padding: 12px 10px; text-align: right; color: var(--text-dim); font-size: 14px; letter-spacing: 1px; font-weight: 400;">債券リターン (Gb)</th>
+                    <th style="padding: 12px 10px; text-align: right; color: var(--text-dim); font-size: 14px; letter-spacing: 1px; font-weight: 400;">プレミアム (Gs-Gb)</th>
+                </tr>
+            </thead>
+            <tbody id="regime-table-body">
+                <!-- JavaScriptで動的に生成。下記はサンプル行のイメージ -->
+                <tr style="border-bottom: 1px solid rgba(26, 45, 74, 0.5);">
+                    <td style="padding: 10px; color: var(--bull); font-weight: 700;">📈 BULL</td>
+                    <td style="padding: 10px; text-align: right;">12.5%</td>
+                    <td style="padding: 10px; text-align: right;">11.2%</td>
+                    <td style="padding: 10px; text-align: right;">2.0%</td>
+                    <td style="padding: 10px; text-align: right; color: var(--accent3);">+9.2%</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
 <!-- ===== 解説・コンテンツセクション ===== -->
 <div class="content-section" style="margin-top: 40px; padding-top: 40px; border-top: 1px solid var(--border);">
     
@@ -946,7 +977,7 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
     <div class="panel" style="margin-bottom: 24px;">
         <div class="panel-header">FIREシミュレーション徹底ガイド</div>
         <div class="panel-body" style="line-height: 1.8; color: var(--text-mid);">
-            <h3>1. FIRE（早期リタイア）とは何か？</h3>
+            <h3 style="color: var(--accent); margin-bottom: 10px;">1. FIRE（早期リタイア）とは何か？</h3>
             <p>
                 FIRE（Financial Independence, Retire Early）は、経済的自立と早期リタイアを指すライフスタイルです。
                 単なる「仕事を辞めること」ではなく、「資産収入が生活費を上回る状態」を作ることで、自分の時間を自由にコントロールすることを目指します。
@@ -966,30 +997,64 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
                 もし資産が枯渇するシナリオが多い場合は、FIRE後の株式比率を下げるか、医療進歩による長寿リスクを見越した予備費を検討してください。
             </p>
         </div>
-    </div>
 
-    <!-- 2. 運営者・法的ページへのリンク（フッター的役割） -->
-    <div class="bottom-links" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 20px;">
-        <a href="/privacy-policy.html" class="diff-btn" style="text-decoration: none;">
-            <div class="diff-label">プライバシーポリシー</div>
-            <div class="diff-sub">AdSense・Cookieについて</div>
-        </a>
-        <a href="/disclaimer.html" class="diff-btn" style="text-decoration: none;">
-            <div class="diff-label">免責事項</div>
-            <div class="diff-sub">投資判断と自己責任について</div>
-        </a>
-        <a href="/contact.html" class="diff-btn" style="text-decoration: none;">
-            <div class="diff-label">お問い合わせ</div>
-            <div class="diff-sub">不具合・改善要望はこちら</div>
-        </a>
-        <a href="/profile.html" class="diff-btn" style="text-decoration: none;">
-            <div class="diff-label">運営者情報</div>
-            <div class="diff-sub">開発者プロフィール</div>
-        </a>
     </div>
+    
+<!-- ===== 数理モデルの解説セクション始まり ===== -->
+<div class= style="margin-top: 40px; padding-top: 40px; border-top: 1px solid var(--border);">
+  <div class="panel" style="margin-bottom: 24px;">
+    <div class="panel-header">📚 数理モデルの技術解説：シミュレーションの裏側</div>
+    <div class="panel-body" style="line-height: 1.8; color: var(--text-mid);">
+      
+      <h3 style="color: var(--accent); margin-bottom: 10px;">1. マルコフ遷移による景気レジームの動的変化</h3>
+      <p>
+        本ツールでは、市場を「強気」「通常」「弱気」「インフレ」の4つの状態に分類し、マルコフ遷移行列を用いて翌年の状態を確率的に決定しています。
+        遷移行列 $P$ に対して長期的な滞在確率は左固有ベクトル $v$ ($vP = v$) として算出されます。
+        これにより、弱気相場からの脱出確率を制御し、単なるランダムウォークでは再現できない「景気サイクル」や「平均回帰性」をシミュレートしています。
+        また、暴落時に資産相関が強まる現象を再現するため、レジームごとに資産間の相関係数を動的に変化させています。
+      </p>
+
+      <h3 style="color: var(--accent); margin-bottom: 10px;">2. 暴落リスクを考慮した「t分布」によるモンテカルロ法</h3>
+      <p>
+        標準的な正規分布では、数十年間に一度の「ブラックスワン（大暴落）」を過小評価する傾向があります。
+        本シミュレーターでは、t分布（自由度 $df=5$ 程度）を採用することで、裾の厚い「ファットテイル」を生成しています。
+        これにより、正規分布では $10^{-6}$ 以下の確率でしか起きない歴史的暴落を現実的な頻度で発生させます。
+        また、$\sqrt{df/(df-2)}$ による補正を行い、分布の分散を $1$ に正規化することで、設定された標準偏差 $\sigma$ との整合性を厳密に保っています。
+      </p>
+
+      <h3 style="color: var(--accent); margin-bottom: 10px;">3. Gompertz-Makeham分布による生存確率の計算</h3>
+      <p>
+        「何歳まで資産が持つか」を判定するため、生物学的な老化モデルであるGompertz-Makeham分布を使用しています。
+      </p>
+　　　<div style="background: var(--surface2); padding: 2px; border-radius: 2px; font-family: var(--font-mono); font-size: 16px; color: var(--accent3); margin: 2px 0; text-align: center;">
+　　　  $$h(x) = \alpha e^{\beta x} + \gamma$$
+　　　</div>
+      <p>
+        ハザード関数における $\alpha e^{\beta x}$ は加齢に伴うリスク増大を、$\gamma$ は偶発的な死亡リスクを表します。
+        本モデルでは、医療進歩によるパラメータの減衰を時間軸で計算する動的補正を採用しました。
+        毎年「その年に生存している」という条件の下で翌年の死力を逐次計算するプロセスにより、100歳を超える「長生きリスク」が資産枯渇に与える影響を保守的に評価しています。
+      </p>
+
+    </div>
+  </div>
 </div>
 
+
+
+<!-- ===== 数理モデルの解説セクション終わり ===== -->
+
+
+
+
+</div><!-- /results-area -->
+  </div><!-- /layout -->
+
+
+
+
+
 </div><!-- /app -->
+
 <!-- ===== 数理モデルの解説セクション始まり ===== -->
 <div class="app" style="margin-top: 40px;">
   <div class="panel">
@@ -1028,27 +1093,30 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
     </div>
   </div>
 </div>
-<!-- ===== 数理モデルの解説セクション終わり ===== -->
+
 <!-- レジーム別の実質リターン計算表 -->
-<div class="regime-summary-table" style="margin-bottom: 20px; overflow-x: auto;">
-    <div style="font-size: 13px; font-weight: bold; margin-bottom: 10px; color: var(--accent);">
-        レジーム別の実質リターン計算表
+
+    <!-- 2. 運営者・法的ページへのリンク（フッター的役割） -->
+    <div class="bottom-links" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 20px;">
+        <a href="/privacy-policy.html" class="diff-btn" style="text-decoration: none;">
+            <div class="diff-label">プライバシーポリシー</div>
+            <div class="diff-sub">AdSense・Cookieについて</div>
+        </a>
+        <a href="/disclaimer.html" class="diff-btn" style="text-decoration: none;">
+            <div class="diff-label">免責事項</div>
+            <div class="diff-sub">投資判断と自己責任について</div>
+        </a>
+        <a href="/contact.html" class="diff-btn" style="text-decoration: none;">
+            <div class="diff-label">お問い合わせ</div>
+            <div class="diff-sub">不具合・改善要望はこちら</div>
+        </a>
+        <a href="/profile.html" class="diff-btn" style="text-decoration: none;">
+            <div class="diff-label">運営者情報</div>
+            <div class="diff-sub">開発者プロフィール</div>
+        </a>
     </div>
-    <table style="width: 100%; font-size: 11px; border-collapse: collapse; color: var(--text-main); border: 1px solid var(--border); background: rgba(0,0,0,0.2);">
-        <thead>
-            <tr style="background: rgba(255,255,255,0.05);">
-                <th style="padding: 10px; border: 1px solid var(--border);">レジーム</th>
-                <th style="padding: 10px; border: 1px solid var(--border);">株式算術平均 (μs)</th>
-                <th style="padding: 10px; border: 1px solid var(--border);">株式幾何平均 (Gs)</th>
-                <th style="padding: 10px; border: 1px solid var(--border);">債券リターン (Gb)</th>
-                <th style="padding: 10px; border: 1px solid var(--border);">リスクプレミアム (Gs-Gb)</th>
-            </tr>
-        </thead>
-        <tbody id="regime-table-body">
-            <!-- JavaScriptで動的に生成 -->
-        </tbody>
-    </table>
 </div>
+
 
 <script>
 // ============================================================
@@ -1131,23 +1199,23 @@ let stageIdCounter = 0;
 
 const EXP_PRESETS = {
   single: [
-    { label:'一人暮らし（若手）', from:22, to:34, exp:180 },
-    { label:'一人暮らし（中堅）', from:35, to:49, exp:220 },
+    { label:'一人暮らし（若手）', from:22, to:34, exp:240 },
+    { label:'一人暮らし（中堅）', from:35, to:49, exp:300 },
     { label:'プレ老後',           from:50, to:64, exp:240 },
     { label:'老後',               from:65, to:90, exp:200 },
   ],
   couple: [
     { label:'共働き（初期）',    from:25, to:34, exp:300 },
-    { label:'共働き（中期）',    from:35, to:49, exp:360 },
+    { label:'共働き（中期）',    from:35, to:49, exp:420 },
     { label:'プレ老後',          from:50, to:64, exp:320 },
     { label:'老後（二人）',      from:65, to:90, exp:280 },
   ],
   family: [
     { label:'夫婦2人',           from:25, to:29, exp:300 },
-    { label:'子育て初期',        from:30, to:39, exp:420 },
-    { label:'子育て＋住宅ローン',from:32, to:51, exp:520 },
-    { label:'ローン完済後',      from:52, to:59, exp:380 },
-    { label:'老後（夫婦）',      from:60, to:90, exp:300 },
+    { label:'子育て初期',        from:30, to:39, exp:480 },
+    { label:'子育て＋住宅ローン',from:32, to:51, exp:650 },
+    { label:'ローン完済後',      from:52, to:59, exp:320 },
+    { label:'老後（夫婦）',      from:60, to:90, exp:280 },
   ],
 };
 
@@ -2365,6 +2433,7 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request).then((response) => response || fetch(event.request))
   );
 });
+
 
 </script>
     <!-- 投げ銭ボタン開始 -->
