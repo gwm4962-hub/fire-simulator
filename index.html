@@ -606,12 +606,26 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
           <div class="param-section">
             <div class="param-section-label">ライフステージ別支出</div>
 
-            <!-- プリセットボタン -->
-            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-              <button class="normalize-btn" onclick="applyExpPreset('single')" title="一人暮らし〜老後">🏠 一人暮らし</button>
-              <button class="normalize-btn" onclick="applyExpPreset('couple')" title="共働き〜老後">👫 夫婦共働き</button>
-              <button class="normalize-btn" onclick="applyExpPreset('family')" title="子育て・住宅ローン込み">👨‍👩‍👧 子育て世帯</button>
-            </div>
+<!-- プリセットボタン：ネオン・トグルスタイル -->
+  <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;" id="preset-container">
+    <button class="preset-btn" onclick="handlePresetClick(this, 'single')" title="一人暮らし〜老後"
+      style="flex:1; min-width:100px; padding:10px 6px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text-dim); font-size:11px; font-family:var(--font-body); cursor:pointer; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display:flex; flex-direction:column; align-items:center; gap:4px;">
+      <span style="font-size:18px;">🏠</span>
+      <span style="font-weight:700; letter-spacing:0.5px;">一人暮らし</span>
+    </button>
+
+    <button class="preset-btn" onclick="handlePresetClick(this, 'couple')" title="共働き〜老後"
+      style="flex:1; min-width:100px; padding:10px 6px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text-dim); font-size:11px; font-family:var(--font-body); cursor:pointer; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display:flex; flex-direction:column; align-items:center; gap:4px;">
+      <span style="font-size:18px;">👫</span>
+      <span style="font-weight:700; letter-spacing:0.5px;">夫婦共働き</span>
+    </button>
+
+    <button class="preset-btn" onclick="handlePresetClick(this, 'family')" title="子育て・住宅ローン込み"
+      style="flex:1; min-width:100px; padding:10px 6px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text-dim); font-size:11px; font-family:var(--font-body); cursor:pointer; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display:flex; flex-direction:column; align-items:center; gap:4px;">
+      <span style="font-size:18px;">👨‍👩‍👧</span>
+      <span style="font-weight:700; letter-spacing:0.5px;">子育て世帯</span>
+    </button>
+  </div>
 
             <!-- タイムラインビジュアライザー -->
             <div id="expense-timeline-bar" style="margin-bottom:10px;"></div>
@@ -927,15 +941,25 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
         <div class="panel-header">🌡️ 感度分析：現役時 × リタイア後 株式比率</div>
         <div class="panel-body">
           <p style="font-size:11px;color:var(--text-dim);margin-bottom:15px;">現役時とリタイア後の株式比率を変化させた際の成功率をマトリックス表示します（試行回数: 200回/セル）。</p>
-          <button id="btn-heat-analysis" class="normalize-btn" style="padding:8px 20px;" onclick="runSensitivityAnalysis()">ヒートマップ分析を実行</button>
-          <div id="heat-progress-container" style="display:none;margin:15px 0;background:var(--border);border-radius:2px;height:4px;">
-            <div id="heat-progress-bar" style="width:0%;height:100%;background:var(--accent);transition:width 0.2s;"></div>
-          </div>
-          <div style="overflow-x:auto;margin-top:20px;display:flex;justify-content:center;">
-            <canvas id="sensitivityHeatmap" width="1200" height="800" style="width:600px;height:400px;max-width:100%;border-radius:4px;"></canvas>
-          </div>
-        </div>
-      </div>
+<!-- 修正：ボタンを大きく、塗りつぶしデザインに変更 -->
+    <button id="btn-heat-analysis" 
+            onclick="runSensitivityAnalysis()"
+            style="width:100%; padding:14px; background:linear-gradient(135deg, var(--accent) 0%, #007ab8 100%); 
+                   border:none; border-radius:6px; color:#000; font-family:var(--font-mono); 
+                   font-size:13px; font-weight:700; letter-spacing:2px; cursor:pointer; 
+                   transition:all .25s; box-shadow: var(--glow-accent); position:relative; overflow:hidden;">
+      <span style="position:relative; z-index:1;">🔥 ヒートマップ分析を実行</span>
+    </button>
+
+    <div id="heat-progress-container" style="display:none; margin:15px 0; background:var(--border); border-radius:2px; height:4px;">
+      <div id="heat-progress-bar" style="width:0%; height:100%; background:var(--accent); transition:width 0.2s;"></div>
+    </div>
+    
+    <div style="overflow-x:auto; margin-top:20px; display:flex; justify-content:center;">
+      <canvas id="sensitivityHeatmap" width="1200" height="800" style="width:600px; height:400px; max-width:100%; border-radius:4px;"></canvas>
+    </div>
+  </div>
+</div>
 
 <!-- レジーム別の実質リターン計算表 -->
 <div class="regime-summary-table" style="margin-bottom: 24px;">
@@ -1344,7 +1368,43 @@ document.getElementById('start-age').addEventListener('input', renderTimeline);
 
 // 初期プリセット適用
 applyExpPreset('family');
+/**
+ * プリセットボタン専用のハンドラ
+ * 見た目のハイライト処理と、データの適用を同時に行います
+ */
+function handlePresetClick(btn, type) {
+    // 1. 全てのプリセットボタンのスタイルをリセット
+    // ※ HTML側でボタンに class="preset-btn" を付与している前提です
+    document.querySelectorAll('.preset-btn').forEach(b => {
+        b.style.borderColor = 'var(--border)';
+        b.style.background = 'var(--surface2)';
+        b.style.color = 'var(--text-dim)';
+        b.style.boxShadow = 'none';
+        b.style.transform = 'translateY(0)';
+    });
 
+    // 2. クリックされたボタンをアクティブ（光る）状態にする
+    if (btn) {
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.background = 'rgba(0, 212, 255, 0.1)'; // ほんのりアクセント色
+        btn.style.color = 'var(--accent)';
+        btn.style.boxShadow = 'var(--glow-accent)';
+        btn.style.transform = 'translateY(-2px)'; // 浮き上がる演出
+    }
+
+    // 3. 既存のロジックでデータを反映
+    applyExpPreset(type);
+}
+
+// 初期化時に「子育て世帯(family)」のボタンを光らせるための処理
+window.addEventListener('DOMContentLoaded', () => {
+    // ページ読み込み完了後、familyボタンを探してクリック状態を再現
+    const familyBtn = document.querySelector('button[onclick*="family"]');
+    if (familyBtn) {
+        // handlePresetClickにボタン要素を渡して実行
+        handlePresetClick(familyBtn, 'family');
+    }
+});
 
 
 
