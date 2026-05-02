@@ -479,6 +479,22 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
   .app{padding:16px 14px;}
   .stage-fields{grid-template-columns:1fr 1fr 1fr;}
 }
+/* 数理解説セクション用のスタイル */
+  .panel-body h3 {
+    font-feature-settings: "palt"; /* 文字詰めを行い、見出しをよりプロっぽく見せる */
+    border-left: 3px solid var(--accent); /* 左側にアクセントカラーの線を入れる */
+    padding-left: 10px;                   /* 線と文字の間の余白 */
+    margin-top: 25px;                     /* 上の段落との間隔 */
+    color: var(--accent);                 /* 見出しの色を強調 */
+  }
+
+  .panel-body p {
+    margin-bottom: 15px;                  /* 段落ごとの下の余白 */
+    text-align: justify;                  /* 文の右端を揃えて美しく見せる */
+    line-height: 1.8;                     /* 行間を広げて読みやすくする */
+  }
+  /* ↑ここまで */
+
 </style>
 </head>
 <body>
@@ -913,7 +929,45 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
     </div><!-- /results-area -->
   </div><!-- /layout -->
 </div><!-- /app -->
+<!-- ===== 数理モデルの解説セクション始まり ===== -->
+<div class="app" style="margin-top: 40px;">
+  <div class="panel">
+    <div class="panel-header">📚 数理モデルの技術解説：シミュレーションの裏側</div>
+    <div class="panel-body" style="line-height: 1.8; color: var(--text-mid); font-size: 14px;">
+      
+      <h3 style="color: var(--accent); margin-bottom: 10px;">1. マルコフ遷移による景気レジームの動的変化</h3>
+      <p>
+        本ツールでは、市場を「強気」「通常」「弱気」「インフレ」の4つの状態に分類し、**マルコフ遷移行列**を用いて翌年の状態を確率的に決定しています。[cite: 1]
+        遷移行列 $P$ に対して長期的な滞在確率は左固有ベクトル $v$ ($vP = v$) として算出されます。[cite: 1]
+        これにより、弱気相場からの脱出確率を制御し、単なるランダムウォークでは再現できない「景気サイクル」や「平均回帰性」をシミュレートしています。[cite: 1]
+        また、暴落時に資産相関が強まる現象を再現するため、レジームごとに資産間の相関係数を動的に変化させています。
+      </p>
 
+      <h3 style="color: var(--accent); margin: 20px 0 10px 0;">2. 暴落リスクを考慮した「t分布」によるモンテカルロ法</h3>
+      <p>
+        標準的な正規分布では、数十年間に一度の「ブラックスワン（大暴落）」を過小評価する傾向があります。[cite: 1]
+        本シミュレーターでは、**t分布（自由度 $df=5$ 程度）**を採用することで、裾の厚い「ファットテイル」を生成しています。[cite: 1]
+        これにより、正規分布では $10^{-6}$ 以下の確率でしか起きない歴史的暴落を現実的な頻度で発生させます。[cite: 1]
+        また、$\sqrt{df/(df-2)}$ による補正を行い、分布の分散を $1$ に正規化することで、設定された標準偏差 $\sigma$ との整合性を厳密に保っています。[cite: 1]
+      </p>
+
+      <h3 style="color: var(--accent); margin: 20px 0 10px 0;">3. Gompertz-Makeham分布による生存確率の計算</h3>
+      <p>
+        「何歳まで資産が持つか」を判定するため、生物学的な老化モデルである**Gompertz-Makeham分布**を使用しています。[cite: 1]
+      </p>
+      <div style="background: var(--surface2); padding: 15px; border-radius: 6px; font-family: var(--font-mono); font-size: 13px; color: var(--accent3); margin: 10px 0; text-align: center;">
+        $h(x) = \alpha e^{\beta x} + \gamma$
+      </div>
+      <p>
+        ハザード関数における $\alpha e^{\beta x}$ は加齢に伴うリスク増大を、$\gamma$ は偶発的な死亡リスクを表します。[cite: 1]
+        本モデルでは、医療進歩によるパラメータの減衰を時間軸で計算する動的補正を採用しました。[cite: 1]
+        毎年「その年に生存している」という条件の下で翌年の死力を逐次計算するプロセスにより、100歳を超える「長生きリスク」が資産枯渇に与える影響を保守的に評価しています。
+      </p>
+
+    </div>
+  </div>
+</div>
+<!-- ===== 数理モデルの解説セクション終わり ===== -->
 <!-- レジーム別の実質リターン計算表 -->
 <div class="regime-summary-table" style="margin-bottom: 20px; overflow-x: auto;">
     <div style="font-size: 13px; font-weight: bold; margin-bottom: 10px; color: var(--accent);">
@@ -1030,7 +1084,7 @@ const EXP_PRESETS = {
   family: [
     { label:'夫婦2人',           from:25, to:29, exp:300 },
     { label:'子育て初期',        from:30, to:39, exp:420 },
-    { label:'子育て＋住宅ローン',from:40, to:51, exp:520 },
+    { label:'子育て＋住宅ローン',from:32, to:51, exp:520 },
     { label:'ローン完済後',      from:52, to:59, exp:380 },
     { label:'老後（夫婦）',      from:60, to:90, exp:300 },
   ],
@@ -2183,14 +2237,14 @@ function drawHeatmap(ctx, results, xLabels, yLabels) {
         ctx.fillRect(x, y, cellW - 1, cellH - 1);
 
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 30px ui-monospace, 'SFMono-Regular', 'Roboto Mono', Menlo, Monaco, Consolas, monospace";
+ctx.font = "bold 30px 'JetBrains Mono', 'Fira Code', 'Courier New', monospace"; // 等幅フォントを指定
         ctx.textAlign = "center";
         ctx.fillText(`${(res.val * 100).toFixed(0)}%`, x + cellW/2, y + cellH/2 + 4);
     });
 
     // 軸ラベルの描画
     ctx.fillStyle = "#6b7a99";
-    ctx.font = "bold 30px ui-monospace, 'SFMono-Regular', 'Roboto Mono', Menlo, Monaco, Consolas, monospace";
+ctx.font = "bold 30px 'JetBrains Mono', 'Fira Code', 'Courier New', monospace"; // 等幅フォントを指定
 
     // X軸（下側）：リタイア後
     xLabels.forEach((l, i) => {
