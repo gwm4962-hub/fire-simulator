@@ -2183,14 +2183,14 @@ function drawHeatmap(ctx, results, xLabels, yLabels) {
         ctx.fillRect(x, y, cellW - 1, cellH - 1);
 
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 30px 'Noto Sans JP'";
+        ctx.font = "bold 30px 'JetBrains Mono', 'Fira Code', 'Courier New', monospace"; // 等幅フォントを指定
         ctx.textAlign = "center";
         ctx.fillText(`${(res.val * 100).toFixed(0)}%`, x + cellW/2, y + cellH/2 + 4);
     });
 
     // 軸ラベルの描画
     ctx.fillStyle = "#6b7a99";
-    ctx.font = "bold 30px 'Noto Sans JP'";
+    ctx.font = "bold 30px 'JetBrains Mono', 'Fira Code', 'Courier New', monospace"; // 等幅フォントを指定
 
     // X軸（下側）：リタイア後
     xLabels.forEach((l, i) => {
