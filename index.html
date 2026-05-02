@@ -392,6 +392,22 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
 .kpi-card.purple:hover{border-color:rgba(179,136,255,.35);box-shadow:0 0 20px rgba(179,136,255,.2);}
 .kpi-card.purple .kpi-value{color:#b388ff;text-shadow:0 0 20px rgba(179,136,255,.4);}
 
+/* ===== DIFFICULTY MODE BUTTONS ===== */
+.diff-btn{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:10px 6px;cursor:pointer;text-align:center;transition:all .2s;color:var(--text-dim);
+}
+.diff-btn:hover{border-color:var(--border-bright);background:var(--surface3);}
+.diff-icon{font-size:18px;margin-bottom:4px;}
+.diff-label{font-size:11px;font-weight:700;font-family:var(--font-mono);color:var(--text);}
+.diff-sub{font-size:9px;color:var(--text-dim);margin-top:2px;}
+#diff-hard.diff-btn-active{border-color:rgba(255,71,87,.6);background:rgba(255,71,87,.1);box-shadow:0 0 14px rgba(255,71,87,.2);}
+#diff-hard.diff-btn-active .diff-label{color:var(--danger);}
+#diff-normal.diff-btn-active{border-color:rgba(0,212,255,.5);background:rgba(0,212,255,.08);box-shadow:0 0 14px rgba(0,212,255,.15);}
+#diff-normal.diff-btn-active .diff-label{color:var(--accent);}
+#diff-easy.diff-btn-active{border-color:rgba(168,255,120,.5);background:rgba(168,255,120,.08);box-shadow:0 0 14px rgba(168,255,120,.15);}
+#diff-easy.diff-btn-active .diff-label{color:var(--success);}
+
 /* Bottom grid 3col on wide screens */
 @media(min-width:1400px){
   .bottom-grid{grid-template-columns:1fr 1fr;}
@@ -639,6 +655,30 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
           <!-- シミュレーション回数 -->
           <div class="param-section" style="margin-bottom:0;margin-top:14px;">
             <div class="param-section-label">シミュレーション</div>
+
+            <!-- 難易度モード -->
+            <div style="margin-bottom:14px;">
+              <div style="font-size:9px;color:var(--text-dim);letter-spacing:1.5px;margin-bottom:8px;">難易度モード（株式リターン・遷移確率を自動調整）</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;" id="difficulty-btns">
+                <button class="diff-btn" id="diff-hard"   onclick="setDifficulty('hard')">
+                  <div class="diff-icon">💀</div>
+                  <div class="diff-label">ハード</div>
+                  <div class="diff-sub">暴落多発</div>
+                </button>
+                <button class="diff-btn diff-btn-active" id="diff-normal" onclick="setDifficulty('normal')">
+                  <div class="diff-icon">📊</div>
+                  <div class="diff-label">普通</div>
+                  <div class="diff-sub">歴史的平均</div>
+                </button>
+                <button class="diff-btn" id="diff-easy"  onclick="setDifficulty('easy')">
+                  <div class="diff-icon">🌈</div>
+                  <div class="diff-label">楽観</div>
+                  <div class="diff-sub">右肩上がり</div>
+                </button>
+              </div>
+              <div id="difficulty-desc" style="margin-top:8px;font-size:9px;color:var(--text-dim);line-height:1.7;padding:6px 8px;background:rgba(255,255,255,.02);border-radius:3px;border-left:2px solid var(--border-bright);"></div>
+            </div>
+
             <div class="param-control" style="margin-bottom:0;">
               <div class="param-row"><span class="param-label">試行回数</span><span class="param-value" id="val-nsims">2,000回</span></div>
               <input type="range" id="nsims" min="200" max="5000" step="200" value="2000">
@@ -1217,6 +1257,8 @@ function normalizeAll(){
   });
 }
 buildTM();
+// 初期難易度を「普通」で設定（レジームカード表示・説明文を初期化）
+setTimeout(() => setDifficulty('normal'), 0);
 
 // ============================================================
 // Random number generators
@@ -1411,6 +1453,111 @@ function renderRetireChecklist({ assets65, needAt65, surplus65, pensionAnnual, e
   `;
 }
 
+
+// ============================================================
+// 難易度モード定義
+// ============================================================
+const DIFFICULTY_MODES = {
+  hard: {
+    label: '💀 ハードモード',
+    desc:  '暴落・長期低迷が多発。弱気相場への遷移確率が高く、株式リターンも低め。最悪シナリオへの耐性を確認したい場合に。',
+    regimes: [
+      // 強気: リターン低め・ボラ高め
+      {mu:[0.06, 0.01], sigma:[0.20, 0.04], corr:0.2,  inf: 0.01},
+      // 通常: ほぼ横ばい
+      {mu:[0.02, 0.01], sigma:[0.18, 0.03], corr:0.1,  inf: 0.00},
+      // 弱気: 暴落大
+      {mu:[-0.18,0.00], sigma:[0.30, 0.06], corr:0.3,  inf:-0.01},
+      // インフレ: スタグフレーション
+      {mu:[-0.03,0.02], sigma:[0.22, 0.06], corr:0.4,  inf: 0.03},
+    ],
+    // 遷移確率 [強気→, 通常→, 弱気→, インフレ→] 各行合計100
+    tm: [
+      [55, 20, 15, 10],  // 強気から
+      [15, 45, 25, 15],  // 通常から
+      [10, 25, 50, 15],  // 弱気から
+      [10, 20, 20, 50],  // インフレから
+    ],
+  },
+  normal: {
+    label: '📊 普通モード',
+    desc:  '歴史的な市場平均に基づく標準設定。長期的な株式投資の期待値に近い前提。',
+    regimes: [
+      {mu:[0.10, 0.02], sigma:[0.15, 0.03], corr:0.1,  inf: 0.01},
+      {mu:[0.08, 0.01], sigma:[0.15, 0.02], corr:0.0,  inf: 0.00},
+      {mu:[-0.07,0.01], sigma:[0.10, 0.04], corr:0.2,  inf:-0.01},
+      {mu:[0.02, 0.00], sigma:[0.10, 0.05], corr:0.4,  inf: 0.01},
+    ],
+    tm: [
+      [70, 20,  5,  5],
+      [15, 70, 10,  5],
+      [ 5, 30, 55, 10],
+      [ 5, 15, 10, 70],
+    ],
+  },
+  easy: {
+    label: '🌈 楽観モード',
+    desc:  '強気相場が長続きしやすく、暴落が少ない楽観シナリオ。右肩上がりを想定した場合の最大ポテンシャルを確認できます。',
+    regimes: [
+      {mu:[0.15, 0.03], sigma:[0.12, 0.02], corr:0.05, inf: 0.01},
+      {mu:[0.10, 0.02], sigma:[0.12, 0.02], corr:0.0,  inf: 0.00},
+      {mu:[-0.03,0.01], sigma:[0.08, 0.03], corr:0.1,  inf:-0.01},
+      {mu:[0.05, 0.01], sigma:[0.08, 0.04], corr:0.2,  inf: 0.01},
+    ],
+    tm: [
+      [80, 15,  3,  2],
+      [25, 65,  5,  5],
+      [15, 55, 20, 10],
+      [10, 30, 10, 50],
+    ],
+  },
+};
+
+let currentDifficulty = 'normal';
+
+function setDifficulty(mode) {
+  currentDifficulty = mode;
+  const def = DIFFICULTY_MODES[mode];
+
+  // 1. REGIMES グローバルを上書き
+  def.regimes.forEach((r, i) => { Object.assign(REGIMES[i], r); });
+
+  // 2. tmValues を上書き
+  def.tm.forEach((row, ri) => { row.forEach((v, ci) => { tmValues[ri][ci] = v; }); });
+
+  // 3. TM UI を再描画
+  buildTM();
+
+  // 4. レジームカードの表示を更新
+  updateRegimeCards();
+
+  // 5. ボタンのアクティブ状態を更新
+  ['hard','normal','easy'].forEach(m => {
+    document.getElementById(`diff-${m}`).classList.toggle('diff-btn-active', m === mode);
+  });
+
+  // 6. 説明文を更新
+  document.getElementById('difficulty-desc').textContent = def.desc;
+}
+
+function updateRegimeCards() {
+  const labels  = ['🐂 強気', '📈 通常', '🐻 弱気', '🔥 インフレ'];
+  const colors  = ['var(--bull)', 'var(--normal)', 'var(--bear)', 'var(--infla)'];
+  const sigStr  = v => (v*100).toFixed(0);
+  const muStr   = v => (v >= 0 ? '+' : '') + (v*100).toFixed(0) + '%';
+  const cards   = document.querySelectorAll('.regime-card');
+  REGIMES.forEach((rg, i) => {
+    if (!cards[i]) return;
+    cards[i].innerHTML = `
+      <div style="font-size:9px;font-family:var(--font-mono);color:${colors[i]};text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px;">${labels[i]}</div>
+      <div style="font-size:11px;line-height:2;color:var(--text-mid);">
+        株式: <b style="color:${colors[i]};">${muStr(rg.mu[0])}</b> σ=${sigStr(rg.sigma[0])}%<br>
+        債券: ${muStr(rg.mu[1])} σ=${sigStr(rg.sigma[1])}%<br>
+        インフレ超過: <b style="color:var(--text);">${muStr(rg.inf)}</b>
+      </div>
+    `;
+  });
+}
 
 // ============================================================
 // グローバル定数：レジーム定義（runSimulation・ヒートマップ共用）
