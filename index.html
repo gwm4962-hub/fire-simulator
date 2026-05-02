@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FIRE シミュレーター v4</title>
 
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    }
+  };
+</script>
+
+
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 <!-- PWA用の設定 -->
     <link rel="manifest" href="manifest.json">
@@ -937,30 +948,30 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
       
       <h3 style="color: var(--accent); margin-bottom: 10px;">1. マルコフ遷移による景気レジームの動的変化</h3>
       <p>
-        本ツールでは、市場を「強気」「通常」「弱気」「インフレ」の4つの状態に分類し、**マルコフ遷移行列**を用いて翌年の状態を確率的に決定しています。[cite: 1]
-        遷移行列 $P$ に対して長期的な滞在確率は左固有ベクトル $v$ ($vP = v$) として算出されます。[cite: 1]
-        これにより、弱気相場からの脱出確率を制御し、単なるランダムウォークでは再現できない「景気サイクル」や「平均回帰性」をシミュレートしています。[cite: 1]
+        本ツールでは、市場を「強気」「通常」「弱気」「インフレ」の4つの状態に分類し、マルコフ遷移行列を用いて翌年の状態を確率的に決定しています。
+        遷移行列 $P$ に対して長期的な滞在確率は左固有ベクトル $v$ ($vP = v$) として算出されます。
+        これにより、弱気相場からの脱出確率を制御し、単なるランダムウォークでは再現できない「景気サイクル」や「平均回帰性」をシミュレートしています。
         また、暴落時に資産相関が強まる現象を再現するため、レジームごとに資産間の相関係数を動的に変化させています。
       </p>
 
       <h3 style="color: var(--accent); margin: 20px 0 10px 0;">2. 暴落リスクを考慮した「t分布」によるモンテカルロ法</h3>
       <p>
-        標準的な正規分布では、数十年間に一度の「ブラックスワン（大暴落）」を過小評価する傾向があります。[cite: 1]
-        本シミュレーターでは、**t分布（自由度 $df=5$ 程度）**を採用することで、裾の厚い「ファットテイル」を生成しています。[cite: 1]
-        これにより、正規分布では $10^{-6}$ 以下の確率でしか起きない歴史的暴落を現実的な頻度で発生させます。[cite: 1]
-        また、$\sqrt{df/(df-2)}$ による補正を行い、分布の分散を $1$ に正規化することで、設定された標準偏差 $\sigma$ との整合性を厳密に保っています。[cite: 1]
+        標準的な正規分布では、数十年間に一度の「ブラックスワン（大暴落）」を過小評価する傾向があります。
+        本シミュレーターでは、t分布（自由度 $df=5$ 程度）を採用することで、裾の厚い「ファットテイル」を生成しています。
+        これにより、正規分布では $10^{-6}$ 以下の確率でしか起きない歴史的暴落を現実的な頻度で発生させます。
+        また、$\sqrt{df/(df-2)}$ による補正を行い、分布の分散を $1$ に正規化することで、設定された標準偏差 $\sigma$ との整合性を厳密に保っています。
       </p>
 
       <h3 style="color: var(--accent); margin: 20px 0 10px 0;">3. Gompertz-Makeham分布による生存確率の計算</h3>
       <p>
-        「何歳まで資産が持つか」を判定するため、生物学的な老化モデルである**Gompertz-Makeham分布**を使用しています。[cite: 1]
+        「何歳まで資産が持つか」を判定するため、生物学的な老化モデルであるGompertz-Makeham分布を使用しています。
       </p>
-      <div style="background: var(--surface2); padding: 15px; border-radius: 6px; font-family: var(--font-mono); font-size: 13px; color: var(--accent3); margin: 10px 0; text-align: center;">
-        $h(x) = \alpha e^{\beta x} + \gamma$
-      </div>
+　　　<div style="background: var(--surface2); padding: 15px; border-radius: 6px; font-family: var(--font-mono); font-size: 13px; color: var(--accent3); margin: 10px 0; text-align: center;">
+　　　  $$h(x) = \alpha e^{\beta x} + \gamma$$
+　　　</div>
       <p>
-        ハザード関数における $\alpha e^{\beta x}$ は加齢に伴うリスク増大を、$\gamma$ は偶発的な死亡リスクを表します。[cite: 1]
-        本モデルでは、医療進歩によるパラメータの減衰を時間軸で計算する動的補正を採用しました。[cite: 1]
+        ハザード関数における $\alpha e^{\beta x}$ は加齢に伴うリスク増大を、$\gamma$ は偶発的な死亡リスクを表します。
+        本モデルでは、医療進歩によるパラメータの減衰を時間軸で計算する動的補正を採用しました。
         毎年「その年に生存している」という条件の下で翌年の死力を逐次計算するプロセスにより、100歳を超える「長生きリスク」が資産枯渇に与える影響を保守的に評価しています。
       </p>
 
