@@ -40,6 +40,15 @@
       }
     </script>
 
+
+
+
+
+
+
+
+
+
 <style>
 :root {
   --bg:#060a14;
@@ -1161,6 +1170,41 @@ document.querySelectorAll('input[type="range"]').forEach(s => {
 
 // Touch guard — prevents sliders from moving during vertical scroll
 // ============================================================
+
+
+
+// --- 既存の変数定義の近く ---
+
+  // --- 【追加場所 A】関数の定義 ---
+  function saveSettings() {
+      const settings = {
+          expStages: expStages,
+          startAge: document.getElementById('start-age').value,
+          initialAssets: document.getElementById('num-initial-assets').value,
+          // 他の入力項目（income, raise等）も必要に応じて追加
+      };
+      localStorage.setItem('fire_sim_settings', JSON.stringify(settings));
+      console.log("Settings saved to localStorage.");
+  }
+
+  function loadSettings() {
+      const saved = localStorage.getItem('fire_sim_settings');
+      if (saved) {
+          const data = JSON.parse(saved);
+          expStages = data.expStages;
+          
+          if(data.startAge) document.getElementById('start-age').value = data.startAge;
+          if(data.initialAssets) document.getElementById('num-initial-assets').value = data.initialAssets;
+          
+          // ステージ一覧の再描画関数（既存）を呼び出す
+          if (typeof renderStages === "function") {
+              renderStages(); 
+          }
+          console.log("Settings loaded from localStorage.");
+      }
+  }
+  
+  // ... 以降、既存のロジック ...
 // 1. データの定義（ここがプログラムの実質的なスタート）
 
      const tmValues = [
@@ -1818,6 +1862,10 @@ async function runSimulation() {
     if(!confirm('遷移確率の合計が100%でない行があります。自動正規化してから実行しますか？')) return;
     normalizeAll();
   }
+// --- 【追加】計算開始と同時に現在の設定を保存 ---
+    saveSettings();
+
+
 
   const btn=document.getElementById('run-btn'); btn.disabled=true;
   const badge=document.getElementById('status-badge');
@@ -2494,6 +2542,13 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
+// --- 【追加場所 B】HTML読み込み完了時の自動復元 ---
+  window.addEventListener('DOMContentLoaded', () => {
+      loadSettings(); 
+      
+      // もし初期表示で計算を一度走らせたい場合はここに追加
+      // runSimulation(); 
+  });
 
 </script>
     <!-- 投げ銭ボタン開始 -->
