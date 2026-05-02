@@ -939,6 +939,56 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
 
     </div><!-- /results-area -->
   </div><!-- /layout -->
+<!-- ===== 解説・コンテンツセクション ===== -->
+<div class="content-section" style="margin-top: 40px; padding-top: 40px; border-top: 1px solid var(--border);">
+    
+    <!-- 1. ガイド・解説テキスト -->
+    <div class="panel" style="margin-bottom: 24px;">
+        <div class="panel-header">FIREシミュレーション徹底ガイド</div>
+        <div class="panel-body" style="line-height: 1.8; color: var(--text-mid);">
+            <h3>1. FIRE（早期リタイア）とは何か？</h3>
+            <p>
+                FIRE（Financial Independence, Retire Early）は、経済的自立と早期リタイアを指すライフスタイルです。
+                単なる「仕事を辞めること」ではなく、「資産収入が生活費を上回る状態」を作ることで、自分の時間を自由にコントロールすることを目指します。
+            </p>
+            
+            <h3>2. このシミュレーターの使い方</h3>
+            <p>
+                本ツールは、一般的な平均利回り計算（定額成長モデル）ではなく、<strong>モンテカルロ法</strong>を採用しています。
+                「普通」モードでは歴史的平均をベースに、「ハード」モードでは過去の金融危機を模した高いボラティリティを再現します。
+                まずは現在の資産と目標額を入力し、1,000回以上の試行を行うことで、ご自身のプランが「何％の確率で成功するか」を確認してください。
+            </p>
+
+            <h3>3. シミュレーション結果の解釈</h3>
+            <p>
+                成功確率が80%以上であれば、一般的なプランとしては非常に堅実と言えます。
+                しかし、金融市場には「ファットテール（極端な暴落）」が存在するため、本シミュレーターでは<strong>t分布（自由度df=5推奨）</strong>を使用し、正規分布では予測しきれないリスクを可視化しています。
+                もし資産が枯渇するシナリオが多い場合は、FIRE後の株式比率を下げるか、医療進歩による長寿リスクを見越した予備費を検討してください。
+            </p>
+        </div>
+    </div>
+
+    <!-- 2. 運営者・法的ページへのリンク（フッター的役割） -->
+    <div class="bottom-links" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 20px;">
+        <a href="/privacy-policy.html" class="diff-btn" style="text-decoration: none;">
+            <div class="diff-label">プライバシーポリシー</div>
+            <div class="diff-sub">AdSense・Cookieについて</div>
+        </a>
+        <a href="/disclaimer.html" class="diff-btn" style="text-decoration: none;">
+            <div class="diff-label">免責事項</div>
+            <div class="diff-sub">投資判断と自己責任について</div>
+        </a>
+        <a href="/contact.html" class="diff-btn" style="text-decoration: none;">
+            <div class="diff-label">お問い合わせ</div>
+            <div class="diff-sub">不具合・改善要望はこちら</div>
+        </a>
+        <a href="/profile.html" class="diff-btn" style="text-decoration: none;">
+            <div class="diff-label">運営者情報</div>
+            <div class="diff-sub">開発者プロフィール</div>
+        </a>
+    </div>
+</div>
+
 </div><!-- /app -->
 <!-- ===== 数理モデルの解説セクション始まり ===== -->
 <div class="app" style="margin-top: 40px;">
