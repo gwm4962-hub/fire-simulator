@@ -1,3 +1,9 @@
+資産形成エンジニアについて
+編集
+32歳の化学・設計エンジニアです。今の日本で誰もが安心して資産形成を検討できるよう、マルコフ突破やモンテカルロ法を用いた精密なモデルを独自で実装しました。より使いやすくアップデートして励みになります！
+
+https://buymeacoffee.com/start.simu
+
 # High-Precision Asset Formation Simulator (FIRE Simulator)
 
 This is an advanced asset lifespan simulation tool using Markov transition models and Monte Carlo methods.
