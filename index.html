@@ -1409,36 +1409,67 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
   <div class="panel-header">🎮 マルコフ遷移ビジュアライザー（体験シミュレーター）</div>
   <div class="panel-body">
     <p style="font-size:13px;color:var(--text-mid);line-height:1.8;margin-bottom:16px;">
-      「1年進める」ボタンを押すたびに、遷移行列の確率に従って景気レジームが推移します。何十回も押すと、ドーナツグラフが定常分布に近づいていく様子を体感できます。
+      再生ボタンで自動シミュレーション。速度スライダーで体感スピードを調整できます。何年も経つと滞在比率が定常分布に収束していく様子を確認してください。
     </p>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;">
-      <!-- 左：現在の状態と操作 -->
+    <!-- ① 現在の状態カード -->
+    <div id="viz-state-card" style="
+      position:relative;overflow:hidden;
+      padding:20px 16px 16px;border-radius:12px;
+      border:2px solid #00d4ff;background:rgba(0,212,255,0.06);
+      text-align:center;margin-bottom:14px;
+      transition:border-color .4s,background .4s;">
+      <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:2px;margin-bottom:8px;">CURRENT REGIME</div>
+      <div id="viz-emoji" style="font-size:36px;margin-bottom:6px;transition:transform .2s;">📈</div>
+      <div id="viz-name" style="font-size:22px;font-weight:700;font-family:var(--font-mono);color:#00d4ff;transition:color .4s;">通常相場</div>
+      <div id="viz-year" style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono);margin-top:6px;">0年目</div>
+      <!-- 光るライン -->
+      <div id="viz-glow-bar" style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#00d4ff;transition:background .4s;"></div>
+    </div>
+
+    <!-- ② コントロール：再生・速度 -->
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;margin-bottom:14px;">
+      <button id="viz-play-btn" onclick="vizTogglePlay()" style="
+        padding:12px 20px;border:none;border-radius:8px;cursor:pointer;
+        background:linear-gradient(135deg,#a8ff78,#00d4ff);
+        color:#000;font-family:var(--font-mono);font-size:14px;font-weight:700;
+        white-space:nowrap;min-width:100px;">▶ 再生</button>
       <div>
-        <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">現在のレジーム</div>
-        <div id="viz-current-state" style="font-size:28px;font-weight:700;font-family:var(--font-mono);text-align:center;padding:16px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);margin-bottom:10px;color:#ffd166;">待機中…</div>
-        <button onclick="vizStep()" style="width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),#007ab8);border:none;border-radius:6px;color:#000;font-family:var(--font-mono);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;margin-bottom:8px;">▶ 1年進める</button>
-        <button onclick="vizReset()" style="width:100%;padding:8px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-family:var(--font-mono);font-size:12px;cursor:pointer;">↺ リセット</button>
-        <div style="margin-top:10px;font-size:11px;color:var(--text-dim);font-family:var(--font-mono);">履歴:</div>
-        <div id="viz-log" style="height:90px;overflow-y:auto;background:rgba(0,0,0,0.3);border-radius:4px;padding:8px;font-family:var(--font-mono);font-size:11px;color:var(--text-mid);margin-top:4px;"></div>
-      </div>
-      <!-- 右：定常分布ドーナツ -->
-      <div>
-        <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">累積滞在比率（定常分布へ収束）</div>
-        <div style="position:relative;height:180px;">
-          <canvas id="viz-dist-chart"></canvas>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:4px;">
+          <span>速度</span><span id="viz-speed-label">普通</span>
         </div>
-        <div id="viz-step-count" style="text-align:center;font-size:12px;color:var(--text-dim);font-family:var(--font-mono);margin-top:6px;">0年経過</div>
+        <input type="range" id="viz-speed" min="1" max="5" value="3" step="1" style="width:100%;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-top:2px;">
+          <span>ゆっくり</span><span>高速</span>
+        </div>
+      </div>
+    </div>
+    <button onclick="vizReset()" style="width:100%;padding:8px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-family:var(--font-mono);font-size:12px;cursor:pointer;margin-bottom:16px;">↺ リセット</button>
+
+    <!-- ③ 遷移履歴フロー（最新5件をチップで表示） -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">遷移履歴（最新5件）</div>
+      <div id="viz-flow" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-height:36px;">
+        <span style="font-size:12px;color:var(--text-dim);">再生すると表示されます</span>
       </div>
     </div>
 
-    <!-- 遷移行列の表示 -->
-    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
-      <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">遷移行列（現在のシミュレーター設定と同じ値）</div>
+    <!-- ④ 累積滞在比率バーグラフ -->
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">累積滞在比率（定常分布へ収束）</div>
+      <div id="viz-bars" style="display:grid;gap:8px;"></div>
+    </div>
+
+    <!-- ⑤ 遷移確率ヒートマップ -->
+    <div style="border-top:1px solid var(--border);padding-top:14px;">
+      <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">
+        遷移確率マトリックス（現在のシミュレーター設定）
+        <span style="color:var(--text-dim);">　■ 高確率 ■ 低確率</span>
+      </div>
       <div style="overflow-x:auto;">
         <table id="viz-matrix-table" style="width:100%;border-collapse:collapse;font-size:11px;font-family:var(--font-mono);"></table>
       </div>
-      <p style="font-size:11px;color:var(--text-dim);margin-top:6px;">※「弱気→弱気」が高い＝不況が続きやすい（粘着性）</p>
+      <p style="font-size:11px;color:var(--text-dim);margin-top:6px;">「弱気→弱気」が高いほど不況が長引く（粘着性）</p>
     </div>
   </div>
 </div>
@@ -1946,24 +1977,65 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
 <!-- レジーム別の実質リターン計算表 -->
 
     <!-- 2. 運営者・法的ページへのリンク（フッター的役割） -->
-    <div class="bottom-links" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 20px;">
-        <a href="/privacy-policy.html" class="diff-btn" style="text-decoration: none;">
-            <div class="diff-label">プライバシーポリシー</div>
-            <div class="diff-sub">AdSense・Cookieについて</div>
-        </a>
-        <a href="/disclaimer.html" class="diff-btn" style="text-decoration: none;">
-            <div class="diff-label">免責事項</div>
-            <div class="diff-sub">投資判断と自己責任について</div>
-        </a>
-        <a href="/contact.html" class="diff-btn" style="text-decoration: none;">
-            <div class="diff-label">お問い合わせ</div>
-            <div class="diff-sub">不具合・改善要望はこちら</div>
-        </a>
-        <a href="/profile.html" class="diff-btn" style="text-decoration: none;">
-            <div class="diff-label">運営者情報</div>
-            <div class="diff-sub">開発者プロフィール</div>
-        </a>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;">
+
+      <button onclick="openModal('privacy')"
+        style="padding:18px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s;width:100%;"
+        onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(0,212,255,0.05)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
+        <div style="font-size:22px;margin-bottom:6px;">🔒</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;">プライバシーポリシー</div>
+        <div style="font-size:11px;color:var(--text-dim);">AdSense・Cookieについて</div>
+      </button>
+
+      <button onclick="openModal('disclaimer')"
+        style="padding:18px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s;width:100%;"
+        onmouseover="this.style.borderColor='var(--warning)';this.style.background='rgba(255,209,102,0.05)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
+        <div style="font-size:22px;margin-bottom:6px;">⚠️</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;">免責事項</div>
+        <div style="font-size:11px;color:var(--text-dim);">投資判断と自己責任について</div>
+      </button>
+
+      <button onclick="openModal('contact')"
+        style="padding:18px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s;width:100%;"
+        onmouseover="this.style.borderColor='#a8ff78';this.style.background='rgba(168,255,120,0.05)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
+        <div style="font-size:22px;margin-bottom:6px;">✉️</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;">お問い合わせ</div>
+        <div style="font-size:11px;color:var(--text-dim);">不具合・改善要望はこちら</div>
+      </button>
+
+      <button onclick="openModal('profile')"
+        style="padding:18px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s;width:100%;"
+        onmouseover="this.style.borderColor='#b388ff';this.style.background='rgba(179,136,255,0.05)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
+        <div style="font-size:22px;margin-bottom:6px;">👤</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;">運営者情報</div>
+        <div style="font-size:11px;color:var(--text-dim);">開発者プロフィール</div>
+      </button>
+
     </div>
+
+    <!-- Buy Me a Coffee -->
+    <div style="margin-top:14px;text-align:center;padding:16px;background:rgba(255,129,63,0.06);border:1px solid rgba(255,129,63,0.2);border-radius:10px;">
+      <div style="font-size:13px;color:var(--text-mid);margin-bottom:10px;">シミュレーターがお役に立ちましたら、開発を応援いただけると嬉しいです！</div>
+      <a href="https://buymeacoffee.com/start.simu" target="_blank" style="text-decoration:none;">
+        <img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=start.simu&button_colour=FF813F&font_colour=ffffff&font_family=Lato&outline_colour=ffffff&coffee_colour=FFDD00"
+             alt="Buy Me A Coffee" style="max-width:200px;border-radius:6px;">
+      </a>
+    </div>
+</div>
+
+<!-- ===== モーダル ===== -->
+<div id="site-modal" onclick="if(event.target===this)closeModal()" style="
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,0.80);backdrop-filter:blur(6px);
+  overflow-y:auto;padding:12px;box-sizing:border-box;">
+  <div style="max-width:680px;margin:auto;background:#0d1424;border:1px solid #1a2d4a;border-radius:12px;padding:24px 18px 28px;position:relative;min-height:200px;">
+    <button onclick="closeModal()" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.06);border:1px solid var(--border);color:#8a9fba;font-size:18px;cursor:pointer;line-height:1;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;">✕</button>
+    <div id="modal-content"></div>
+  </div>
 </div>
 
 
@@ -2428,14 +2500,17 @@ window.addEventListener('DOMContentLoaded', () => {
     // 3. イベント委任リスナーを登録（復元後なのでscheduleSaveが安全に動く）
     registerAutoSaveListeners();
 
-    // ★ 新機能の初期化
+    // ★ 新機能の初期化（DOM確定後に実行）
     updateTaxDisplay();
     renderRegimeDashboard();
     updateRegimeTable();
-    initMarkovVisualizer();
-    drawRegimeSwitchChart();
     initVolatilityDragExplorer();
-    initFatTailAnalyzer();
+    // Canvasチャートは200ms遅延させてスマホでのDOMサイズ確定を待つ
+    setTimeout(() => {
+      initFatTailAnalyzer();
+      initMarkovVisualizer();
+      drawRegimeSwitchChart();
+    }, 200);
 
     // ★ 収入スライダーに税金計算を連動
     ['income','income-b','raise','raise-b'].forEach(id => {
@@ -4032,7 +4107,10 @@ function initFatTailAnalyzer() {
   if (!slider || !canvas) return;
   if (ftChart) { ftChart.destroy(); ftChart = null; }
 
-  // 数学関数
+  // canvasにサイズを明示指定（スマホでoffsetWidth=0になる問題を防ぐ）
+  canvas.width  = 600;
+  canvas.height = 280;
+
   function lngamma(z) {
     return (z-0.5)*Math.log(z) - z + 0.5*Math.log(2*Math.PI);
   }
@@ -4046,8 +4124,7 @@ function initFatTailAnalyzer() {
     return Math.exp(-0.5*x*x) / Math.sqrt(2*Math.PI);
   }
 
-  // X軸ラベル: -5 〜 +5
-  const xs = Array.from({length:101}, (_,i) => -5 + i*0.1);
+  const xs      = Array.from({length:101}, (_,i) => -5 + i*0.1);
   const xlabels = xs.map(x => x.toFixed(1));
   const normData = xs.map(x => normalPDF(x));
 
@@ -4107,10 +4184,8 @@ function initFatTailAnalyzer() {
   function updateFT() {
     const df = parseFloat(slider.value);
     document.getElementById('ft-df-display').textContent = df.toFixed(1);
-
     ftChart.data.datasets[0].data = xs.map(x => tPDF(x, df));
     ftChart.update('none');
-
     const typeEl = document.getElementById('ft-dist-type');
     if (df < 4) {
       typeEl.textContent = 'Extreme Fat-tail 💀'; typeEl.style.color = '#ff4757';
@@ -4127,6 +4202,7 @@ function initFatTailAnalyzer() {
   updateFT();
 }
 
+
 // ============================================================
 // ★ ボラティリティ・ドラッグ体験ツール
 // ============================================================
@@ -4139,6 +4215,10 @@ function initVolatilityDragExplorer() {
   if (!muEl || !sigmaEl || !canvas) return;
 
   if (vdChart) { vdChart.destroy(); vdChart = null; }
+
+  // canvasにサイズを明示指定
+  canvas.width  = 600;
+  canvas.height = 280;
 
   const years = Array.from({length:21}, (_,i) => i);
 
@@ -4228,94 +4308,431 @@ function initVolatilityDragExplorer() {
 }
 
 // ============================================================
-// ★ マルコフ遷移ビジュアライザー
+// ★ モーダル（プライバシー・免責・お問い合わせ・運営者）
 // ============================================================
-let vizChart = null;
-let vizStateIdx = 1; // 通常から開始
-let vizCounts = [0, 0, 0, 0];
+const MODAL_CONTENT = {
+
+  // ──────────────────────────────────────────
+  privacy: `
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:2px;margin-bottom:4px;">PRIVACY POLICY</div>
+    <h2 style="font-size:20px;color:var(--text);margin:0 0 4px;">🔒 プライバシーポリシー</h2>
+    <p style="font-size:11px;color:var(--text-dim);margin:0 0 20px;">制定：2024年　最終更新：2025年</p>
+
+    <div style="font-size:13px;color:var(--text-mid);line-height:2.0;">
+
+      <div style="padding:12px 14px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:6px;margin-bottom:20px;font-size:13px;">
+        <b style="color:var(--accent);">✅ 重要：</b>本ツールに入力した資産・年収などのデータは、<b style="color:var(--text);">外部サーバーへ一切送信されません。</b>すべての計算はお使いのブラウザ上でのみ実行されます。
+      </div>
+
+      <h3 style="font-size:14px;color:var(--accent);margin:20px 0 8px;display:flex;align-items:center;gap:6px;"><span>1.</span> 基本方針</h3>
+      <p>FIREシミュレーター（以下「本ツール」）は、利用者のプライバシーを尊重し、個人情報の適切な管理に努めます。本ポリシーは、当ツールにおける情報の取り扱い方針を定めるものです。</p>
+
+      <h3 style="font-size:14px;color:var(--accent);margin:20px 0 8px;">2. 収集する情報と利用目的</h3>
+      <div style="display:grid;gap:8px;margin-bottom:12px;">
+        <div style="padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:6px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">📦 ローカルストレージ（ブラウザ内保存）</div>
+          <div style="font-size:12px;color:var(--text-dim);">シミュレーションの設定値（年齢・資産額・目標額など）を次回アクセス時に復元するためにブラウザ内に保存します。このデータは外部には送信されず、ブラウザキャッシュを削除すれば消去されます。</div>
+        </div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:6px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">📊 Google Analytics（アクセス解析）</div>
+          <div style="font-size:12px;color:var(--text-dim);">本サイトのアクセス状況（ページビュー数・滞在時間など）を把握するためにGoogle Analyticsを使用する場合があります。取得するデータに氏名・住所等の個人を特定できる情報は含まれません。</div>
+        </div>
+        <div style="padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:6px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">💰 Google AdSense（広告配信）</div>
+          <div style="font-size:12px;color:var(--text-dim);">本サイトはGoogle AdSenseによる広告を掲載する場合があります。Googleは広告配信にCookieを使用し、利用者の興味に応じた広告を表示することがあります。</div>
+        </div>
+      </div>
+
+      <h3 style="font-size:14px;color:var(--accent);margin:20px 0 8px;">3. Cookieについて</h3>
+      <p>Cookieとは、ウェブサイトがブラウザに保存する小さなデータファイルです。本ツール自体はCookieを使用しませんが、Google Analytics・AdSenseがCookieを利用します。ブラウザの設定からCookieを無効化することで、これらをオプトアウトできます。</p>
+      <p style="margin-top:8px;">Google のプライバシーポリシー：<a href="https://policies.google.com/privacy" target="_blank" style="color:var(--accent);">https://policies.google.com/privacy</a></p>
+
+      <h3 style="font-size:14px;color:var(--accent);margin:20px 0 8px;">4. 第三者への情報提供</h3>
+      <p>法令に基づく場合、または利用者の同意がある場合を除き、収集した情報を第三者に提供することはありません。</p>
+
+      <h3 style="font-size:14px;color:var(--accent);margin:20px 0 8px;">5. 未成年者の利用</h3>
+      <p>本ツールは成人を対象としています。18歳未満の方が利用する場合は、保護者の同意のもとでご利用ください。</p>
+
+      <h3 style="font-size:14px;color:var(--accent);margin:20px 0 8px;">6. ポリシーの改定</h3>
+      <p>本ポリシーは予告なく変更する場合があります。変更後のポリシーは本ページに掲載した時点で効力を生じます。重要な変更がある場合はツール上でお知らせします。</p>
+
+      <div style="margin-top:24px;padding:12px 14px;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:6px;font-size:12px;color:var(--text-dim);">
+        運営：FIREシミュレーター個人開発者　／　X: <a href="https://x.com/start_simu" target="_blank" style="color:var(--accent);">@start_simu</a>
+      </div>
+    </div>
+  `,
+
+  // ──────────────────────────────────────────
+  disclaimer: `
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--warning);letter-spacing:2px;margin-bottom:4px;">DISCLAIMER</div>
+    <h2 style="font-size:20px;color:var(--text);margin:0 0 4px;">⚠️ 免責事項</h2>
+    <p style="font-size:11px;color:var(--text-dim);margin:0 0 20px;">最終更新：2025年</p>
+
+    <div style="font-size:13px;color:var(--text-mid);line-height:2.0;">
+
+      <div style="padding:14px;background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.35);border-radius:8px;margin-bottom:20px;">
+        <b style="color:var(--danger);font-size:14px;">⚠️ 最重要事項</b><br>
+        <span style="font-size:13px;">本ツールは<b style="color:var(--text);">投資勧誘・売買推奨を一切目的としていません。</b>シミュレーション結果はあくまで統計的な参考情報であり、将来の成果を何ら保証するものではありません。</span>
+      </div>
+
+      <h3 style="font-size:14px;color:var(--warning);margin:20px 0 8px;">1. ツールの目的と限界</h3>
+      <p>本ツールは、モンテカルロ法に基づく統計的シミュレーションによって資産形成の「可能性の幅」を提示するものです。以下の点にご注意ください：</p>
+      <ul style="margin:8px 0 0 16px;padding:0;display:grid;gap:4px;">
+        <li>過去のデータや統計的仮定に基づいており、未来を予測するものではありません</li>
+        <li>税制・社会保険制度の変更は反映されません</li>
+        <li>個人の健康状態・家族構成の変化・緊急支出等は考慮されません</li>
+        <li>設定値の誤りにより、現実とかけ離れた結果が出る場合があります</li>
+      </ul>
+
+      <h3 style="font-size:14px;color:var(--warning);margin:20px 0 8px;">2. 投資リスクの警告</h3>
+      <p>投資には元本割れのリスクが伴います。主なリスクには以下が含まれます：</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0;">
+        ${[['市場リスク','相場全体の下落による損失'],['信用リスク','発行体の債務不履行'],['流動性リスク','売りたいときに売れない'],['インフレリスク','物価上昇による実質価値の目減り'],['為替リスク','外貨建て資産の為替変動'],['長寿リスク','想定以上に長生きすることによる資産枯渇']].map(([k,v])=>`
+          <div style="padding:8px 10px;background:rgba(255,71,87,0.05);border:1px solid rgba(255,71,87,0.15);border-radius:5px;">
+            <div style="font-size:11px;font-weight:700;color:var(--warning);">${k}</div>
+            <div style="font-size:11px;color:var(--text-dim);">${v}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <h3 style="font-size:14px;color:var(--warning);margin:20px 0 8px;">3. 専門家への相談を強く推奨します</h3>
+      <div style="display:grid;gap:6px;margin-bottom:12px;">
+        ${[['💼 ファイナンシャルプランナー（CFP/AFP）','資産運用・保険・ライフプラン全般'],['🧾 税理士','税務・確定申告・相続税対策'],['⚖️ 弁護士','契約・相続・法的トラブル全般'],['🏦 証券会社・銀行','具体的な金融商品の選択']].map(([k,v])=>`
+          <div style="display:flex;gap:10px;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:5px;">
+            <span style="font-size:13px;font-weight:700;color:var(--text);min-width:0;">${k}</span>
+            <span style="font-size:12px;color:var(--text-dim);">${v}</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <h3 style="font-size:14px;color:var(--warning);margin:20px 0 8px;">4. 損害賠償の否認</h3>
+      <p>本ツールの利用によって生じたいかなる損害（直接的・間接的・特別・付随的損害を含む）についても、開発者は一切の責任を負いません。利用者は自己の判断と責任において本ツールを使用するものとします。</p>
+
+      <h3 style="font-size:14px;color:var(--warning);margin:20px 0 8px;">5. 著作権・利用規約</h3>
+      <p>本ツールのソースコード・テキスト・デザイン等の著作権は開発者に帰属します。個人的な学習・参考目的での利用は自由ですが、無断での複製・商用利用・再配布を禁じます。</p>
+
+      <div style="margin-top:24px;padding:12px 14px;background:rgba(255,209,102,0.05);border:1px solid rgba(255,209,102,0.2);border-radius:6px;font-size:12px;color:var(--text-dim);">
+        本免責事項は日本法に準拠します。紛争が生じた場合は、開発者の所在地を管轄する裁判所を専属的合意管轄裁判所とします。
+      </div>
+    </div>
+  `,
+
+  // ──────────────────────────────────────────
+  contact: `
+    <div style="font-family:var(--font-mono);font-size:10px;color:#a8ff78;letter-spacing:2px;margin-bottom:4px;">CONTACT</div>
+    <h2 style="font-size:20px;color:var(--text);margin:0 0 4px;">✉️ お問い合わせ</h2>
+    <p style="font-size:13px;color:var(--text-dim);margin:0 0 20px;">不具合の報告・機能のご要望・ご質問はこちらからお寄せください。</p>
+
+    <div style="font-size:13px;color:var(--text-mid);line-height:2.0;">
+
+      <h3 style="font-size:14px;color:#a8ff78;margin:0 0 10px;">📬 連絡先</h3>
+      <div style="display:grid;gap:10px;margin-bottom:24px;">
+        <a href="https://x.com/start_simu" target="_blank"
+           style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(29,155,240,0.05);border:1px solid rgba(29,155,240,0.25);border-radius:8px;text-decoration:none;transition:border-color .2s;"
+           onmouseover="this.style.borderColor='#1d9bf0'" onmouseout="this.style.borderColor='rgba(29,155,240,0.25)'">
+          <span style="font-size:28px;flex-shrink:0;">𝕏</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);">X（旧Twitter）でDM</div>
+            <div style="font-size:12px;color:var(--text-dim);">@start_simu　— 返信まで数日いただく場合があります</div>
+          </div>
+          <span style="margin-left:auto;font-size:18px;color:var(--text-dim);">→</span>
+        </a>
+        <a href="https://buymeacoffee.com/start.simu" target="_blank"
+           style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,129,63,0.05);border:1px solid rgba(255,129,63,0.25);border-radius:8px;text-decoration:none;"
+           onmouseover="this.style.borderColor='#FF813F'" onmouseout="this.style.borderColor='rgba(255,129,63,0.25)'">
+          <span style="font-size:28px;flex-shrink:0;">☕</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);">Buy Me a Coffee でメッセージ</div>
+            <div style="font-size:12px;color:var(--text-dim);">開発支援のご寄付と合わせてメッセージを送れます</div>
+          </div>
+          <span style="margin-left:auto;font-size:18px;color:var(--text-dim);">→</span>
+        </a>
+      </div>
+
+      <h3 style="font-size:14px;color:#a8ff78;margin:0 0 10px;">❓ よくあるご質問</h3>
+      <div style="display:grid;gap:8px;">
+        ${[
+          ['🐛 バグ・計算が合わない','X（旧Twitter）のDMにて「設定値・再現手順・スクリーンショット」をお送りください。迅速に対応します。'],
+          ['💡 機能リクエスト','新機能のご要望は大歓迎です！特に多かったご要望は優先して実装します。'],
+          ['💾 データが消えた','ブラウザのキャッシュクリア・プライベートモード・別のブラウザでは設定が消えます。定期的にエクスポートをお勧めします。'],
+          ['📱 スマホで表示が崩れる','機種名・OSバージョン・ブラウザ名をお知らせください。できる限り対応します。'],
+          ['🔢 計算結果の解釈方法','ツール内の「クイックガイド」や「数理モデル解説」パネルをご確認ください。'],
+          ['📧 返信がない','スパムフォルダをご確認ください。1週間以上経過しても返信がない場合は再度ご連絡ください。'],
+        ].map(([q,a])=>`
+          <details style="padding:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+            <summary style="padding:10px 12px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);list-style:none;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.02);">
+              <span>${q}</span>
+            </summary>
+            <div style="padding:10px 12px;font-size:12px;color:var(--text-dim);border-top:1px solid var(--border);background:rgba(255,255,255,0.01);">${a}</div>
+          </details>
+        `).join('')}
+      </div>
+
+      <div style="margin-top:20px;padding:12px 14px;background:rgba(168,255,120,0.04);border:1px solid rgba(168,255,120,0.15);border-radius:6px;font-size:12px;color:var(--text-dim);">
+        💌 いただいたフィードバックはすべて開発改善に活用しています。ご意見・ご感想もお気軽にどうぞ！
+      </div>
+    </div>
+  `,
+
+  // ──────────────────────────────────────────
+  profile: `
+    <div style="font-family:var(--font-mono);font-size:10px;color:#b388ff;letter-spacing:2px;margin-bottom:4px;">ABOUT</div>
+    <h2 style="font-size:20px;color:var(--text);margin:0 0 20px;">👤 運営者情報</h2>
+
+    <div style="font-size:13px;color:var(--text-mid);line-height:2.0;">
+
+      <!-- プロフィールカード -->
+      <div style="display:flex;align-items:center;gap:16px;padding:16px;background:rgba(179,136,255,0.07);border:1px solid rgba(179,136,255,0.25);border-radius:10px;margin-bottom:22px;">
+        <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#b388ff,#00d4ff);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;box-shadow:0 0 20px rgba(179,136,255,0.3);">🔥</div>
+        <div style="min-width:0;">
+          <div style="font-size:16px;font-weight:700;color:var(--text);">FIREシミュレーター 開発者</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">統計・資産運用に興味を持つ個人開発エンジニア</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+            <a href="https://x.com/start_simu" target="_blank" style="font-size:12px;color:#1d9bf0;text-decoration:none;display:flex;align-items:center;gap:4px;">𝕏 @start_simu</a>
+            <a href="https://buymeacoffee.com/start.simu" target="_blank" style="font-size:12px;color:#FF813F;text-decoration:none;display:flex;align-items:center;gap:4px;">☕ Buy Me a Coffee</a>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="font-size:14px;color:#b388ff;margin:0 0 8px;">🛠️ このツールについて</h3>
+      <p>モンテカルロ法・マルコフ連鎖・t分布を組み合わせた本格的な資産シミュレーターです。「たまたま運が良かっただけのFIRE計画」を排除し、最悪シナリオ（シーケンス・オブ・リターン・リスク）への耐性を検証することを目的として個人で開発しました。</p>
+      <p style="margin-top:8px;">完全にブラウザ上で動作し、入力データは外部サーバーへ一切送信されません。</p>
+
+      <h3 style="font-size:14px;color:#b388ff;margin:20px 0 8px;">🔧 使用技術スタック</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">
+        ${[
+          ['HTML / CSS / JS','バニラ実装'],
+          ['Chart.js 4.4','グラフ描画'],
+          ['モンテカルロ法','N=2000回試行'],
+          ['マルコフ連鎖','4レジーム遷移'],
+          ['t分布（Fat-tail）','df=5推奨'],
+          ['簡易税金計算エンジン','超過累進課税'],
+          ['LocalStorage','設定の永続化'],
+          ['MathJax','数式描画'],
+        ].map(([t,d])=>`
+          <div style="padding:4px 10px;background:rgba(179,136,255,0.08);border:1px solid rgba(179,136,255,0.25);border-radius:16px;font-size:11px;">
+            <span style="color:#b388ff;font-weight:700;">${t}</span>
+            <span style="color:var(--text-dim);margin-left:4px;">${d}</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <h3 style="font-size:14px;color:#b388ff;margin:20px 0 8px;">📋 更新履歴</h3>
+      <div style="display:grid;gap:5px;">
+        ${[
+          ['v12','2025年','トルネードチャート・感度分析・税金エンジン・共働き・子ども教育費・安全率計算を追加'],
+          ['v11','2025年','ヒートマップ分析・マルコフビジュアライザー・Fat-tailアナライザー・ボラドラッグ体験ツールを追加'],
+          ['v10','2024年','シミュレーション解説文・改善アドバイス自動生成を追加'],
+          ['v9','2024年','定常分布円グラフ・Regime Performance Matrix・スマホUI大幅改善'],
+          ['v4','2024年','UI全面刷新・ダークテーマ・解説パネル群追加'],
+          ['v1','2024年','初版リリース（モンテカルロ基本実装）'],
+        ].map(([v,y,d])=>`
+          <div style="display:flex;gap:8px;align-items:start;padding:8px 10px;background:rgba(255,255,255,0.02);border-radius:5px;border:1px solid var(--border);">
+            <span style="font-family:var(--font-mono);font-size:11px;font-weight:700;color:#b388ff;flex-shrink:0;min-width:28px;">${v}</span>
+            <span style="font-size:11px;color:var(--text-dim);flex-shrink:0;min-width:40px;">${y}</span>
+            <span style="font-size:12px;color:var(--text-mid);">${d}</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <h3 style="font-size:14px;color:#b388ff;margin:20px 0 8px;">💖 開発を続ける原動力</h3>
+      <p>「FIRE計画の数理的な検証ツールが欲しい」という個人的な動機から開発を始めました。統計的に正直なシミュレーターとして、楽観的な皮算用を防ぐことを最重視しています。</p>
+      <div style="margin-top:12px;padding:14px;background:rgba(255,129,63,0.06);border:1px solid rgba(255,129,63,0.2);border-radius:8px;text-align:center;">
+        <div style="font-size:13px;color:var(--text-mid);margin-bottom:10px;">シミュレーターがお役に立ちましたら、コーヒー1杯分の支援をいただけると大変嬉しいです ☕</div>
+        <a href="https://buymeacoffee.com/start.simu" target="_blank" style="text-decoration:none;">
+          <img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=start.simu&button_colour=FF813F&font_colour=ffffff&font_family=Lato&outline_colour=ffffff&coffee_colour=FFDD00"
+               alt="Buy Me A Coffee" style="max-width:180px;border-radius:6px;">
+        </a>
+      </div>
+    </div>
+  `,
+};
+
+function openModal(key) {
+  const modal = document.getElementById('site-modal');
+  const content = document.getElementById('modal-content');
+  if (!modal || !content || !MODAL_CONTENT[key]) return;
+  content.innerHTML = MODAL_CONTENT[key];
+  modal.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  const modal = document.getElementById('site-modal');
+  if (modal) modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ESCキーで閉じる
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+
+// ============================================================
+// ★ マルコフ遷移ビジュアライザー（リニューアル版）
+// ============================================================
+let vizChart = null; // 後方互換用
+let vizStateIdx = 1;
+let vizCounts = [0,0,0,0];
 let vizTotal = 0;
+let vizPlaying = false;
+let vizTimer = null;
+let vizHistory = [];
+
 const VIZ_LABELS  = ['🐂 強気', '📈 通常', '🐻 弱気', '🔥 インフレ'];
+const VIZ_NAMES   = ['強気相場', '通常相場', '弱気相場', 'インフレ相場'];
+const VIZ_EMOJIS  = ['🐂', '📈', '🐻', '🔥'];
 const VIZ_COLORS  = ['#a8ff78', '#00d4ff', '#ff4757', '#ffd166'];
+const VIZ_SPEEDS  = [1200, 700, 400, 200, 60];
+const VIZ_SPEED_LABELS = ['ゆっくり', '遅め', '普通', '速め', '高速'];
 
 function initMarkovVisualizer() {
-  const canvas = document.getElementById('viz-dist-chart');
-  if (!canvas) return;
-  if (vizChart) { vizChart.destroy(); vizChart = null; }
-  vizStateIdx = 1; vizCounts = [0,0,0,0]; vizTotal = 0;
-  const el = document.getElementById('viz-current-state');
-  if (el) { el.textContent = '📈 通常'; el.style.color = '#00d4ff'; }
-  const log = document.getElementById('viz-log');
-  if (log) log.innerHTML = '';
-  const cnt = document.getElementById('viz-step-count');
-  if (cnt) cnt.textContent = '0年経過';
-
-  vizChart = new Chart(canvas.getContext('2d'), {
-    type: 'doughnut',
-    data: {
-      labels: VIZ_LABELS,
-      datasets: [{ data: [1,1,1,1], backgroundColor: VIZ_COLORS, borderWidth: 2, borderColor: '#0f1a2e' }],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position:'bottom', labels:{ color:'#8a9fba', font:{size:11}, padding:8 } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${(ctx.parsed/Math.max(1,vizTotal)*100).toFixed(1)}%` } },
-      },
-    },
-  });
-
+  vizStateIdx = 1; vizCounts = [0,0,0,0]; vizTotal = 0; vizHistory = [];
+  vizPlaying = false;
+  if (vizTimer) { clearInterval(vizTimer); vizTimer = null; }
+  const btn = document.getElementById('viz-play-btn');
+  if (btn) {
+    btn.textContent = '▶ 再生';
+    btn.style.background = 'linear-gradient(135deg,#a8ff78,#00d4ff)';
+  }
+  const spd = document.getElementById('viz-speed');
+  if (spd) {
+    spd.addEventListener('input', () => {
+      const lbl = document.getElementById('viz-speed-label');
+      if (lbl) lbl.textContent = VIZ_SPEED_LABELS[parseInt(spd.value)-1];
+      if (vizPlaying) {
+        clearInterval(vizTimer);
+        vizTimer = setInterval(vizStep, VIZ_SPEEDS[parseInt(spd.value)-1]);
+      }
+    });
+  }
+  updateVizCard(1);
+  renderVizBars();
+  renderVizFlow();
   buildVizMatrix();
 }
 
-function buildVizMatrix() {
-  const table = document.getElementById('viz-matrix-table');
-  if (!table) return;
-  const regimeNames = ['強気', '通常', '弱気', 'インフレ'];
-  const normalized = tmValues.map(row => {
-    const s = row.reduce((a,b)=>a+b,0) || 1;
-    return row.map(v=>(v/s*100).toFixed(0)+'%');
-  });
-  const header = `<tr style="background:rgba(0,212,255,0.08);"><th style="padding:6px 8px;color:var(--text-dim);border:1px solid var(--border);">現在↓ 次→</th>${regimeNames.map((n,i)=>`<th style="padding:6px 8px;color:${VIZ_COLORS[i]};border:1px solid var(--border);">${n}</th>`).join('')}</tr>`;
-  const rows = regimeNames.map((name,i) =>
-    `<tr>${[`<td style="padding:6px 8px;color:${VIZ_COLORS[i]};font-weight:700;border:1px solid var(--border);">${name}</td>`,
-      ...normalized[i].map((v,j)=>{
-        const isHigh = parseFloat(v)>=50;
-        const isDiag = i===j;
-        return `<td style="padding:6px 8px;text-align:center;border:1px solid var(--border);background:${isDiag&&isHigh?'rgba(255,71,87,0.12)':isDiag?'rgba(255,255,255,0.03)':'transparent'};color:${isHigh?'#ffd166':'var(--text-mid)'};">${v}</td>`;
-      })].join('')}</tr>`
-  ).join('');
-  table.innerHTML = header + rows;
+function updateVizCard(idx) {
+  const card  = document.getElementById('viz-state-card');
+  const emoji = document.getElementById('viz-emoji');
+  const name  = document.getElementById('viz-name');
+  const year  = document.getElementById('viz-year');
+  const glow  = document.getElementById('viz-glow-bar');
+  const color = VIZ_COLORS[idx];
+  if (!card) return;
+  card.style.borderColor = color;
+  card.style.background  = color + '12';
+  if (emoji) {
+    emoji.style.transform = 'scale(1.3)';
+    emoji.textContent = VIZ_EMOJIS[idx];
+    setTimeout(() => { if (emoji) emoji.style.transform = 'scale(1)'; }, 200);
+  }
+  if (name)  { name.textContent = VIZ_NAMES[idx]; name.style.color = color; }
+  if (year)  year.textContent = vizTotal + '年目';
+  if (glow)  glow.style.background = color;
+}
+
+function renderVizBars() {
+  const container = document.getElementById('viz-bars');
+  if (!container) return;
+  const total = Math.max(1, vizTotal);
+  let stationary = [0.25,0.25,0.25,0.25];
+  try {
+    const raw = computeStationaryDist(tmValues);
+    const s = raw.reduce((a,b)=>a+b,0);
+    stationary = raw.map(v=>v/s);
+  } catch(e) {}
+  container.innerHTML = VIZ_NAMES.map((nm, i) => {
+    const actual = vizCounts[i] / total * 100;
+    const theory = stationary[i] * 100;
+    const color  = VIZ_COLORS[i];
+    return '<div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
+        '<span style="font-size:12px;font-weight:700;color:' + color + ';">' + VIZ_EMOJIS[i] + ' ' + nm + '</span>' +
+        '<span style="font-size:12px;font-family:var(--font-mono);color:' + color + ';">' + actual.toFixed(1) + '%</span>' +
+      '</div>' +
+      '<div style="background:var(--border);border-radius:4px;height:16px;overflow:hidden;position:relative;">' +
+        '<div style="height:100%;width:' + actual.toFixed(1) + '%;background:' + color + ';border-radius:4px;transition:width .35s ease;"></div>' +
+        '<div style="position:absolute;top:0;bottom:0;left:' + theory.toFixed(1) + '%;width:2px;background:rgba(255,255,255,0.5);"></div>' +
+      '</div>' +
+      '<div style="font-size:10px;color:var(--text-dim);margin-top:2px;">理論値 ' + theory.toFixed(0) + '%（白線）/ 年数: ' + vizCounts[i] + '年</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderVizFlow() {
+  const container = document.getElementById('viz-flow');
+  if (!container) return;
+  if (vizHistory.length === 0) {
+    container.innerHTML = '<span style="font-size:12px;color:var(--text-dim);">再生すると表示されます</span>';
+    return;
+  }
+  const recent = vizHistory.slice(-5);
+  container.innerHTML = recent.map((idx, i) => {
+    const color = VIZ_COLORS[idx];
+    const isLatest = i === recent.length - 1;
+    const chip = '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;background:' + color + '22;border:1px solid ' + color + ';font-size:12px;font-weight:' + (isLatest ? '700' : '400') + ';color:' + color + ';' + (isLatest ? 'box-shadow:0 0 8px ' + color + '55;' : 'opacity:0.65;') + '">' + VIZ_EMOJIS[idx] + ' ' + VIZ_NAMES[idx] + '</span>';
+    const arrow = i < recent.length-1 ? '<span style="color:var(--text-dim);font-size:12px;">→</span>' : '';
+    return chip + arrow;
+  }).join('');
 }
 
 function vizStep() {
   const row = tmValues[vizStateIdx];
   const sum = row.reduce((a,b)=>a+b,0) || 1;
   const r = Math.random() * sum;
-  let cum = 0, next = 0;
-  for (let i=0; i<row.length; i++) { cum+=row[i]; if(r<cum){next=i;break;} }
-
-  const prev = vizStateIdx;
+  let cum=0, next=0;
+  for (let i=0;i<row.length;i++) { cum+=row[i]; if(r<cum){next=i;break;} }
   vizStateIdx = next;
   vizCounts[next]++;
   vizTotal++;
+  vizHistory.push(next);
+  if (vizHistory.length > 5) vizHistory.shift();
+  updateVizCard(next);
+  renderVizBars();
+  renderVizFlow();
+}
 
-  const el = document.getElementById('viz-current-state');
-  if (el) { el.textContent = VIZ_LABELS[next]; el.style.color = VIZ_COLORS[next]; }
-
-  const log = document.getElementById('viz-log');
-  if (log) {
-    log.innerHTML = `<span style="color:${VIZ_COLORS[prev]};">${VIZ_LABELS[prev].replace(/\S+\s/,'')}</span> → <span style="color:${VIZ_COLORS[next]};">${VIZ_LABELS[next].replace(/\S+\s/,'')}</span> (${vizTotal}年目)<br>` + log.innerHTML;
-  }
-  const cnt = document.getElementById('viz-step-count');
-  if (cnt) cnt.textContent = `${vizTotal}年経過`;
-
-  if (vizChart) {
-    vizChart.data.datasets[0].data = [...vizCounts];
-    vizChart.update('none');
+function vizTogglePlay() {
+  vizPlaying = !vizPlaying;
+  const btn = document.getElementById('viz-play-btn');
+  if (vizPlaying) {
+    const spd = parseInt(document.getElementById('viz-speed') ? document.getElementById('viz-speed').value : 3);
+    vizTimer = setInterval(vizStep, VIZ_SPEEDS[spd-1]);
+    if (btn) { btn.textContent = '⏸ 一時停止'; btn.style.background = 'linear-gradient(135deg,#ff9a3c,#ff4757)'; }
+  } else {
+    clearInterval(vizTimer); vizTimer = null;
+    if (btn) { btn.textContent = '▶ 再生'; btn.style.background = 'linear-gradient(135deg,#a8ff78,#00d4ff)'; }
   }
 }
 
-function vizReset() { initMarkovVisualizer(); }
+function vizReset() {
+  vizPlaying = false;
+  if (vizTimer) { clearInterval(vizTimer); vizTimer = null; }
+  initMarkovVisualizer();
+}
+
+function buildVizMatrix() {
+  const table = document.getElementById('viz-matrix-table');
+  if (!table) return;
+  const names = ['強気', '通常', '弱気', 'インフレ'];
+  const normalized = tmValues.map(row => {
+    const s = row.reduce((a,b)=>a+b,0)||1;
+    return row.map(v=>v/s*100);
+  });
+  let html = '<tr style="background:rgba(0,212,255,0.06);"><th style="padding:6px 8px;color:var(--text-dim);border:1px solid var(--border);font-size:10px;">現在↓ 次→</th>' +
+    names.map((n,i) => '<th style="padding:6px 8px;color:' + VIZ_COLORS[i] + ';border:1px solid var(--border);font-size:11px;text-align:center;">' + VIZ_EMOJIS[i] + '<br>' + n + '</th>').join('') + '</tr>';
+  names.forEach((name,i) => {
+    html += '<tr><td style="padding:6px 8px;font-weight:700;color:' + VIZ_COLORS[i] + ';border:1px solid var(--border);font-size:11px;">' + VIZ_EMOJIS[i] + ' ' + name + '</td>';
+    normalized[i].forEach((v,j) => {
+      const alpha = Math.min(255, Math.round(v/100*0.85*255)).toString(16).padStart(2,'0');
+      const isDiag = i===j;
+      html += '<td style="padding:6px 8px;text-align:center;border:1px solid var(--border);background:' + VIZ_COLORS[j] + alpha + ';font-weight:' + (v>=40?'700':'400') + ';font-size:11px;color:' + (v>=55?'#000':'var(--text)') + ';' + (isDiag?'outline:2px solid rgba(255,255,255,0.3);outline-offset:-2px;':'') + '">' + v.toFixed(0) + '%</td>';
+    });
+    html += '</tr>';
+  });
+  table.innerHTML = html;
+}
+
 
 // ============================================================
 // ★ レジーム・スイッチング比較チャート（SVGで描画）
