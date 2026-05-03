@@ -1112,28 +1112,63 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
 
       <!-- ⑦ ヒートマップ -->
       <div class="panel sensitivity-section" style="margin-top:0;">
-        <div class="panel-header">🌡️ 感度分析：現役時 × リタイア後 株式比率</div>
+        <div class="panel-header">🌡️ 感度分析：株式比率ヒートマップ</div>
         <div class="panel-body">
-          <p style="font-size:11px;color:var(--text-dim);margin-bottom:15px;">現役時とリタイア後の株式比率を変化させた際の成功率をマトリックス表示します（試行回数: 200回/セル）。</p>
-<!-- 修正：ボタンを大きく、塗りつぶしデザインに変更 -->
-    <button id="btn-heat-analysis" 
-            onclick="runSensitivityAnalysis()"
-            style="width:100%; padding:14px; background:linear-gradient(135deg, var(--accent) 0%, #007ab8 100%); 
-                   border:none; border-radius:6px; color:#000; font-family:var(--font-mono); 
-                   font-size:13px; font-weight:700; letter-spacing:2px; cursor:pointer; 
-                   transition:all .25s; box-shadow: var(--glow-accent); position:relative; overflow:hidden;">
-      <span style="position:relative; z-index:1;">🔥 ヒートマップ分析を実行</span>
-    </button>
+          <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;line-height:1.7;">
+            現役時・FIRE後の株式比率を 0〜100% で格子状に変化させ、各セルの<b style="color:var(--text);">FIRE成功率</b>をヒートマップで可視化します。緑が高成功率、赤が低成功率です。
+          </p>
 
-    <div id="heat-progress-container" style="display:none; margin:15px 0; background:var(--border); border-radius:2px; height:4px;">
-      <div id="heat-progress-bar" style="width:0%; height:100%; background:var(--accent); transition:width 0.2s;"></div>
-    </div>
-    
-    <div style="overflow-x:auto; margin-top:20px; display:flex; justify-content:center;">
-      <canvas id="sensitivityHeatmap" width="1200" height="800" style="width:600px; height:400px; max-width:100%; border-radius:4px;"></canvas>
-    </div>
-  </div>
-</div>
+          <!-- 実行ボタン -->
+          <button id="btn-heat-analysis" onclick="runSensitivityAnalysis()"
+            style="width:100%;padding:16px;background:linear-gradient(135deg,var(--accent) 0%,#007ab8 100%);
+                   border:none;border-radius:8px;color:#000;font-family:var(--font-mono);
+                   font-size:14px;font-weight:700;letter-spacing:2px;cursor:pointer;
+                   transition:all .25s;box-shadow:var(--glow-accent);margin-bottom:14px;">
+            🔥 ヒートマップ分析を実行
+          </button>
+
+          <!-- 進捗バー -->
+          <div id="heat-progress-container" style="display:none;margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:4px;">
+              <span>計算中…（6×6 = 36セル）</span>
+              <span id="heat-progress-pct">0%</span>
+            </div>
+            <div style="background:var(--border);border-radius:3px;height:6px;overflow:hidden;">
+              <div id="heat-progress-bar" style="width:0%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));transition:width 0.15s;border-radius:3px;"></div>
+            </div>
+          </div>
+
+          <!-- ヒートマップ本体（Chart.jsで描画） -->
+          <div id="heatmap-wrap" style="display:none;">
+            <!-- 軸ラベル上部 -->
+            <div style="text-align:center;font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:6px;">
+              ← FIRE後 株式比率 →
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <!-- Y軸ラベル -->
+              <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;white-space:nowrap;flex-shrink:0;">
+                ← 現役時 株式比率 →
+              </div>
+              <!-- Chart.js canvas -->
+              <div style="flex:1;position:relative;">
+                <canvas id="sensitivityHeatmap"></canvas>
+              </div>
+            </div>
+
+            <!-- カラースケール凡例 -->
+            <div style="display:flex;align-items:center;gap:8px;margin-top:12px;justify-content:center;">
+              <span style="font-size:11px;color:var(--danger);">低 0%</span>
+              <div style="height:10px;flex:1;max-width:200px;border-radius:5px;
+                background:linear-gradient(90deg,#ff4757,#ffd166,#a8ff78);"></div>
+              <span style="font-size:11px;color:var(--success);">高 100%</span>
+              <span style="font-size:10px;color:var(--text-dim);margin-left:8px;">FIRE成功率</span>
+            </div>
+          </div>
+
+          <!-- インサイトボックス -->
+          <div id="heatmap-insight-box" style="display:none;margin-top:20px;"></div>
+        </div>
+      </div>
 
 <!-- ★ トルネードチャート & 安全率パネル -->
 <div class="panel sensitivity-section" style="margin-top:0;" id="tornado-panel">
@@ -2973,57 +3008,275 @@ function updateRegimeTable() {
 }
 
 // 2. 感度分析実行関数
+// ============================================================
+// ヒートマップ感度分析
+// ============================================================
+let heatmapChartInstance = null;
+
 async function runSensitivityAnalysis() {
-    updateRegimeTable();
+  const btn          = document.getElementById('btn-heat-analysis');
+  const progWrap     = document.getElementById('heat-progress-container');
+  const progBar      = document.getElementById('heat-progress-bar');
+  const progPct      = document.getElementById('heat-progress-pct');
+  const heatWrap     = document.getElementById('heatmap-wrap');
+  const insightBox   = document.getElementById('heatmap-insight-box');
 
-    const canvas = document.getElementById('sensitivityHeatmap');
-    if (!canvas) { alert('canvas要素が見つかりません'); return; }
-    const ctx = canvas.getContext('2d');
-    const btn = document.getElementById('btn-heat-analysis');
+  btn.disabled = true;
+  btn.textContent = '⏳ 計算中…';
+  progWrap.style.display = 'block';
+  progBar.style.width = '0%';
+  if (progPct) progPct.textContent = '0%';
+  heatWrap.style.display = 'none';
+  insightBox.style.display = 'none';
 
-    // 進捗バー表示
-    const progContainer = document.getElementById('heat-progress-container');
-    const progBar       = document.getElementById('heat-progress-bar');
-    if (progContainer) progContainer.style.display = 'block';
-    if (progBar)       progBar.style.width = '0%';
+  // 現在の設定をバックアップ
+  const curWork = parseInt(document.getElementById('w-working').value);
+  const curRet  = parseInt(document.getElementById('w-retired').value);
 
-    const ratioSteps = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0];
-    btn.disabled = true;
-    btn.textContent = '計算中…';
+  const ratioSteps = [0, 20, 40, 60, 80, 100]; // %表示
+  const n = ratioSteps.length;
+  // grid[i][j] = 現役i% × FIRE後j% の成功率
+  const grid = Array.from({length:n}, ()=>new Array(n).fill(0));
 
-    const results    = [];
-    const totalSteps = ratioSteps.length * ratioSteps.length;
-    let currentStep  = 0;
+  const total = n * n;
+  let done = 0;
 
-    try {
-        for (let i = 0; i < ratioSteps.length; i++) {       // Y軸: 現役時
-            for (let j = 0; j < ratioSteps.length; j++) {   // X軸: リタイア後
-                const successRate = await runLightweightSim(ratioSteps[i], ratioSteps[j]);
-                results.push({ yIdx: i, xIdx: j, val: successRate });
-                currentStep++;
-                if (progBar) progBar.style.width = (currentStep / totalSteps * 100) + '%';
-                await new Promise(r => setTimeout(r, 0)); // UI スレッドを解放
-            }
-        }
-        drawHeatmap(ctx, results, ratioSteps, ratioSteps);
-    } catch(e) {
-        console.error('ヒートマップ計算エラー:', e);
-        alert('計算中にエラーが発生しました: ' + e.message);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'ヒートマップ分析を実行';
-        setTimeout(() => { if (progContainer) progContainer.style.display = 'none'; }, 800);
+  try {
+    for (let i=0; i<n; i++) {
+      for (let j=0; j<n; j++) {
+        grid[i][j] = await runLightweightSim(ratioSteps[i]/100, ratioSteps[j]/100);
+        done++;
+        const pct = Math.round(done/total*100);
+        progBar.style.width = pct + '%';
+        if (progPct) progPct.textContent = pct + '%';
+        await new Promise(r=>setTimeout(r,0));
+      }
     }
+
+    // Chart.js でヒートマップ描画
+    drawHeatmapChart(ratioSteps, grid);
+    heatWrap.style.display = 'block';
+
+    // インサイト表示
+    displayHeatmapInsight(ratioSteps, grid, curWork, curRet);
+    insightBox.style.display = 'block';
+
+  } catch(e) {
+    console.error('ヒートマップエラー:', e);
+    alert('計算中にエラーが発生しました: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔥 再実行';
+    setTimeout(()=>{ progWrap.style.display='none'; }, 600);
+  }
 }
 
+function drawHeatmapChart(ratioSteps, grid) {
+  // 既存インスタンスを破棄して canvas を作り直す
+  if (heatmapChartInstance) { heatmapChartInstance.destroy(); heatmapChartInstance = null; }
+  const old = document.getElementById('sensitivityHeatmap');
+  if (old) old.remove();
+  const canvas = document.createElement('canvas');
+  canvas.id = 'sensitivityHeatmap';
+  document.querySelector('#heatmap-wrap > div:nth-child(2) > div:nth-child(2)').appendChild(canvas);
 
-// ヒートマップ計算用の軽量版シミュレーター
-// 基本的なロジックはrunSimulationと同じですが、描画を省きNを200程度に絞ります
-// ヒートマップ計算用の高度版シミュレーター
-// メインの runSimulation のロジック（レジーム遷移・リバランス）を完全移植
+  const n = ratioSteps.length;
 
+  // Chart.js matrix plugin が使えないので、bubble chart で代替
+  // x=FIRE後%, y=現役%, r=固定, backgroundColor=成功率で色分け
+  const bubbleData = [];
+  for (let i=0; i<n; i++) {
+    for (let j=0; j<n; j++) {
+      bubbleData.push({
+        x: ratioSteps[j],  // X軸: FIRE後
+        y: ratioSteps[i],  // Y軸: 現役
+        r: 18,
+        val: grid[i][j],
+        label: `${(grid[i][j]*100).toFixed(0)}%`,
+      });
+    }
+  }
 
-// ヒートマップ計算用シミュレーター（毎回UIから最新値を取得）
+  // 成功率 → 色変換 (0=赤, 0.5=黄, 1=緑)
+  const rateToColor = (v, alpha=0.85) => {
+    const h = Math.round(v * 120);
+    return `hsla(${h},70%,45%,${alpha})`;
+  };
+
+  heatmapChartInstance = new Chart(canvas.getContext('2d'), {
+    type: 'bubble',
+    data: {
+      datasets: [{
+        data: bubbleData,
+        backgroundColor: bubbleData.map(d=>rateToColor(d.val)),
+        borderColor:     bubbleData.map(d=>rateToColor(d.val, 1)),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 1,
+      layout: { padding: { top:10, right:10, bottom:10, left:10 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ()=>'',
+            label: ctx => {
+              const d = ctx.raw;
+              return [
+                `現役時: ${d.y}%  FIRE後: ${d.x}%`,
+                `成功率: ${(d.val*100).toFixed(1)}%`,
+              ];
+            },
+          },
+        },
+        // セル内に成功率を描画するカスタムプラグイン
+        datalabels: false,
+      },
+      scales: {
+        x: {
+          type: 'linear', min: -10, max: 110,
+          title: { display:false },
+          ticks: {
+            stepSize: 20,
+            color: '#8a9fba',
+            font: { size:11, family:'Space Mono' },
+            callback: v => ratioSteps.includes(v) ? v+'%' : '',
+          },
+          grid: { color:'rgba(26,45,74,0.5)' },
+        },
+        y: {
+          type: 'linear', min: -10, max: 110,
+          title: { display:false },
+          ticks: {
+            stepSize: 20,
+            color: '#8a9fba',
+            font: { size:11, family:'Space Mono' },
+            callback: v => ratioSteps.includes(v) ? v+'%' : '',
+          },
+          grid: { color:'rgba(26,45,74,0.5)' },
+        },
+      },
+    },
+    plugins: [{
+      // セル内に成功率テキストを描画
+      id: 'cellLabels',
+      afterDatasetsDraw(chart) {
+        const {ctx} = chart;
+        chart.getDatasetMeta(0).data.forEach((pt, idx) => {
+          const d = bubbleData[idx];
+          const text = `${(d.val*100).toFixed(0)}%`;
+          ctx.save();
+          ctx.font = `bold 11px 'Space Mono', monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = d.val > 0.5 ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)';
+          ctx.fillText(text, pt.x, pt.y);
+          ctx.restore();
+        });
+      },
+    }],
+  });
+}
+
+function displayHeatmapInsight(ratioSteps, grid, curWork, curRet) {
+  const n = ratioSteps.length;
+
+  // 最高・最低成功率のセルを探す
+  let maxVal=-1, minVal=2, bestW=0, bestR=0, worstW=0, worstR=0;
+  for (let i=0; i<n; i++) {
+    for (let j=0; j<n; j++) {
+      if (grid[i][j] > maxVal) { maxVal=grid[i][j]; bestW=ratioSteps[i]; bestR=ratioSteps[j]; }
+      if (grid[i][j] < minVal) { minVal=grid[i][j]; worstW=ratioSteps[i]; worstR=ratioSteps[j]; }
+    }
+  }
+
+  // 現在の設定の成功率
+  const wi = ratioSteps.indexOf(curWork);
+  const ri = ratioSteps.indexOf(curRet);
+  const curVal = (wi>=0 && ri>=0) ? grid[wi][ri] : null;
+
+  // 傾向分析：高株式比率(80%+)の平均成功率 vs 低株式比率(20%以下)
+  const highEquityAvg = (grid[4][3]+grid[4][4]+grid[5][4]+grid[5][5])/4;
+  const lowEquityAvg  = (grid[0][0]+grid[0][1]+grid[1][0]+grid[1][1])/4;
+
+  // 推奨アドバイス
+  let advice = '';
+  if (curVal === null) {
+    advice = '現在の設定がグリッド範囲外のため、最適設定への移行をご検討ください。';
+  } else if (curVal >= maxVal * 0.97) {
+    advice = '✅ 現在の設定は統計的にほぼ最適です。このまま進めてください。';
+  } else {
+    const diff = ((maxVal - curVal)*100).toFixed(1);
+    advice = `現在の設定（現役${curWork}% / FIRE後${curRet}%）は成功率 ${(curVal*100).toFixed(1)}%。`
+           + `最適設定（現役${bestW}% / FIRE後${bestR}%）に変更すると約 <b>+${diff}pt</b> 改善できます。`;
+  }
+
+  // 色ヘルパー
+  const pctColor = v => v >= 0.8 ? '#a8ff78' : v >= 0.6 ? '#ffd166' : '#ff4757';
+
+  const box = document.getElementById('heatmap-insight-box');
+  box.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--accent);border-radius:8px;padding:18px;animation:fadeIn .5s ease;">
+      <div style="color:var(--accent);font-family:var(--font-mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:18px;">💡</span> 分析結果のインサイト
+      </div>
+
+      <!-- 3カラム KPI -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px;">
+        <div style="background:var(--surface3);border-radius:6px;padding:12px;text-align:center;">
+          <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;">最高成功率</div>
+          <div style="font-size:22px;font-weight:700;font-family:var(--font-mono);color:#a8ff78;">${(maxVal*100).toFixed(0)}%</div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">現役${bestW}% / 後${bestR}%</div>
+        </div>
+        <div style="background:var(--surface3);border-radius:6px;padding:12px;text-align:center;">
+          <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;">現在の設定</div>
+          <div style="font-size:22px;font-weight:700;font-family:var(--font-mono);color:${curVal!=null?pctColor(curVal):'var(--text-dim)'};">${curVal!=null?(curVal*100).toFixed(0)+'%':'—'}</div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">現役${curWork}% / 後${curRet}%</div>
+        </div>
+        <div style="background:var(--surface3);border-radius:6px;padding:12px;text-align:center;">
+          <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;">最低成功率</div>
+          <div style="font-size:22px;font-weight:700;font-family:var(--font-mono);color:#ff4757;">${(minVal*100).toFixed(0)}%</div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">現役${worstW}% / 後${worstR}%</div>
+        </div>
+      </div>
+
+      <!-- テキストインサイト -->
+      <div style="font-size:13px;line-height:1.9;color:var(--text);margin-bottom:14px;">
+        <p style="margin-bottom:8px;">
+          ${bestR < bestW
+            ? '📉 <b>リタイア後は株式比率を下げる</b>ディフェンシブ戦略が有利です。引き出し期のシーケンス・オブ・リターン・リスクを抑制するためです。'
+            : '📈 <b>リタイア後も高い株式比率</b>が有利です。長期的な資産成長がリスクを上回る設定になっています。'}
+        </p>
+        <p style="margin-bottom:8px;">
+          ${highEquityAvg > lowEquityAvg
+            ? `📊 全体的に<b>高株式比率エリア（80%+）</b>の成功率（平均 ${(highEquityAvg*100).toFixed(0)}%）が低株式比率（平均 ${(lowEquityAvg*100).toFixed(0)}%）を上回っています。`
+            : `📊 全体的に<b>低株式比率エリア</b>の成功率（平均 ${(lowEquityAvg*100).toFixed(0)}%）が高株式比率（平均 ${(highEquityAvg*100).toFixed(0)}%）を上回っています。支出水準に対して資産成長より安定性が優先される設定です。`}
+        </p>
+      </div>
+
+      <!-- アドバイスボックス -->
+      <div style="padding:12px 14px;background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.2);border-radius:6px;font-size:12px;line-height:1.8;color:var(--text);">
+        <b style="color:var(--accent);">現在の設定へのアドバイス：</b><br>
+        ${advice}
+      </div>
+    </div>
+  `;
+}
+
+// 旧drawHeatmap（canvas版）は互換性のため残す
+function drawHeatmap(ctx, results, xLabels, yLabels) {}
+
+// 感度分析用の進捗バー更新関数（互換）
+function updateHeatProgress(current, total) {
+  const pct = (current / total * 100);
+  const bar = document.getElementById('heat-progress-bar');
+  if (bar) bar.style.width = pct + '%';
+  const el = document.getElementById('heat-progress-pct');
+  if (el) el.textContent = Math.round(pct) + '%';
+}
 async function runLightweightSim(wWork, wRet) {
     // UI から最新値を取得（単位: スライダー値は「万円」なので ×10000 で円換算）
     const startAge       = parseInt(document.getElementById('start-age').value)        || 30;
@@ -3130,70 +3383,13 @@ async function executeGridSearch() {
 }
 
 // 描画関数のラベル更新
-function drawHeatmap(ctx, results, xLabels, yLabels) {
-    const padding = { top: 80, right: 60, bottom: 120, left: 160 };
-    const width = ctx.canvas.width - padding.left - padding.right;
-    const height = ctx.canvas.height - padding.top - padding.bottom;
-    const cellW = width / xLabels.length;
-    const cellH = height / yLabels.length;
-
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-    results.forEach(res => {
-        const x = padding.left + res.xIdx * cellW;
-        const y = padding.top + res.yIdx * cellH;
-        // 成功率が高いほど緑(120)、低いほど赤(0)
-        const hue = res.val * 120;
-        ctx.fillStyle = `hsla(${hue}, 70%, 45%, 0.9)`;
-        ctx.fillRect(x, y, cellW - 1, cellH - 1);
-
-        ctx.fillStyle = "#ffffff";
-ctx.font = "bold 30px 'JetBrains Mono', 'Fira Code', 'Courier New', monospace"; // 等幅フォントを指定
-        ctx.textAlign = "center";
-        ctx.fillText(`${(res.val * 100).toFixed(0)}%`, x + cellW/2, y + cellH/2 + 4);
-    });
-
-    // 軸ラベルの描画
-    ctx.fillStyle = "#6b7a99";
-ctx.font = "bold 30px 'JetBrains Mono', 'Fira Code', 'Courier New', monospace"; // 等幅フォントを指定
-
-    // X軸（下側）：リタイア後
-    xLabels.forEach((l, i) => {
-        ctx.textAlign = "center";
-        ctx.fillText(`${(l*100).toFixed(0)}%`, padding.left + i * cellW + cellW/2, ctx.canvas.height - 75);
-    });
-
-    // Y軸（左側）：現役時
-    yLabels.forEach((l, i) => {
-        ctx.textAlign = "right";
-        ctx.fillText(`${(l*100).toFixed(0)}%`, padding.left - 10, padding.top + i * cellH + cellH/2 + 4);
-    });
-
- // Y軸タイトル
-    ctx.save();
-    ctx.translate(50, padding.top + height/2);
-    ctx.rotate(-Math.PI/2);
-    ctx.textAlign = "center";
-    ctx.fillText("株式比率（現役時）", 0, 0);
-    ctx.restore();
-// X軸タイトル
-    ctx.textAlign = "center";
-    ctx.fillText("株式比率（リタイア後）", padding.left + width/2, ctx.canvas.height - 20);
-}
-
-
-// 感度分析用の進捗バー更新関数
+// 感度分析用の進捗バー更新関数（互換）
 function updateHeatProgress(current, total) {
-    const container = document.getElementById('heat-progress-container');
-    const bar = document.getElementById('heat-progress-bar');
-    if (container && bar) {
-        container.style.display = 'block';
-        const percentage = (current / total) * 100;
-        bar.style.width = percentage + '%';
-        if (percentage >= 100) {
-            setTimeout(() => { container.style.display = 'none'; }, 500);
-        }
-    }
+  const pct = (current / total * 100);
+  const bar = document.getElementById('heat-progress-bar');
+  if (bar) bar.style.width = pct + '%';
+  const el = document.getElementById('heat-progress-pct');
+  if (el) el.textContent = Math.round(pct) + '%';
 }
 //////////
 
