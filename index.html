@@ -1016,7 +1016,7 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
             <li><strong>試行回数 (nsims):</strong> 運の要素を排除するため、まずは「2,000回」以上での実行をお勧めします。5,000回にすると、極めて信頼性の高い「最悪のシナリオ」まで網羅できます。</li>
         </ul>
 
-        <p style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 0.9em; border-left: 4px solid #ccc;">
+        <p>
             <strong>💡 ヒント:</strong> 算出された「成功率」が低い場合は、FIRE後の株式比率を調整するか、支出の見直しを検討してください。
         </p>
     </div>
@@ -1052,18 +1052,45 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
         </ul>
 
 <!-- 3. マルコフ遷移（技術詳細の補完） -->
-        <h3 style="color: var(--accent); margin: 20px 0 10px 0;">3. マルコフ遷移による景気レジームの動的な再現</h3>
-        <p>
-            市場を「強気」「通常」「弱気」「インフレ」の4状態（レジーム）に分類し、マルコフ遷移行列 $P$ を用いて翌年の状態を確率的に決定します。
-            長期的な状態滞在確率は、遷移行列の最大固有値（1）に対応する左固有ベクトル $v$ ($vP = v$) として算出され、定常分布を形成します。
-        </p>
+<h3 style="color: var(--accent); margin: 20px 0 10px 0;">3. マルコフ遷移による景気レジームの動的な再現</h3>
+<p>
+    市場を「強気」「通常」「弱気」「インフレ」の4状態（レジーム）に分類し、マルコフ遷移行列 $P$ を用いて翌年の状態を確率的に決定します。
+    長期的な状態滞在確率は、遷移行列の最大固有値（1）に対応する左固有ベクトル $v$ ($vP = v$) として算出され、定常分布を形成します。
+</p>
 
-        <ul style="margin-bottom: 15px; font-size: 0.95em;">
-            <li><strong>多次元パラメータによるレジーム定義:</strong> 各レジームには、期待リターン ($\mu$)、ボラティリティ ($\sigma$)、資産間相関 ($corr$)、およびインフレ率 ($inf$) がカプセル化されています。これにより、相場の「色」に合わせてリスク・リターン特性が動的に変化する非線形なシミュレーションを実現しています[cite: 1]。</li>
-            <li><strong>自動正規化と確率の保存:</strong> 実行時に遷移行列の各行が厳密に $100\%$ ($1.0$) であるかをバリデーションします[cite: 1]。合計が一致しない場合は「自動正規化（Normalization）」を行い、確率論の基礎である「全確率の和が1である」という数学的整合性を強制的に担保することで、モデルの破綻を防ぎます[cite: 1]。</li>
-            <li><strong>計算直前の状態保存 (State Persistence):</strong> シミュレーション開始と同時に、その時点のすべての数理パラメータ（遷移確率、期待リターン等）を永続化保存します[cite: 1]。これにより、感度分析やヒートマップ生成時において、計算の再現性と統計的な一貫性を維持します[cite: 1]。</li>
-            <li><strong>ボラティリティ・クラスタリング:</strong> 弱気相場に入ると翌年も停滞しやすいという「相場の粘着性」を再現し、単なるランダムウォークでは捉えきれない長期停滞が資産寿命に与える影響を厳密に評価可能です[cite: 1]。</li>
-        </ul>
+<div style="background: rgba(var(--accent-rgb), 0.03); padding: 18px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(var(--accent-rgb), 0.1);">
+    <h4 style="color: var(--accent); margin-top: 0; margin-bottom: 10px; font-size: 1em;">💡 数理モデルの直感的解釈</h4>
+    
+    <p style="font-weight: bold; margin-bottom: 5px;">① マルコフ遷移行列 $P$：相場の「移り変わり」を占う表</p>
+    <p style="font-size: 0.9em; color: var(--text-mid); margin-bottom: 12px;">
+        通常のシミュレーションのような「毎年一律○％」ではなく、現実の「良い時期」と「悪い時期」の交互の到来を再現します。
+        <br><strong>具体例：</strong>「今年は弱気（暴落）だったが、来年も弱気が続く確率は40%、通常に戻る確率は50%、強気に転じる確率は10%」といった遷移確率を制御します。
+    </p>
+
+    <p style="font-weight: bold; margin-bottom: 5px;">② 左固有ベクトル $v$：長期的な「滞在期間」の黄金比</p>
+    <p style="font-size: 0.9em; color: var(--text-mid); margin-bottom: 12px;">
+        シミュレーションを何十年と繰り返した際、「結局、各状態に合計で何％の期間滞在するか」という最終的なバランスを算出する数式です。
+        <br><strong>具体例：</strong>全期間のうち「強気20年、通常50年、弱気20年、インフレ10年」といった比率を固定することで、不自然に不景気ばかりが続くようなデータの偏りを防ぎ、数学的にバランスの取れた「もっともらしい未来」を描きます。
+    </p>
+
+    <p style="font-weight: bold; margin-bottom: 5px;">③ 定常分布：統計的信頼性の担保</p>
+    <p style="font-size: 0.9em; color: var(--text-mid);">
+        景気の配分が一定の安定した割合に落ち着く性質を指します。
+        最初が強気でも弱気でも、長期で見れば景気の波をひと通り経験し、統計的に信頼できる結果に収束することを保証しています。
+    </p>
+</div>
+
+<ul style="margin-bottom: 15px; font-size: 0.95em;">
+    <li><strong>多次元パラメータによるレジーム定義:</strong> 各レジームには期待リターン ($\mu$)、ボラティリティ ($\sigma$)、資産間相関 ($corr$)、インフレ率 ($inf$) がカプセル化され、相場の「色」に合わせてリスク・リターン特性が動的に変化します。</li>
+    <li><strong>自動正規化と確率の保存:</strong> 実行時に遷移行列の各行が厳密に $100\%$ ($1.0$) であるかをバリデーションします。不一致時は「自動正規化」を行い、全確率の和を1に保つ数学的整合性を強制的に担保してモデルの破綻を防ぎます。</li>
+    <li><strong>計算直前の状態保存 (State Persistence):</strong> 開始時にすべての数理パラメータを永続化保存し、感度分析やヒートマップ生成時における計算の再現性と統計的な一貫性を維持します。</li>
+    <li><strong>ボラティリティ・クラスタリング:</strong> 弱気から弱気への確率を高く設定することで、「一度不況に入ると数年は抜け出せない」という相場の粘着性を再現し、長期停滞が資産寿命に与える影響を厳密に評価可能です。</li>
+</ul>
+
+<p style="background: #f8f9fa; padding: 12px; border-radius: 6px; font-size: 0.9em; border-left: 4px solid var(--accent);">
+    <strong>📊 まとめ：</strong>
+    遷移行列 $P$ で来年の相場を確率的に決めつつ、長期的なバランス $v$ が現実的になるよう設計されています。これにより、非常に精度の高い「最悪のシナリオ」や「平均的なシナリオ」の予測が可能となっています。
+</p>
 
 
               <h3 style="color: var(--accent); margin: 20px 0 10px 0;">4. 投資リターンの幾何的補正とリスクプレミアム</h3>
