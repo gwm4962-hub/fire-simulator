@@ -1112,40 +1112,40 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
             本ツールでは、裾の厚い<strong>t分布（自由度 $df=5$ 推奨）</strong>を採用することでファットテイルを生成し、歴史的な金融危機を現実的な頻度で発生させています。
         </p>
 
-        <!-- 視覚化グラフ: 正規分布 vs t分布 -->
+        <!-- 視覚化グラフ: 模式図としてわかりやすさを優先 -->
         <div style="background: var(--surface2); padding: 20px; border-radius: 12px; border: 1px solid rgba(var(--accent-rgb), 0.1); margin: 20px 0; text-align: center;">
-            <p style="font-weight: bold; font-size: 13px; color: var(--accent); margin-bottom: 15px;">【比較図】正規分布 vs t分布（ファットテイル）</p>
-            <svg viewBox="0 0 400 220" style="width: 100%; max-width: 400px; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));">
-                <!-- 背景グリッド（地面） -->
-                <line x1="20" y1="180" x2="380" y2="180" stroke="var(--text-mid)" stroke-width="0.5" opacity="0.3" />
+            <p style="font-weight: bold; font-size: 13px; color: var(--accent); margin-bottom: 15px;">【模式図】正規分布 vs t分布（暴落リスクの可視化）</p>
+            <svg viewBox="0 0 400 240" style="width: 100%; max-width: 400px; height: auto;">
+                <!-- 地面 -->
+                <line x1="20" y1="200" x2="380" y2="200" stroke="var(--text-mid)" stroke-width="1" opacity="0.4" />
                 
-                <!-- 正規分布 (Normal Distribution) -->
-                <!-- 数学的に正しい釣鐘型を意識：端が急速に0に収束する様子 -->
-                <path d="M 100,180 C 130,180 160,20 200,20 C 240,20 270,180 300,180" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
-                <text x="280" y="45" fill="#94a3b8" font-size="10" font-family="var(--font-mono)">正規分布（薄い裾）</text>
-                <text x="280" y="58" fill="#94a3b8" font-size="9" opacity="0.8">→ 暴落を「ほぼゼロ」とみなす</text>
+                <!-- 正規分布（点線）：中央は高いが、端はすぐに地面に着く -->
+                <path d="M 120,200 C 150,200 170,20 200,20 C 230,20 250,200 280,200" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
+                <text x="280" y="50" fill="#94a3b8" font-size="10" font-family="var(--font-mono)">正規分布（薄い裾）</text>
+                <text x="280" y="65" fill="#94a3b8" font-size="9" opacity="0.8">→ 暴落を「ゼロ」とみなす</text>
                 
-                <!-- t分布 (t-Distribution) -->
-                <!-- 裾が地面から浮いており、遠くまで伸びる様子 -->
-                <path d="M 20,175 C 100,175 160,60 200,60 C 240,60 300,175 380,175" fill="none" stroke="var(--accent3)" stroke-width="3" />
-                <text x="310" y="145" fill="var(--accent3)" font-size="11" font-weight="bold" font-family="var(--font-mono)">t分布（厚い裾）</text>
+                <!-- t分布（実線）：裾が地面に着かず、遠くまで厚みを保つ -->
+                <path d="M 20,195 C 100,195 160,70 200,70 C 240,70 300,195 380,195" fill="none" stroke="var(--accent3)" stroke-width="3" />
+                <text x="310" y="160" fill="var(--accent3)" font-size="11" font-weight="bold" font-family="var(--font-mono)">t分布（厚い裾）</text>
                 
-                <!-- 暴落エリアの強調：正規分布が消えている領域をハイライト -->
-                <rect x="20" y="160" width="80" height="35" rx="4" fill="rgba(var(--accent3-rgb), 0.1)" />
-                <circle cx="50" cy="175" r="6" fill="var(--accent3)" opacity="0.6">
-                    <animate attributeName="r" values="5;8;5" dur="2s" repeatCount="indefinite" />
-                </circle>
-                <text x="25" y="210" fill="var(--accent3)" font-size="10" font-weight="bold">← 歴史的大暴落（正規分布では無視される領域）</text>
+                <!-- 暴落エリアの強調：線の下に配置して被りを回避 -->
+                <g transform="translate(40, 210)">
+                    <rect x="-25" y="-5" width="130" height="25" rx="4" fill="rgba(var(--accent3-rgb), 0.1)" />
+                    <circle cx="0" cy="8" r="6" fill="var(--accent3)">
+                        <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite" />
+                    </circle>
+                    <text x="12" y="12" fill="var(--accent3)" font-size="10" font-weight="bold">← 歴史的大暴落（t分布のみが捕捉）</text>
+                </g>
             </svg>
             <p style="font-size: 12px; color: var(--text-mid); margin-top: 15px; line-height: 1.5;">
-                ※正規分布（点線）では統計的に「無視」される左端の領域が、<br>
-                t分布（青線）では<strong>現実的な発生確率</strong>として保持されます。
+                正規分布（点線）は暴落を「あり得ないこと」として切り捨てますが、<br>
+                t分布（青線）は<strong>「起こり得るリスク」</strong>として計算に含め続けます。
             </p>
         </div>
 
         <ul style="margin-bottom: 20px; padding-left: 20px;">
-            <li><strong>分散の正規化:</strong> $\sqrt{df/(df-2)}$ による補正を行い、分布の分散を $1$ に正規化しています。これにより、設定された標準偏差 $\sigma$ との整合性を厳密に保ちつつ、形状のみを「暴落が起きやすい形」へ変形させています。</li>
-            <li><strong>ブラックスワンの再現:</strong> 正規分布では「数万年に一度」と片付けられてしまうリーマンショック級の変動を、統計学的に正しくシミュレーションに組み込みます。</li>
+            <li><strong>分散の正規化:</strong> $\sqrt{df/(df-2)}$ による補正を行い、設定された標準偏差 $\sigma$ との整合性を維持しつつ、形状のみを「暴落が起きやすい形」へ変形させています。</li>
+            <li><strong>ブラックスワンの再現:</strong> 正規分布では無視されるリーマンショック級の変動を、統計学的に正しくシミュレーションに組み込みます。</li>
         </ul>
 
         <div style="background: rgba(var(--accent3-rgb), 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(var(--accent3-rgb), 0.2); font-size: 13px;">
@@ -1163,10 +1163,6 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
             <li><strong>感度分析（ヒートマップ）:</strong> 株式比率や支出額の変化が成功率に与える影響を可視化し、最適な資産配分の特定を助けます。</li>
         </ul>
         </div>
-
-        <p>
-            <strong>💡 ヒント:</strong> まずは「難易度：普通」で「試行回数：2,000回」から開始し、ヒートマップ分析で自身のプランがどの変数の変化に対して最も脆弱（センシティブ）かを確認してください。
-        </p>
     </div>
 </div>
 
