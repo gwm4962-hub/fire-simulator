@@ -3207,6 +3207,7 @@ function updateHeatProgress(current, total) {
 // ★ 新機能 1: 簡易税金計算エンジン
 // ============================================================
 function calcTax(grossYen) {
+  if (!grossYen || grossYen <= 0) return { socialIns:0, incomeTax:0, residTax:0, takeHomeYen:0, rate:0, taxable:0 };
   // 社会保険料（約15%、上限考慮）
   const socialIns = Math.min(grossYen * 0.15, 1_400_000);
   // 給与所得控除
@@ -3390,8 +3391,8 @@ function applyChildEducationStages() {
         expStages.push({
           id: `edu_${child.id}_${s.label}`,
           label: s.label,
-          start: Math.max(startAge, s.ageStart),
-          end: s.ageEnd,
+          from: Math.max(startAge, s.ageStart),
+          to: s.ageEnd,
           exp: s.cost,
           _autoEdu: true,
         });
@@ -3462,68 +3463,82 @@ function setDifficultyEnhanced(mode) {
 // ★ 新機能 6: トルネードチャート & 安全率計算
 // ============================================================
 
-// 軽量シングルシム（N=300回、最終資産中央値を返す）
+// ============================================================
+// 軽量シングルシム：資産寿命スコアを返す
+// 資産寿命スコア = 資産が持った年齢の中央値（破綻しなければ95歳）
+// → 破綻シナリオでも「何歳まで持ったか」で各パラメータの影響を比較可能
+// ============================================================
 function runSingleSimFast(cfg) {
   const N = 300;
   const TM = tmValues.map(row => {
     const s = row.reduce((a,b)=>a+b,0)||1;
     return row.map(v=>v/s);
   });
-  const finals = [];
+  const lifetimes = []; // 各試行で資産が持った年齢
+
   for (let n=0; n<N; n++) {
     let assets = cfg.initAssets;
     let retired = false;
     let cumInf = 1.0;
     let regIdx = 1;
+    let surviveAge = 95; // 破綻しなければ95歳まで持ったとみなす
+
     for (let age=cfg.startAge; age<=95; age++) {
       const t = age - cfg.startAge;
       const rg = REGIMES[regIdx];
       const w  = retired ? cfg.wRetire : cfg.wWork;
-      // リターン
+
       const zS = tRandom(cfg.tDof);
       const zB = normalRandom();
       const zBc = rg.corr*zS + Math.sqrt(Math.max(0,1-rg.corr*rg.corr))*zB;
       assets *= (w*(1+rg.mu[0]+rg.sigma[0]*zS) + (1-w)*(1+rg.mu[1]+rg.sigma[1]*zBc));
-      // FIRE判定
+
       if (!retired && assets >= cfg.fireThr) retired = true;
-      // 収入
+
       let income = 0;
       if (!retired && age<60) income = cfg.annualIncome * cfg.takeHome * Math.pow(1+cfg.raiseRate,t);
       if (age>=65) income += cfg.monthlyPension*12*0.85;
-      // 支出（インフレ反映）
+
       cumInf *= (1 + cfg.baseInfl + rg.inf);
       const exp = getExpenseForAge(age) * cumInf * cfg.expScale;
-      assets = Math.max(0, assets + income - exp);
-      // レジーム遷移
-      let r=Math.random(), s=0;
-      for (let ri=0;ri<TM[regIdx].length;ri++){
-        s+=TM[regIdx][ri];
-        if(r<s){regIdx=ri;break;}
+      assets = assets + income - exp;
+
+      if (assets <= 0) {
+        surviveAge = age; // 破綻した年齢を記録
+        break;
       }
-      if (assets<=0) break;
+
+      // レジーム遷移
+      let r=Math.random(), s2=0;
+      for (let ri=0;ri<TM[regIdx].length;ri++){
+        s2+=TM[regIdx][ri];
+        if(r<s2){regIdx=ri;break;}
+      }
     }
-    finals.push(assets);
+    lifetimes.push(surviveAge);
   }
-  finals.sort((a,b)=>a-b);
-  return finals[Math.floor(finals.length*0.5)]; // 中央値
+
+  lifetimes.sort((a,b)=>a-b);
+  return lifetimes[Math.floor(lifetimes.length*0.5)]; // 資産寿命の中央値（歳）
 }
 
 // 現在のUI設定からベースラインcfgを作る
 function buildBaselineCfg() {
-  const annualIncome = parseInt(document.getElementById('income').value)*10000;
+  const annualIncome = Math.max(1, parseInt(document.getElementById('income').value)||500) * 10000;
+  const taxResult = calcTax(annualIncome);
   return {
     startAge:      parseInt(document.getElementById('start-age').value)||30,
-    initAssets:    parseInt(document.getElementById('initial-assets').value)*10000,
-    fireThr:       parseInt(document.getElementById('fire-threshold').value)*10000,
+    initAssets:    (parseInt(document.getElementById('initial-assets').value)||0)*10000,
+    fireThr:       (parseInt(document.getElementById('fire-threshold').value)||10000)*10000,
     annualIncome,
-    takeHome:      calcTax(annualIncome).rate,
-    raiseRate:     parseFloat(document.getElementById('raise').value)/100,
-    monthlyPension:parseInt(document.getElementById('pension').value)*10000,
-    baseInfl:      parseFloat(document.getElementById('base-infl').value)/100,
-    wWork:         parseInt(document.getElementById('w-working').value)/100,
-    wRetire:       parseInt(document.getElementById('w-retired').value)/100,
+    takeHome:      isFinite(taxResult.rate) ? taxResult.rate : 0.75,
+    raiseRate:     parseFloat(document.getElementById('raise').value)/100 || 0,
+    monthlyPension:(parseInt(document.getElementById('pension').value)||0)*10000,
+    baseInfl:      parseFloat(document.getElementById('base-infl').value)/100 || 0.01,
+    wWork:         (parseInt(document.getElementById('w-working').value)||70)/100,
+    wRetire:       (parseInt(document.getElementById('w-retired').value)||40)/100,
     tDof:          parseInt(document.getElementById('tdof').value)||5,
-    expScale:      1.0, // 支出スケール係数（感度分析で変動させる）
+    expScale:      1.0,
   };
 }
 
@@ -3539,82 +3554,101 @@ async function runTornadoAnalysis() {
   progWrap.style.display = 'block';
   progBar.style.width = '0%';
 
-  const base = buildBaselineCfg();
-  const baseVal = runSingleSimFast(base); // ベースライン中央値
+  try {
+    const base = buildBaselineCfg();
+    const baseVal = runSingleSimFast(base);
 
-  // 感度対象パラメータ定義
-  const factors = [
-    { key:'annualIncome',   label:'年間収入',         delta: 0.10,
-      plus: c=>({...c, annualIncome: c.annualIncome*1.10, takeHome: calcTax(c.annualIncome*1.10).rate }),
-      minus:c=>({...c, annualIncome: c.annualIncome*0.90, takeHome: calcTax(c.annualIncome*0.90).rate }) },
-    { key:'expScale',       label:'年間支出',          delta: 0.10,
-      plus: c=>({...c, expScale:0.90}),   // 支出−10%（資産に有利）
-      minus:c=>({...c, expScale:1.10}) },  // 支出+10%（資産に不利）
-    { key:'baseInfl',       label:'インフレ率',        delta: 0.10,
-      plus: c=>({...c, baseInfl:c.baseInfl*0.90}),
-      minus:c=>({...c, baseInfl:Math.min(0.10,c.baseInfl*1.10+0.005)}) },
-    { key:'wWork',          label:'株式比率（現役）',  delta: 0.10,
-      plus: c=>({...c, wWork:Math.min(1,c.wWork+0.10)}),
-      minus:c=>({...c, wWork:Math.max(0,c.wWork-0.10)}) },
-    { key:'raiseRate',      label:'昇給率',            delta: 0.10,
-      plus: c=>({...c, raiseRate:c.raiseRate+0.005}),
-      minus:c=>({...c, raiseRate:Math.max(0,c.raiseRate-0.005)}) },
-    { key:'monthlyPension', label:'月額年金',          delta: 0.10,
-      plus: c=>({...c, monthlyPension:c.monthlyPension*1.20}),
-      minus:c=>({...c, monthlyPension:c.monthlyPension*0.80}) },
-  ];
+    // NaN/undefined のみエラー。0や負値は「資産枯渇」として正当な結果
+    if (baseVal == null || isNaN(baseVal)) {
+      throw new Error('パラメータの読み取りに失敗しました。ページをリロードして再度お試しください。');
+    }
 
-  const results = [];
-  for (let i=0; i<factors.length; i++) {
-    const f = factors[i];
-    progBar.style.width = `${(i/factors.length*70).toFixed(0)}%`;
-    await new Promise(r=>setTimeout(r,0));
-    const valPlus  = runSingleSimFast(f.plus(base));
-    const valMinus = runSingleSimFast(f.minus(base));
-    results.push({
-      label: f.label,
-      high:  (valPlus  - baseVal)/1e8,  // 億円単位
-      low:   (valMinus - baseVal)/1e8,
-      range: Math.abs(valPlus - valMinus)/1e8,
-    });
+    const factors = [
+      { label:'年間収入',
+        plus:  c=>({...c, annualIncome: c.annualIncome*1.10, takeHome: calcTax(c.annualIncome*1.10).rate }),
+        minus: c=>({...c, annualIncome: c.annualIncome*0.90, takeHome: calcTax(c.annualIncome*0.90).rate }) },
+      { label:'年間支出',
+        plus:  c=>({...c, expScale: Math.max(0.1, c.expScale*0.90) }),  // 支出−10%→有利
+        minus: c=>({...c, expScale: c.expScale*1.10 }) },
+      { label:'インフレ率',
+        plus:  c=>({...c, baseInfl: Math.max(0, c.baseInfl - 0.005) }),  // インフレ低下→有利
+        minus: c=>({...c, baseInfl: c.baseInfl + 0.005 }) },
+      { label:'株式比率（現役）',
+        plus:  c=>({...c, wWork: Math.min(1, c.wWork + 0.10) }),
+        minus: c=>({...c, wWork: Math.max(0, c.wWork - 0.10) }) },
+      { label:'昇給率',
+        plus:  c=>({...c, raiseRate: c.raiseRate + 0.005 }),
+        minus: c=>({...c, raiseRate: Math.max(0, c.raiseRate - 0.005) }) },
+      { label:'月額年金',
+        plus:  c=>({...c, monthlyPension: c.monthlyPension * 1.20 }),
+        minus: c=>({...c, monthlyPension: c.monthlyPension * 0.80 }) },
+    ];
+
+    const results = [];
+    for (let i = 0; i < factors.length; i++) {
+      const f = factors[i];
+      progBar.style.width = `${Math.round(i / factors.length * 70)}%`;
+      await new Promise(r => setTimeout(r, 0)); // UIスレッドを解放
+
+      const valPlus  = runSingleSimFast(f.plus(base));
+      const valMinus = runSingleSimFast(f.minus(base));
+      const high = valPlus  - baseVal; // 年数差分
+      const low  = valMinus - baseVal;
+      results.push({
+        label: f.label,
+        high,
+        low,
+        range: Math.abs(valPlus - valMinus),
+      });
+    }
+
+    // 影響度順にソート
+    results.sort((a, b) => b.range - a.range);
+    progBar.style.width = '80%';
+    await new Promise(r => setTimeout(r, 0));
+
+    // チャート描画（canvasを毎回再生成して確実に描画）
+    drawTornadoChart(results, baseVal);
+    progBar.style.width = '90%';
+    await new Promise(r => setTimeout(r, 0));
+
+    // 安全率 & トレードオフ
+    const safetyResult = calcSafetyAndTradeoff(base, baseVal);
+    displaySafetyResults(safetyResult, baseVal);
+
+    progBar.style.width = '100%';
+    await new Promise(r => setTimeout(r, 100));
+
+  } catch (err) {
+    console.error('トルネード分析エラー:', err);
+    alert('分析中にエラーが発生しました: ' + err.message);
+  } finally {
+    progWrap.style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = '🌪️ 再実行';
   }
-
-  // 影響度順にソート
-  results.sort((a,b)=>b.range-a.range);
-  progBar.style.width = '85%';
-  await new Promise(r=>setTimeout(r,0));
-
-  // チャート描画
-  drawTornadoChart(results, baseVal);
-
-  // 安全率 & トレードオフ計算
-  progBar.style.width = '92%';
-  await new Promise(r=>setTimeout(r,0));
-  const safetyResult = calcSafetyAndTradeoff(base, baseVal);
-
-  progBar.style.width = '100%';
-  await new Promise(r=>setTimeout(r,50));
-  progWrap.style.display = 'none';
-  btn.disabled = false;
-  btn.textContent = '🌪️ 再実行';
-
-  displaySafetyResults(safetyResult, baseVal);
 }
 
 function drawTornadoChart(results, baseVal) {
   const wrap = document.getElementById('tornado-chart-wrap');
   wrap.style.display = 'block';
 
-  if (tornadoChartInstance) { tornadoChartInstance.destroy(); tornadoChartInstance = null; }
+  if (tornadoChartInstance) {
+    tornadoChartInstance.destroy();
+    tornadoChartInstance = null;
+  }
+  const oldCanvas = document.getElementById('tornadoChart');
+  if (oldCanvas) oldCanvas.remove();
+  const newCanvas = document.createElement('canvas');
+  newCanvas.id = 'tornadoChart';
+  wrap.appendChild(newCanvas);
 
-  const ctx = document.getElementById('tornadoChart').getContext('2d');
+  const ctx = newCanvas.getContext('2d');
   const labels = results.map(r => r.label);
 
-  // トルネードチャートの正しいデータ構造：
-  // 各ファクターで high/low のどちらが「有利」かは値の大小で決まる
-  // → max(high,low) を緑（好転）、min(high,low) を赤（悪化）として表示
-  const favorable   = results.map(r => Math.max(r.high, r.low));  // 有利な方向（緑）
-  const unfavorable = results.map(r => Math.min(r.high, r.low));  // 不利な方向（赤）
+  // high/low は「年齢の差分（年）」単位
+  const favorable   = results.map(r => Math.max(r.high, r.low));
+  const unfavorable = results.map(r => Math.min(r.high, r.low));
 
   tornadoChartInstance = new Chart(ctx, {
     type: 'bar',
@@ -3626,16 +3660,14 @@ function drawTornadoChart(results, baseVal) {
           data: favorable,
           backgroundColor: favorable.map(v => v >= 0 ? 'rgba(168,255,120,0.75)' : 'rgba(255,71,87,0.75)'),
           borderColor:     favorable.map(v => v >= 0 ? 'rgba(168,255,120,1)'    : 'rgba(255,71,87,1)'),
-          borderWidth: 1,
-          borderRadius: 3,
+          borderWidth: 1, borderRadius: 3,
         },
         {
           label: '悪化時の影響',
           data: unfavorable,
           backgroundColor: unfavorable.map(v => v < 0 ? 'rgba(255,71,87,0.75)' : 'rgba(168,255,120,0.75)'),
           borderColor:     unfavorable.map(v => v < 0 ? 'rgba(255,71,87,1)'    : 'rgba(168,255,120,1)'),
-          borderWidth: 1,
-          borderRadius: 3,
+          borderWidth: 1, borderRadius: 3,
         },
       ],
     },
@@ -3646,19 +3678,17 @@ function drawTornadoChart(results, baseVal) {
       plugins: {
         title: {
           display: true,
-          text: `各パラメータ ±変動時の最終資産への影響（ベース: ${(baseVal/1e8).toFixed(2)}億円）`,
+          text: `各パラメータ変動時の資産寿命への影響（ベース: ${baseVal}歳まで持続）`,
           color: '#dce8f5',
           font: { size: 12, family: 'Noto Sans JP' },
           padding: { bottom: 12 },
         },
-        legend: {
-          labels: { color: '#8a9fba', font: { size: 11 } },
-        },
+        legend: { labels: { color: '#8a9fba', font: { size: 11 } } },
         tooltip: {
           callbacks: {
             label: ctx => {
               const v = ctx.parsed.x;
-              return `${ctx.dataset.label}: ${v >= 0 ? '+' : ''}${v.toFixed(2)}億円`;
+              return `${ctx.dataset.label}: ${v >= 0 ? '+' : ''}${v.toFixed(1)}年`;
             },
           },
         },
@@ -3668,11 +3698,10 @@ function drawTornadoChart(results, baseVal) {
           stacked: false,
           grid:  { color: 'rgba(26,45,74,0.8)' },
           ticks: {
-            color: '#8a9fba',
-            font: { size: 11 },
-            callback: v => `${v >= 0 ? '+' : ''}${v.toFixed(1)}億`,
+            color: '#8a9fba', font: { size: 11 },
+            callback: v => `${v >= 0 ? '+' : ''}${v.toFixed(0)}年`,
           },
-          title: { display: true, text: '最終資産の増減（億円）', color: '#5a7090', font: { size: 11 } },
+          title: { display: true, text: '資産寿命の増減（年）', color: '#5a7090', font: { size: 11 } },
         },
         y: {
           stacked: false,
@@ -3685,57 +3714,64 @@ function drawTornadoChart(results, baseVal) {
 }
 
 function calcSafetyAndTradeoff(base, planVal) {
-  // ── 安全率：runSimulation の下位10%中央値を「最悪ケース」として使用 ──
+  // planVal = 資産寿命の中央値（歳）= ベースラインスコア
   let worstVal = null;
-  let worstSource = 'sim'; // データソース識別用
+  let worstSource = 'approx';
 
   if (lastFinalAssets && lastFinalAssets.length >= 10) {
-    // 下位10%のスライス
     const bottom10 = lastFinalAssets.slice(0, Math.ceil(lastFinalAssets.length * 0.10));
-    // その中央値
-    worstVal = bottom10[Math.floor(bottom10.length * 0.5)];
+    const bottom10median = bottom10[Math.floor(bottom10.length * 0.5)];
+    const planAssets = lastFinalAssets[Math.floor(lastFinalAssets.length * 0.5)] || 1;
+    const stressRatio = planAssets > 0
+      ? Math.max(1.0, 1.0 + (planAssets - bottom10median) / planAssets * 0.3)
+      : 1.2;
+    const worstCfg = { ...base, expScale: Math.min(2.0, base.expScale * stressRatio) };
+    worstVal = runSingleSimFast(worstCfg);
     worstSource = 'sim';
   } else {
-    // SIMULATEが未実行の場合はrunSingleSimFastで近似（フォールバック）
-    const worst = {
-      ...base,
-      baseInfl: Math.min(0.10, base.baseInfl * 1.5 + 0.01),
-      expScale: 1.20,
-      wWork:    Math.max(0, base.wWork - 0.20),
-      wRetire:  Math.max(0, base.wRetire - 0.20),
-    };
-    worstVal = runSingleSimFast(worst);
+    const worstCfg = { ...base, expScale: base.expScale * 1.20, baseInfl: base.baseInfl + 0.01 };
+    worstVal = runSingleSimFast(worstCfg);
     worstSource = 'approx';
   }
 
-  // 安全率 = 計画値（中央値） / (計画値 - 最悪値)
-  // 最悪値が計画値以上なら安全率∞ → 表示上は "≥2.0" とする
+  // 安全率 = 計画寿命 / (計画寿命 - 最悪寿命)
   let safetyFactor;
   if (worstVal >= planVal) {
     safetyFactor = '≥2.0';
-  } else if (worstVal <= 0) {
+  } else if (worstVal <= base.startAge) {
     safetyFactor = '0.00';
   } else {
-    safetyFactor = (planVal / Math.max(1, planVal - worstVal)).toFixed(2);
+    const denominator = planVal - worstVal;
+    safetyFactor = denominator > 0 ? (planVal / denominator).toFixed(2) : '≥2.0';
   }
 
-  // トレードオフ：実質コスト増（expScale+0.03）で生じる損失を収入増で補う年額
-  const degraded = { ...base, expScale: base.expScale + 0.03 };
-  const degradedVal = runSingleSimFast(degraded);
-  const gap = Math.max(0, planVal - degradedVal);
-  const requiredExtraIncome = gap > 0 ? Math.round(gap / 30 / 10000) : 0; // 万円/年
+  // トレードオフ：支出3%増による寿命短縮
+  const degradedCfg = { ...base, expScale: base.expScale + 0.03 };
+  const degradedVal = runSingleSimFast(degradedCfg);
+  const lifetimeLoss = planVal - degradedVal; // 何年短縮されるか
 
-  return { safetyFactor, worstVal, planVal, requiredExtraIncome, worstSource };
+  // 収入5%増で何年延びるかを計算し、逆算
+  const incomeDelta = base.annualIncome * 0.05;
+  const boostedCfg = {
+    ...base,
+    annualIncome: base.annualIncome + incomeDelta,
+    takeHome: calcTax(base.annualIncome + incomeDelta).rate,
+  };
+  const boostedVal = runSingleSimFast(boostedCfg);
+  const yearPerIncome = boostedVal - planVal;
+  const requiredExtraIncome = lifetimeLoss > 0 && yearPerIncome > 0
+    ? Math.round(incomeDelta / 10000 * lifetimeLoss / yearPerIncome)
+    : 0;
+
+  return { safetyFactor, worstVal, planVal, requiredExtraIncome, worstSource, lifetimeLoss };
 }
 
-function displaySafetyResults({ safetyFactor, worstVal, planVal, requiredExtraIncome, worstSource }) {
+function displaySafetyResults({ safetyFactor, worstVal, planVal, requiredExtraIncome, worstSource, lifetimeLoss }) {
   document.getElementById('safety-section').style.display = 'block';
 
-  // safetyFactor は "≥2.0" などの文字列の場合があるため、
-  // 数値比較用に別途 sfNum を算出する
-  const sfNum = (safetyFactor === '≥2.0') ? 99 :
-                (safetyFactor === '0.00')  ? 0  :
-                parseFloat(safetyFactor)   || 0;
+  const sfNum = (safetyFactor === '≥2.0') ? 99
+              : (safetyFactor === '0.00')  ? 0
+              : parseFloat(safetyFactor)   || 0;
 
   const sfEl = document.getElementById('safety-factor-val');
   sfEl.textContent = safetyFactor;
@@ -3745,24 +3781,26 @@ function displaySafetyResults({ safetyFactor, worstVal, planVal, requiredExtraIn
   if      (sfNum >= 1.5) sfDescEl.textContent = '✅ 堅牢なポートフォリオです';
   else if (sfNum >= 1.2) sfDescEl.textContent = '⚠️ 許容範囲ですが改善余地あり';
   else if (sfNum >  0  ) sfDescEl.textContent = '❌ リスクが高い状態です';
-  else                   sfDescEl.textContent = '❌ 最悪ケースで資産が枯渇します';
+  else                   sfDescEl.textContent = '❌ 最悪ケースで早期に資産が枯渇します';
 
   document.getElementById('tradeoff-val').textContent =
     requiredExtraIncome > 0 ? `+${requiredExtraIncome.toLocaleString()}万円/年` : '影響軽微';
   document.getElementById('tradeoff-desc').textContent =
-    `利回り実質低下分を補うには年間約 ${requiredExtraIncome.toLocaleString()}万円の収入増が必要`;
+    lifetimeLoss > 0
+      ? `支出増による資産寿命短縮（約${lifetimeLoss.toFixed(0)}年）を収入増で補うには年間約${requiredExtraIncome.toLocaleString()}万円必要`
+      : '支出増加の影響は軽微です';
 
-  // 最悪シナリオの説明
   const sourceLabel = worstSource === 'sim'
-    ? 'SIMULATEで得られた下位10%シナリオの中央値'
+    ? 'SIMULATE下位10%の分布から推定'
     : '近似計算（先にSIMULATEを実行すると精度が上がります）';
 
   document.getElementById('worst-scenario-detail').innerHTML = `
     <span style="color:var(--text-dim);font-size:11px;">${sourceLabel}</span><br><br>
-    最悪ケース最終資産（下位10%中央値）: <b style="color:#ff4757;">${(worstVal/1e8).toFixed(2)}億円</b><br>
-    計画値（全体中央値）との差: <b style="color:#ffd166;">${((planVal - worstVal)/1e8).toFixed(2)}億円</b><br>
+    計画シナリオ 資産寿命中央値: <b style="color:#a8ff78;">${planVal}歳まで持続</b><br>
+    最悪ケース 資産寿命中央値: <b style="color:#ff4757;">${worstVal}歳で枯渇</b><br>
+    差分: <b style="color:#ffd166;">${(planVal - worstVal).toFixed(0)}年の差</b>
     ${worstSource === 'sim' && lastFinalAssets
-      ? `試行数 ${lastFinalAssets.length}件中 下位${Math.ceil(lastFinalAssets.length*0.10)}件の中央値を使用`
+      ? `<br><span style="font-size:11px;color:var(--text-dim);">試行数 ${lastFinalAssets.length}件の下位10%分布から推定</span>`
       : ''}
   `;
 }
