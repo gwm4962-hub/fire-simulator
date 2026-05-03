@@ -1040,7 +1040,7 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
 
               <h3 style="color: var(--accent); margin: 20px 0 10px 0;">2. 投資リターンの幾何的補正とリスクプレミアム</h3>
         <p>
-            各レジームにおける投資リターンの予測値算出において、複利効果を考慮した「幾何平均」への変換を行っています[cite: 1]。
+            各レジームにおける投資リターンの予測値算出において、複利効果を考慮した「$Gs$（幾何平均）」への変換を行っています[cite: 1]。
         </p>
         <ul style="margin-bottom: 15px; font-size: 0.95em;">
             <li><strong>算術平均から幾何平均への変換:</strong> 投資においてボラティリティ $\sigma$ (標準偏差)が大きいほど実質的なリターン（幾何平均）は目減りするため、$\mu$（算術平均）と$\sigma$をつかった近似式 $Gs = \mu - \frac{\sigma^2}{2}$ を用いて現実的なリターンを算出しています[cite: 1]。</li>
