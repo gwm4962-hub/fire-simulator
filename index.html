@@ -633,6 +633,80 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
   <div class="layout">
     <!-- ===== LEFT PANEL ===== -->
     <div style="display:flex;flex-direction:column;gap:14px;">
+
+      <!-- ★ ツール概要ガイド -->
+      <div class="panel">
+        <div class="panel-header">🚀 このシミュレーターの使い方</div>
+        <div class="panel-body">
+          <p style="font-size:13px;color:var(--text-mid);line-height:1.9;margin-bottom:16px;">
+            本ツールは、統計的な手法（<b style="color:var(--text);">モンテカルロ法</b>）を用いて、あなたの資産形成と将来の破綻リスクをシミュレーションするための高度な分析ツールです。
+          </p>
+
+          <!-- ステップ1 -->
+          <div style="margin-bottom:14px;padding:12px;background:rgba(0,212,255,0.05);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;">1. 基本設定を入力する</div>
+            <div style="font-size:12px;color:var(--text-mid);line-height:1.9;">
+              まずは左側のパネルで、あなたの現在の状況と目標を設定しましょう。
+              <ul style="margin:6px 0 0 16px;padding:0;">
+                <li><b style="color:var(--text);">初期条件：</b>現在の年齢と、今持っている資産額を入力します。</li>
+                <li><b style="color:var(--text);">FIRE目標：</b>「この金額が貯まったら仕事を辞める（または抑える）」という目標額を設定します。※FIREを考えていない方は、老後までに貯めたい目標金額を入力してください。到達すると自動的に「FIRE後（または目標達成後）」のライフスタイルへ計算が切り替わります。</li>
+                <li><b style="color:var(--text);">収入・世帯：</b>世帯年収や手取り率、昇給率を設定します。共働き設定も可能です。</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- ステップ2 -->
+          <div style="margin-bottom:14px;padding:12px;background:rgba(168,255,120,0.05);border-left:3px solid #a8ff78;border-radius:0 6px 6px 0;">
+            <div style="font-size:13px;font-weight:700;color:#a8ff78;margin-bottom:8px;">2. ライフステージと支出をカスタマイズ</div>
+            <div style="font-size:12px;color:var(--text-mid);line-height:1.9;">
+              将来の支出は一定ではありません。
+              <ul style="margin:6px 0 0 16px;padding:0;">
+                <li><b style="color:var(--text);">子ども・教育費：</b>お子様の生まれ年を入力するだけで、教育費のピークや児童手当を自動で計算に組み込みます。</li>
+                <li><b style="color:var(--text);">ライフステージ別支出：</b>「現役時代」「FIRE直後」「老後」など、時期に合わせた生活費を設定できます。プリセットボタンを使うと素早く設定可能です。</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- ステップ3 -->
+          <div style="margin-bottom:14px;padding:12px;background:rgba(255,209,102,0.05);border-left:3px solid #ffd166;border-radius:0 6px 6px 0;">
+            <div style="font-size:13px;font-weight:700;color:#ffd166;margin-bottom:8px;">3. 投資リスク（難易度）を選ぶ</div>
+            <div style="font-size:12px;color:var(--text-mid);line-height:1.9;">
+              市場の状況をどう想定するかを選びます。
+              <ul style="margin:6px 0 0 16px;padding:0;">
+                <li><b style="color:var(--text);">難易度ボタン：</b>「楽観（右肩上がり）」「標準」「過酷（不況多め）」から選択でき、将来の不確実性をシミュレーションに反映します。</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- ステップ4 -->
+          <div style="margin-bottom:14px;padding:12px;background:rgba(0,212,255,0.05);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;">4. シミュレーションを実行する</div>
+            <div style="font-size:12px;color:var(--text-mid);line-height:1.9;">
+              設定が完了したら、最下部の <b style="color:var(--accent);">「▶ SIMULATE」</b> ボタンをクリックしてください。通常2,000回の人生を瞬時に試行し、統計的な結果を算出します。
+            </div>
+          </div>
+
+          <!-- ステップ5 -->
+          <div style="margin-bottom:16px;padding:12px;background:rgba(179,136,255,0.05);border-left:3px solid #b388ff;border-radius:0 6px 6px 0;">
+            <div style="font-size:13px;font-weight:700;color:#b388ff;margin-bottom:8px;">5. 結果を分析する</div>
+            <div style="font-size:12px;color:var(--text-mid);line-height:1.9;">
+              実行後、右側のパネルに詳細なデータが表示されます。
+              <ul style="margin:6px 0 0 16px;padding:0;">
+                <li><b style="color:var(--text);">あなたのお金ロードマップ：</b>目標までの距離を3ステップで視覚化します。</li>
+                <li><b style="color:var(--text);">成功率と破綻リスク：</b>100歳まで資産が持つ確率や、万が一の破綻確率をチェックしましょう。</li>
+                <li><b style="color:var(--text);">達成年齢分布：</b>「早ければ◯歳、遅くとも◯歳」という目標達成時期の幅を確認できます。</li>
+                <li><b style="color:var(--text);">老後資金チェックリスト：</b>65歳時点での資産や年金のバランスを自動評価します。</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 注意事項 -->
+          <div style="padding:10px 12px;background:rgba(255,209,102,0.07);border:1px solid rgba(255,209,102,0.25);border-radius:6px;font-size:12px;color:var(--text-mid);line-height:1.8;">
+            <b style="color:var(--warning);">⚠️ ご注意</b>　このシミュレーターは統計的な予測であり、将来の成果を保証するものではありません。投資の最終判断はご自身の責任で行ってください。
+          </div>
+        </div>
+      </div>
+
       <div class="panel">
         <div class="panel-header">基本設定</div>
         <div class="panel-body">
@@ -901,38 +975,17 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
         </div>
       </div>
 
-      <!-- Transition Matrix -->
-      <div class="panel">
-        <div class="panel-header" style="justify-content:space-between;">
-          <span style="display:flex;align-items:center;gap:8px;">
-            <span style="width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);display:inline-block;flex-shrink:0;"></span>
-            レジーム遷移確率
-          </span>
-          <button class="normalize-btn" onclick="normalizeAll()">自動正規化</button>
-        </div>
-        <div class="panel-body">
-          <div style="font-size:9px;color:var(--text-dim);margin-bottom:12px;line-height:1.7;">
-            各ブロック = 現在のレジームから次年度への遷移確率。行合計が
-            <span style="color:var(--accent3);font-family:var(--font-mono);">100%</span> になるよう設定してください。
-          </div>
-          <div class="tm-outer" id="tm-outer"></div>
+      <!-- Transition Matrix はトルネードの後に移動 -->
 
-          <!-- ★ Regime Dashboard：定常分布 -->
-          <div id="regime-dashboard" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);"></div>
+      <!-- 免責事項（SIMULATEボタン前） -->
+      <div style="margin-bottom:12px;padding:12px 14px;border:1px solid rgba(255,209,102,.25);border-radius:6px;background:rgba(255,209,102,.04);">
+        <div style="color:var(--warning);font-weight:700;font-size:12px;margin-bottom:6px;">⚠️ 免責事項</div>
+        <div style="font-size:11px;line-height:1.8;color:var(--text-dim);">
+          本ツールは資産形成のシミュレーション結果を提示するもので、<b style="color:var(--text);">投資勧誘や売買推奨ではありません</b>。統計的予測であり将来の成果を約束せず、最終判断は利用者自身の責任で行ってください。
         </div>
       </div>
 
       <button class="run-btn" id="run-btn" onclick="runSimulation()">▶ SIMULATE</button>
-<!-- ★ここから挿入：ボタン直下の免責事項★ -->
-      <div class="disclaimer-box" style="margin-top: 15px; margin-bottom: 15px; padding: 12px; border: 1px solid var(--border); border-radius: 4px; background: rgba(0,0,0,0.15); font-size: 10px; line-height: 1.5; color: var(--text-dim);">
-        <div style="color: var(--warning); font-weight: bold; margin-bottom: 5px; font-size: 11px;">
-          ⚠️ 【免責事項 / Disclaimer】
-        </div>
-        <p style="margin: 0 0 5px 0;"><b>目的:</b> 本ツールは資産形成のシミュレーション結果を提示するもので、投資勧誘や売買推奨を目的としたものではありません。</p>
-        <p style="margin: 0 0 5px 0;"><b>正確性・リスク:</b> ロジックには万全を期していますが、正確性を保証するものではありません。統計的予測であり、将来の成果を約束せず、実際の市場変動で資産が減少する可能性があります。</p>
-        <p style="margin: 0;"><b>自己責任:</b> 本ツールの利用による損害について開発者は一切責任を負いません。最終判断は利用者自身の責任で行ってください。</p>
-      </div>
-      <!-- ★ここまで★ -->
       <div class="progress-bar" id="progress-bar">
         <div class="progress-fill" id="progress-fill"></div>
       </div>
@@ -1082,6 +1135,12 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
             <div style="color:var(--text-dim);font-size:11px;text-align:center;padding:20px 0;">シミュレーション後に表示されます</div>
           </div>
         </div>
+
+        <!-- ★ シミュレーション結果 解説パネル -->
+        <div class="panel" id="sim-commentary-panel" style="display:none;">
+          <div class="panel-header">📋 シミュレーション結果の解説</div>
+          <div class="panel-body" id="sim-commentary-body"></div>
+        </div>
       </div>
 
       <!-- ⑥ レジーム設定カード -->
@@ -1140,17 +1199,9 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
 
           <!-- ヒートマップ本体（Chart.jsで描画） -->
           <div id="heatmap-wrap" style="display:none;">
-            <!-- 軸ラベル上部 -->
-            <div style="text-align:center;font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:6px;">
-              ← FIRE後 株式比率 →
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <!-- Y軸ラベル -->
-              <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;white-space:nowrap;flex-shrink:0;">
-                ← 現役時 株式比率 →
-              </div>
-              <!-- Chart.js canvas -->
-              <div style="flex:1;position:relative;">
+            <div style="display:flex;align-items:stretch;gap:0;">
+              <!-- Chart.js canvas（軸タイトルはChart.js内で描画） -->
+              <div style="flex:1;position:relative;" id="heatmap-canvas-container">
                 <canvas id="sensitivityHeatmap"></canvas>
               </div>
             </div>
@@ -1160,7 +1211,7 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
               <span style="font-size:11px;color:var(--danger);">低 0%</span>
               <div style="height:10px;flex:1;max-width:200px;border-radius:5px;
                 background:linear-gradient(90deg,#ff4757,#ffd166,#a8ff78);"></div>
-              <span style="font-size:11px;color:var(--success);">高 100%</span>
+              <span style="font-size:11px;color:var(--accent3);">高 100%</span>
               <span style="font-size:10px;color:var(--text-dim);margin-left:8px;">FIRE成功率</span>
             </div>
           </div>
@@ -1231,36 +1282,263 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
   </div>
 </div>
 
-<!-- レジーム別の実質リターン計算表 -->
-<div class="regime-summary-table" style="margin-bottom: 24px;">
-    <div style="font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; color: var(--accent); display: flex; align-items: center; gap: 8px;">
-        <span style="width: 12px; height: 1px; background: var(--accent); opacity: 0.6;"></span>
-        Regime Performance Matrix
+<!-- ★ レジーム遷移確率（トルネードの後に移動） -->
+<div class="panel sensitivity-section" style="margin-top:0;">
+  <div class="panel-header" style="justify-content:space-between;">
+    <span style="display:flex;align-items:center;gap:8px;">
+      <span style="width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);display:inline-block;flex-shrink:0;"></span>
+      レジーム遷移確率
+    </span>
+    <button class="normalize-btn" onclick="normalizeAll()">自動正規化</button>
+  </div>
+  <div class="panel-body">
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;line-height:1.7;">
+      各ブロック = 現在のレジームから次年度への遷移確率。行合計が
+      <span style="color:var(--accent3);font-family:var(--font-mono);">100%</span> になるよう設定してください。
     </div>
-    
-    <div style="overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); box-shadow: inset 0 0 20px rgba(0,0,0,0.2);">
-        <table style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; color: var(--text); min-width: 500px;">
-            <thead>
-                <tr style="background: rgba(0, 212, 255, 0.05); border-bottom: 1px solid var(--border);">
-                    <th style="padding: 12px 10px; text-align: left; color: var(--text-dim); font-size: 14px; letter-spacing: 1px; font-weight: 400;">レジーム</th>
-                    <th style="padding: 12px 10px; text-align: right; color: var(--text-dim); font-size: 14px; letter-spacing: 1px; font-weight: 400;">株式算術平均 (μs)</th>
-                    <th style="padding: 12px 10px; text-align: right; color: var(--text-dim); font-size: 14px; letter-spacing: 1px; font-weight: 400;">株式幾何平均 (Gs)</th>
-                    <th style="padding: 12px 10px; text-align: right; color: var(--text-dim); font-size: 14px; letter-spacing: 1px; font-weight: 400;">債券リターン (Gb)</th>
-                    <th style="padding: 12px 10px; text-align: right; color: var(--text-dim); font-size: 14px; letter-spacing: 1px; font-weight: 400;">プレミアム (Gs-Gb)</th>
-                </tr>
-            </thead>
-            <tbody id="regime-table-body">
-                <!-- JavaScriptで動的に生成。下記はサンプル行のイメージ -->
-                <tr style="border-bottom: 1px solid rgba(26, 45, 74, 0.5);">
-                    <td style="padding: 10px; color: var(--bull); font-weight: 700;">📈 BULL</td>
-                    <td style="padding: 10px; text-align: right;">12.5%</td>
-                    <td style="padding: 10px; text-align: right;">11.2%</td>
-                    <td style="padding: 10px; text-align: right;">2.0%</td>
-                    <td style="padding: 10px; text-align: right; color: var(--accent3);">+9.2%</td>
-                </tr>
-            </tbody>
-        </table>
+    <div class="tm-outer" id="tm-outer"></div>
+    <!-- 定常分布 -->
+    <div id="regime-dashboard" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);"></div>
+  </div>
+</div>
+
+<!-- ★ マルコフ遷移 数理解説パネル -->
+<div class="panel sensitivity-section" style="margin-top:0;margin-bottom:0;">
+  <div class="panel-header">🧮 数理モデル解説：マルコフ遷移行列と定常分布</div>
+  <div class="panel-body">
+
+    <!-- 1. マルコフ遷移行列 -->
+    <div style="margin-bottom:18px;">
+      <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+        <span style="background:var(--accent);color:#000;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">1</span>
+        マルコフ遷移行列：景気の「バトンタッチ」の仕組み
+      </div>
+      <div style="font-size:13px;color:var(--text-mid);line-height:1.9;">
+        マルコフ遷移行列は、<b style="color:var(--text);">「現在の状態が、次の瞬間の状態に影響を与える」</b>という性質（マルコフ性）を数式にしたものです。
+      </div>
+      <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="padding:10px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:6px;font-size:12px;line-height:1.8;">
+          <b style="color:var(--accent);">図の解説</b><br>
+          各状態（レジーム）を丸、移動の確率を矢印で表します。
+        </div>
+        <div style="padding:10px;background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2);border-radius:6px;font-size:12px;line-height:1.8;">
+          <b style="color:var(--danger);">ポイント</b><br>
+          「弱気→弱気」の数値を高くすると、「不況が長引く」ボラティリティ・クラスタリングを再現できます。
+        </div>
+      </div>
     </div>
+
+    <!-- 2. 定常分布 -->
+    <div style="margin-bottom:18px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:700;color:#b388ff;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+        <span style="background:#b388ff;color:#000;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">2</span>
+        左固有ベクトルと定常分布：長期的な「人生の天気予報」
+      </div>
+      <div style="font-size:13px;color:var(--text-mid);line-height:1.9;">
+        シミュレーションを何十年も繰り返すと、最終的に「各状態に合計で何％滞在したか」が一定の比率に落ち着きます。これが<b style="color:var(--text);">定常分布</b>です。
+        <br>
+        <b style="color:#b388ff;">数理的な意味：</b>遷移行列の左固有ベクトルを求めることは、この<b style="color:var(--text);">「黄金比（バランス）」</b>を計算していることと同義です。
+        <br>
+        <b style="color:#b388ff;">シミュレーターでの役割：</b>最初が「強気」から始まっても「弱気」から始まっても、100年間のトータルで見れば、もっともらしいバランスで景気が巡るよう設計されています。
+      </div>
+    </div>
+
+    <!-- 3. レジーム・スイッチング -->
+    <div style="margin-bottom:18px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:700;color:#ffd166;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+        <span style="background:#ffd166;color:#000;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">3</span>
+        レジーム・スイッチング：資産残高への影響
+      </div>
+      <div style="font-size:13px;color:var(--text-mid);line-height:1.9;margin-bottom:10px;">
+        一律リターン（例えば毎年5%）で計算した場合と、マルコフ連鎖によるレジーム・スイッチングを導入した場合では、資産残高の推移は以下のように変わります。
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div style="padding:10px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:6px;font-size:12px;line-height:1.8;">
+          <b style="color:var(--accent);">🔵 一律リターン</b><br>
+          毎年一定の成長。リスクを過小評価しやすく、皮算用になりがちです。
+        </div>
+        <div style="padding:10px;background:rgba(255,154,60,0.06);border:1px solid rgba(255,154,60,0.2);border-radius:6px;font-size:12px;line-height:1.8;">
+          <b style="color:#ff9a3c;">🟠 マルコフ連鎖</b><br>
+          「弱気」レジームで資産が削られ、「通常」に戻って回復する<b>現実の相場特有の「うねり」</b>が再現されます。
+        </div>
+      </div>
+      <!-- 比較グラフ（SVG） -->
+      <div id="regime-switch-chart" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;"></div>
+    </div>
+
+    <!-- 4. カプセル化 -->
+    <div style="margin-bottom:18px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:700;color:#a8ff78;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+        <span style="background:#a8ff78;color:#000;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">4</span>
+        シミュレーター内部での「カプセル化」
+      </div>
+      <div style="font-size:13px;color:var(--text-mid);line-height:1.9;margin-bottom:10px;">
+        各レジームは、単なるラベルではなく、4つの変数をひとまとめにした「性格」を持っています。
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div style="padding:9px 10px;background:rgba(168,255,120,0.07);border:1px solid rgba(168,255,120,0.25);border-radius:5px;font-size:12px;line-height:1.7;">
+          <span style="font-size:16px;">🐂</span> <b style="color:#a8ff78;">強気</b><br>追い風。低リスク高リターン
+        </div>
+        <div style="padding:9px 10px;background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.25);border-radius:5px;font-size:12px;line-height:1.7;">
+          <span style="font-size:16px;">📈</span> <b style="color:#00d4ff;">通常</b><br>凪の状態。安定成長
+        </div>
+        <div style="padding:9px 10px;background:rgba(255,71,87,0.07);border:1px solid rgba(255,71,87,0.25);border-radius:5px;font-size:12px;line-height:1.7;">
+          <span style="font-size:16px;">🐻</span> <b style="color:#ff4757;">弱気</b><br>嵐。大暴落と高ボラティリティ
+        </div>
+        <div style="padding:9px 10px;background:rgba(255,209,102,0.07);border:1px solid rgba(255,209,102,0.25);border-radius:5px;font-size:12px;line-height:1.7;">
+          <span style="font-size:16px;">🔥</span> <b style="color:#ffd166;">インフレ</b><br>霧。名目資産は増えても実質価値が減る
+        </div>
+      </div>
+    </div>
+
+    <!-- まとめ -->
+    <div style="padding:14px;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.2);border-radius:6px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px;">📌 まとめ：なぜこの数理モデルが必要か</div>
+      <div style="font-size:13px;color:var(--text-mid);line-height:1.9;">
+        <div style="display:flex;gap:8px;margin-bottom:6px;"><span style="color:var(--accent);flex-shrink:0;">▶</span><span>遷移行列によって、「暴落のあとの停滞」のような<b style="color:var(--text);">時間の粘着性</b>を作ります。</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;"><span style="color:#b388ff;flex-shrink:0;">▶</span><span>定常分布によって、「人生全体での不況の割合」を<b style="color:var(--text);">数学的な妥当性</b>（例えば20%など）で制御します。</span></div>
+        <div style="display:flex;gap:8px;"><span style="color:#a8ff78;flex-shrink:0;">▶</span><span>これらを組み合わせることで、「たまたま運が良かっただけのFIRE計画」を排除し、<b style="color:var(--text);">最悪のシナリオ（シーケンス・オブ・リターン・リスク）</b>にも耐えられるかを検証できます。</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ★ マルコフ遷移ビジュアライザー -->
+<div class="panel sensitivity-section" style="margin-top:0;margin-bottom:24px;">
+  <div class="panel-header">🎮 マルコフ遷移ビジュアライザー（体験シミュレーター）</div>
+  <div class="panel-body">
+    <p style="font-size:13px;color:var(--text-mid);line-height:1.8;margin-bottom:16px;">
+      「1年進める」ボタンを押すたびに、遷移行列の確率に従って景気レジームが推移します。何十回も押すと、ドーナツグラフが定常分布に近づいていく様子を体感できます。
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;">
+      <!-- 左：現在の状態と操作 -->
+      <div>
+        <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">現在のレジーム</div>
+        <div id="viz-current-state" style="font-size:28px;font-weight:700;font-family:var(--font-mono);text-align:center;padding:16px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);margin-bottom:10px;color:#ffd166;">待機中…</div>
+        <button onclick="vizStep()" style="width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),#007ab8);border:none;border-radius:6px;color:#000;font-family:var(--font-mono);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;margin-bottom:8px;">▶ 1年進める</button>
+        <button onclick="vizReset()" style="width:100%;padding:8px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-family:var(--font-mono);font-size:12px;cursor:pointer;">↺ リセット</button>
+        <div style="margin-top:10px;font-size:11px;color:var(--text-dim);font-family:var(--font-mono);">履歴:</div>
+        <div id="viz-log" style="height:90px;overflow-y:auto;background:rgba(0,0,0,0.3);border-radius:4px;padding:8px;font-family:var(--font-mono);font-size:11px;color:var(--text-mid);margin-top:4px;"></div>
+      </div>
+      <!-- 右：定常分布ドーナツ -->
+      <div>
+        <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">累積滞在比率（定常分布へ収束）</div>
+        <div style="position:relative;height:180px;">
+          <canvas id="viz-dist-chart"></canvas>
+        </div>
+        <div id="viz-step-count" style="text-align:center;font-size:12px;color:var(--text-dim);font-family:var(--font-mono);margin-top:6px;">0年経過</div>
+      </div>
+    </div>
+
+    <!-- 遷移行列の表示 -->
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">遷移行列（現在のシミュレーター設定と同じ値）</div>
+      <div style="overflow-x:auto;">
+        <table id="viz-matrix-table" style="width:100%;border-collapse:collapse;font-size:11px;font-family:var(--font-mono);"></table>
+      </div>
+      <p style="font-size:11px;color:var(--text-dim);margin-top:6px;">※「弱気→弱気」が高い＝不況が続きやすい（粘着性）</p>
+    </div>
+  </div>
+</div>
+<div class="panel sensitivity-section" style="margin-top:0;margin-bottom:24px;">
+  <div class="panel-header">📊 市場レジーム別 リターン表</div>
+  <div class="panel-body">
+
+    <!-- 初心者向け解説 -->
+    <div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:6px;padding:12px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;">📖 この表の見方</div>
+      <div style="font-size:12px;color:var(--text-mid);line-height:1.8;margin-bottom:10px;">
+        市場を4つの状態に分類し、毎年ランダムに切り替えながら資産の増減を計算します。
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
+        <div style="padding:7px 8px;background:var(--surface3);border-radius:4px;line-height:1.6;">
+          <div style="color:var(--accent);font-weight:700;margin-bottom:2px;">G（幾何平均）★重要</div>
+          <div style="color:var(--text-mid);">長期で実際に得られる複利リターン</div>
+        </div>
+        <div style="padding:7px 8px;background:var(--surface3);border-radius:4px;line-height:1.6;">
+          <div style="color:var(--text-dim);font-weight:700;margin-bottom:2px;">μ（算術平均）</div>
+          <div style="color:var(--text-mid);">1年の期待値。長期では過大評価になる</div>
+        </div>
+        <div style="padding:7px 8px;background:var(--surface3);border-radius:4px;line-height:1.6;">
+          <div style="color:var(--text-dim);font-weight:700;margin-bottom:2px;">σ（ボラ）</div>
+          <div style="color:var(--text-mid);">値動きの激しさ。大きいほどブレが大きい</div>
+        </div>
+        <div style="padding:7px 8px;background:var(--surface3);border-radius:4px;line-height:1.6;">
+          <div style="color:var(--text-dim);font-weight:700;margin-bottom:2px;">定常確率</div>
+          <div style="color:var(--text-mid);">長期的にこの相場に留まる割合</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- カードグリッド（スマホ2列） -->
+    <div id="regime-cards-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;"></div>
+
+    <!-- 長期期待値サマリー -->
+    <div id="regime-table-footer" style="font-size:12px;color:var(--text-mid);line-height:1.9;padding:10px 12px;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:6px;"></div>
+
+    <!-- ★ ボラティリティ・ドラッグ体験ツール -->
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:4px;font-family:var(--font-mono);letter-spacing:1px;">VOLATILITY_DRAG_EXPLORER</div>
+      <div style="font-size:12px;color:var(--text-mid);margin-bottom:14px;">「算術平均」と「幾何平均（実際の複利成長率）」の差をスライダーで体験できます。</div>
+
+      <!-- スライダー -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div style="background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">算術平均リターン (μ): <b id="vd-mu-val" style="color:var(--accent);">5.0%</b></div>
+          <input type="range" id="vd-mu" min="0" max="15" value="5" step="0.5" style="width:100%;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-top:2px;"><span>0%</span><span>15%</span></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">ボラティリティ (σ): <b id="vd-sigma-val" style="color:#ff9a3c;">20.0%</b></div>
+          <input type="range" id="vd-sigma" min="0" max="50" value="20" step="1" style="width:100%;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-top:2px;"><span>0%</span><span>50%</span></div>
+        </div>
+      </div>
+
+      <!-- 結果カード -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div style="padding:12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.02);text-align:center;">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">見かけの平均（算術平均）</div>
+          <div id="vd-arithmetic" style="font-size:22px;font-weight:700;font-family:var(--font-mono);color:var(--text);">5.00%</div>
+        </div>
+        <div style="padding:12px;border-radius:8px;border:1px solid var(--accent);background:rgba(0,212,255,0.05);text-align:center;">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">実際の複利成長率（幾何平均）★</div>
+          <div id="vd-geometric" style="font-size:22px;font-weight:700;font-family:var(--font-mono);color:var(--accent);">3.00%</div>
+        </div>
+      </div>
+
+      <!-- 計算式 -->
+      <div style="background:#000;padding:10px 14px;border-radius:4px;font-family:var(--font-mono);color:var(--accent);text-align:center;margin-bottom:12px;font-size:13px;">
+        G ≈ μ − σ²/2 &nbsp;→&nbsp; <span id="vd-formula" style="color:#8a9fba;">5.0% − (20.0%²/2) = 3.0%</span>
+      </div>
+
+      <!-- ドラッグ差の視覚バー -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:4px;">
+          <span>ボラティリティ・ドラッグ（μ − G）</span>
+          <span id="vd-drag-val" style="color:#ff4757;font-family:var(--font-mono);">−2.00%</span>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:8px;overflow:hidden;">
+          <div id="vd-drag-bar" style="height:100%;background:linear-gradient(90deg,#ff4757,#ffd166);border-radius:3px;transition:width .2s;width:13%;"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:3px;">ドラッグが大きいほど、長期保有で実際の利益が期待より目減りします</div>
+      </div>
+
+      <!-- Chart.js グラフ -->
+      <div style="position:relative;height:200px;margin-bottom:10px;">
+        <canvas id="vd-chart"></canvas>
+      </div>
+
+      <!-- 直感的な解説 -->
+      <div style="padding:10px 12px;background:rgba(255,209,102,0.06);border:1px solid rgba(255,209,102,0.2);border-radius:6px;font-size:12px;color:var(--text-mid);line-height:1.8;">
+        <b style="color:#ffd166;">💡 なぜ幾何平均は低くなるのか？</b><br>
+        100万円が「+50%」→「−50%」になると、算術平均は<b style="color:var(--text);">0%</b>ですが、資産は 100 → 150 → <b style="color:#ff4757;">75万円</b>（▲25%）。マイナスの影響はプラスより強く働くため、変動（σ）が大きいほど実際の成長率（幾何平均）は押し下げられます。
+      </div>
+    </div>
+
+  </div>
 </div>
 
 
@@ -1428,6 +1706,51 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
         <div style="background: rgba(var(--accent3-rgb), 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(var(--accent3-rgb), 0.2); font-size: 13px;">
             <strong style="color: var(--accent3);">⚠️ なぜ重要か：</strong>
             多くのシミュレーターが「楽観的」になりがちなのは、正規分布が持つ「極端な外れ値を排除する」性質のためです。本ツールではあえて裾を厚くすることで、資産寿命を削り取る「真の暴落リスク」への耐性をテストできます。
+        </div>
+
+        <!-- ★ Fat-tail インタラクティブビジュアライザー -->
+        <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border);">
+          <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:4px;font-family:var(--font-mono);letter-spacing:1px;">FAT-TAIL_RISK_ANALYZER</div>
+          <div style="font-size:12px;color:var(--text-mid);margin-bottom:14px;">自由度スライダーを動かして、t分布の「裾の厚さ」が変化する様子を体験できます。</div>
+
+          <!-- スライダー -->
+          <div style="background:rgba(255,255,255,0.03);padding:12px 14px;border-radius:8px;border:1px solid var(--border);margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono);">自由度 ν (Degrees of Freedom)</span>
+              <span id="ft-df-display" style="font-size:16px;font-weight:700;font-family:var(--font-mono);color:var(--accent);">3.0</span>
+            </div>
+            <input type="range" id="ft-df-slider" min="2.1" max="30" value="3" step="0.1" style="width:100%;">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-top:4px;">
+              <span>ν=2 (極端なFat-tail)</span>
+              <span>ν=30 (ほぼ正規分布)</span>
+            </div>
+            <div style="margin-top:8px;font-size:11px;color:var(--text-dim);">※ 自由度が低い（3〜5）ほどリーマンショック級の暴落が発生しやすくなります</div>
+          </div>
+
+          <!-- 分布タイプバッジ -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+            <div style="padding:10px 12px;border-radius:6px;background:rgba(0,0,0,0.2);border-left:3px solid #5a7090;">
+              <div style="font-size:11px;color:var(--text-dim);">正規分布（点線）</div>
+              <div style="font-size:14px;font-weight:700;color:#8a9fba;">薄い裾 (Thin-tail)</div>
+              <div style="font-size:11px;color:var(--text-dim);">暴落を「無視」する楽観モデル</div>
+            </div>
+            <div style="padding:10px 12px;border-radius:6px;background:rgba(0,212,255,0.05);border-left:3px solid var(--accent);">
+              <div style="font-size:11px;color:var(--text-dim);">t分布（実線）</div>
+              <div id="ft-dist-type" style="font-size:14px;font-weight:700;color:#ff4757;">Extreme Fat-tail</div>
+              <div style="font-size:11px;color:var(--text-dim);">ブラックスワンを捕捉する現実モデル</div>
+            </div>
+          </div>
+
+          <!-- グラフ -->
+          <div style="position:relative;height:240px;margin-bottom:12px;">
+            <canvas id="ft-chart"></canvas>
+          </div>
+
+          <!-- 解説 -->
+          <div style="padding:10px 12px;background:rgba(255,71,87,0.05);border:1px solid rgba(255,71,87,0.2);border-radius:6px;font-size:12px;color:var(--text-mid);line-height:1.8;">
+            <b style="color:var(--danger);">📉 グラフの両端（裾）に注目してください。</b><br>
+            正規分布（点線）は端の確率がほぼゼロになりますが、<b style="color:var(--accent);">t分布（青実線）</b>は端でも高さが残ります。これが<b style="color:var(--danger);">「ファットテイル（厚い裾）」</b>です。自由度を下げるほど裾が厚くなり、暴落が起きやすい市場を表現します。
+          </div>
         </div>
     </div>
 </div>
@@ -2108,6 +2431,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // ★ 新機能の初期化
     updateTaxDisplay();
     renderRegimeDashboard();
+    updateRegimeTable();
+    initMarkovVisualizer();
+    drawRegimeSwitchChart();
+    initVolatilityDragExplorer();
+    initFatTailAnalyzer();
 
     // ★ 収入スライダーに税金計算を連動
     ['income','income-b','raise','raise-b'].forEach(id => {
@@ -2117,7 +2445,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ★ 遷移行列スライダー変更時に定常分布を更新
     document.addEventListener('input', e => {
-      if (e.target.classList.contains('tm-sl')) renderRegimeDashboard();
+      if (e.target.classList.contains('tm-sl')) {
+        renderRegimeDashboard();
+        updateRegimeTable();
+      }
     });
 
   }, 50);
@@ -2421,6 +2752,162 @@ function renderRetireChecklist({ assets65, needAt65, surplus65, pensionAnnual, e
 
 
 // ============================================================
+// シミュレーション結果の解説文を生成・表示
+// ============================================================
+function renderSimCommentary({
+  successRate, bankruptRate, fireRate,
+  fireAgeMed, startAge, lifeExp,
+  assets65, needAt65, surplus65, monthlyRetire,
+  initAssets, fireThr, mf,
+}) {
+  const panel = document.getElementById('sim-commentary-panel');
+  const body  = document.getElementById('sim-commentary-body');
+  if (!panel || !body) return;
+  panel.style.display = 'block';
+
+  const fmt万 = v => Math.abs(v) >= 1e8
+    ? (v/1e8).toFixed(1)+'億円'
+    : Math.round(v/1e4).toLocaleString()+'万円';
+
+  const pct = v => (v*100).toFixed(1)+'%';
+
+  // ── 総合評価 ──
+  let overallGrade, overallColor, overallIcon, overallText;
+  if (successRate >= 0.90) {
+    overallGrade='S';overallColor='#a8ff78';overallIcon='🏆';
+    overallText='非常に堅牢なプランです。95歳まで資産が持続する確率が90%を超えており、どんな市場環境でも安心できる水準です。';
+  } else if (successRate >= 0.75) {
+    overallGrade='A';overallColor='#00d4ff';overallIcon='✅';
+    overallText='良好なプランです。成功率75%以上は長期投資として十分な水準です。いくつかの改善余地があります。';
+  } else if (successRate >= 0.55) {
+    overallGrade='B';overallColor='#ffd166';overallIcon='⚠️';
+    overallText='改善余地があります。約半数のシナリオで資産が持続しますが、市場悪化時のリスクが残ります。支出削減や収入増強を検討してください。';
+  } else if (successRate >= 0.30) {
+    overallGrade='C';overallColor='#ff9a3c';overallIcon='🔴';
+    overallText='リスクが高いプランです。過半数のシナリオで資産が枯渇する可能性があります。大幅な見直しが必要です。';
+  } else {
+    overallGrade='D';overallColor='#ff4757';overallIcon='💀';
+    overallText='このまま続けると資産枯渇のリスクが非常に高いです。支出の大幅削減・FIRE目標の延期・収入増を強く推奨します。';
+  }
+
+  // ── FIREシナリオ解説 ──
+  let fireText = '';
+  if (fireRate >= 0.8) {
+    fireText = `試行の${pct(fireRate)}でFIREを達成できる見込みです。`;
+    if (fireAgeMed) fireText += `中央値では<b>${fireAgeMed}歳</b>（あと${fireAgeMed - startAge}年）でFIRE達成が見込まれます。`;
+  } else if (fireRate >= 0.3) {
+    fireText = `FIRE達成率は${pct(fireRate)}です。`;
+    if (fireAgeMed) fireText += `達成できるシナリオでは<b>${fireAgeMed}歳</b>が中央値です。`;
+    fireText += '市場環境次第で達成時期が大きく変わります。';
+  } else if (fireRate > 0) {
+    fireText = `FIRE達成率は${pct(fireRate)}と低水準です。現在の設定では大多数のシナリオでFIRE目標資産への到達が困難です。`;
+    const gap = fireThr - initAssets;
+    if (gap > 0) fireText += `目標資産まで<b>${fmt万(gap)}</b>の不足があります。`;
+  } else {
+    fireText = '現在の設定ではFIRE達成が非常に困難です。目標資産額の引き下げ、または収入・貯蓄率の大幅改善が必要です。';
+  }
+
+  // ── 老後シナリオ解説 ──
+  let retireText = '';
+  if (surplus65 >= 5000 * 1e4) {
+    retireText = `65歳時点で必要老後資金を<b>${fmt万(surplus65)}</b>上回る見込みです。医療費・介護費の備えも十分で、資産の一部を子世代に残せる可能性があります。`;
+  } else if (surplus65 >= 1000 * 1e4) {
+    retireText = `老後資金は<b>${fmt万(surplus65)}</b>の余裕があります。月${monthlyRetire}万円の生活水準を維持できる見込みです。`;
+  } else if (surplus65 >= 0) {
+    retireText = `老後資金はギリギリ確保できる見込みですが、余裕は${fmt万(surplus65)}と小さいです。予期せぬ医療費・介護費に備え、月支出の節約を心がけてください。`;
+  } else {
+    retireText = `65歳時点で老後資金が<b>${fmt万(Math.abs(surplus65))}</b>不足する見込みです。年金だけでは生活費をカバーできない可能性があります。`;
+  }
+
+  // ── 破綻リスク解説 ──
+  let bankruptText = '';
+  if (bankruptRate < 0.05) {
+    bankruptText = `生前の資産枯渇リスクは${pct(bankruptRate)}と極めて低く、優れた水準です。`;
+  } else if (bankruptRate < 0.20) {
+    bankruptText = `破綻率${pct(bankruptRate)}は許容範囲ですが、ゼロではありません。市場暴落が長期続いた場合のシナリオを念頭に置いてください。`;
+  } else if (bankruptRate < 0.40) {
+    bankruptText = `破綻率${pct(bankruptRate)}はやや高めです。支出削減・FIRE後の株式比率調整・年金の繰り下げ受給などを検討してください。`;
+  } else {
+    bankruptText = `破綻率${pct(bankruptRate)}は非常に高い水準です。現在のプランには根本的な見直しが必要です。`;
+  }
+
+  // ── 改善アドバイス（状況に応じて最大5件）──
+  const tips = [];
+
+  // 1. 支出削減
+  if (successRate < 0.75 && monthlyRetire < 25) {
+    tips.push('💡 <b>支出削減</b>：月支出を3万円削減すると年36万円の効果。長期複利で成功率が数十ポイント改善することがあります。固定費（通信費・保険）の見直しから始めましょう。');
+  }
+
+  // 2. FIRE後株式比率
+  if (bankruptRate > 0.15) {
+    tips.push('💡 <b>FIRE後の株式比率調整</b>：リタイア後の株式比率を現在より10〜20pt下げると、シーケンス・オブ・リターン・リスク（暴落直後の取り崩し）を軽減できます。ヒートマップ分析で最適比率を確認してください。');
+  }
+
+  // 3. 年金繰り下げ
+  if (surplus65 < 3000 * 1e4 && assets65 > 0) {
+    tips.push('💡 <b>年金の繰り下げ受給</b>：65歳受給を70歳まで繰り下げると月額が<b>42%増</b>、75歳まで繰り下げると<b>84%増</b>になります。70歳時点で資産があるなら強力な老後リスクヘッジになります。');
+  }
+
+  // 4. FIRE目標資産の引き下げ
+  if (fireRate < 0.5 && fireThr > initAssets) {
+    const realisticTarget = Math.round(fireThr * 0.8 / 1e4) * 1e4;
+    const realisticFmt = realisticTarget >= 1e8
+      ? (realisticTarget/1e8).toFixed(1)+'億円'
+      : Math.round(realisticTarget/1e4).toLocaleString()+'万円';
+    tips.push(`💡 <b>FIRE目標資産の現実化</b>：現在の目標資産を20%引き下げた<b>${realisticFmt}</b>に設定すると、FIRE達成率が大幅に改善する可能性があります。生活費の見直しと合わせて検討してください。`);
+  }
+
+  // 5. 贈与税非課税枠（資産潤沢時）
+  if (mf > 1.0 && successRate >= 0.85) {
+    tips.push('💡 <b>生前贈与の活用</b>：死亡時の中央値資産が1億円超です。暦年贈与の年間非課税枠（110万円）を活用した資産移転、または相続時精算課税制度（2,500万円まで非課税）の活用を税理士にご相談ください。');
+  }
+
+  // 成功パターンの激励
+  if (tips.length === 0 && successRate >= 0.90) {
+    tips.push('✨ 現在のプランは非常に優秀です！このまま継続しましょう。市場環境が想定外に悪化した場合の備えとして、生活費の10〜20%を現金で保有しておくとさらに安心です。');
+  }
+
+  body.innerHTML = `
+    <!-- 総合評価 -->
+    <div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--surface3);border-radius:8px;margin-bottom:16px;border:1px solid ${overallColor}33;">
+      <div style="text-align:center;flex-shrink:0;">
+        <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:4px;">総合評価</div>
+        <div style="font-size:48px;font-weight:700;font-family:var(--font-mono);color:${overallColor};line-height:1;text-shadow:0 0 20px ${overallColor}66;">${overallGrade}</div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${overallColor};margin-bottom:6px;">${overallIcon} FIRE成功率 ${pct(successRate)}</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.8;">${overallText}</div>
+      </div>
+    </div>
+
+    <!-- 3列インサイト -->
+    <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px;">
+      <div style="background:var(--surface2);border-radius:6px;padding:14px;border-left:3px solid #00d4ff;">
+        <div style="font-size:11px;color:var(--accent);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">🎯 FIREシナリオ</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.8;">${fireText}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:6px;padding:14px;border-left:3px solid #b388ff;">
+        <div style="font-size:11px;color:#b388ff;font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">🏦 老後シナリオ</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.8;">${retireText}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:6px;padding:14px;border-left:3px solid ${bankruptRate > 0.2 ? '#ff4757' : '#ffd166'};">
+        <div style="font-size:11px;color:${bankruptRate > 0.2 ? '#ff4757' : '#ffd166'};font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">⚠️ リスク評価</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.8;">${bankruptText}</div>
+      </div>
+    </div>
+
+    <!-- 改善アドバイス -->
+    ${tips.length > 0 ? `
+    <div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:6px;padding:14px;">
+      <div style="font-size:11px;color:var(--accent);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:10px;">📌 改善アドバイス</div>
+      ${tips.map(t=>`<div style="font-size:13px;color:var(--text);line-height:1.8;margin-bottom:6px;">${t}</div>`).join('')}
+    </div>` : ''}
+  `;
+}
+
+
+// ============================================================
 // 難易度モード定義
 // ============================================================
 const DIFFICULTY_MODES = {
@@ -2510,6 +2997,7 @@ function setDifficulty(mode) {
 
   // 8. 定常分布の再計算
   renderRegimeDashboard();
+  updateRegimeTable();
 
   // 9. 保存（ロード中は除く）
   scheduleSave();
@@ -2840,6 +3328,15 @@ if(dead[i]) continue; // skip financials if died this step
   // ---- 老後チェックリスト ----
   renderRetireChecklist({ assets65, needAt65, surplus65, pensionAnnual, expAt65, retireYears, monthlyRetire });
 
+  // ---- シミュレーション結果 解説 ----
+  renderSimCommentary({
+    successRate: nS/N, bankruptRate: nB/N, fireRate: nFS/N,
+    fireAgeMed, startAge, lifeExp,
+    assets65, needAt65, surplus65, monthlyRetire,
+    initAssets, fireThr, annualIncome: annualIncome*(isDual?1:1),
+    N, mf,
+  });
+
   // ---- Chart ----
   const cont=document.getElementById('chart-container');
   cont.innerHTML='<div class="chart-wrapper"><canvas id="myChart"></canvas></div>';
@@ -2979,33 +3476,132 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
 // 修正版：感度分析実行関数
 // 1. まず計算表を更新する関数を「独立」して定義する
 function updateRegimeTable() {
-    const labels = ["強気", "通常", "弱気", "インフレ"];
-    const tbody = document.getElementById('regime-table-body');
-    if (!tbody) return;
+  const grid   = document.getElementById('regime-cards-grid');
+  const footer = document.getElementById('regime-table-footer');
+  if (!grid) return;
 
-    tbody.innerHTML = ""; 
+  const meta = [
+    { emoji:'🐂', label:'強気相場',    color:'#a8ff78', border:'rgba(168,255,120,0.3)', bg:'rgba(168,255,120,0.06)' },
+    { emoji:'📈', label:'通常相場',    color:'#00d4ff', border:'rgba(0,212,255,0.3)',   bg:'rgba(0,212,255,0.06)'   },
+    { emoji:'🐻', label:'弱気相場',    color:'#ff4757', border:'rgba(255,71,87,0.3)',   bg:'rgba(255,71,87,0.06)'   },
+    { emoji:'🔥', label:'インフレ相場', color:'#ffd166', border:'rgba(255,209,102,0.3)', bg:'rgba(255,209,102,0.06)' },
+  ];
 
-    REGIMES.forEach((rg, i) => {
-        const muS = rg.mu[0];
-        const sigmaS = rg.sigma[0];
-        const gs = muS - (Math.pow(sigmaS, 2) / 2);
-        const gb = rg.mu[1];
-        const premium = gs - gb;
+  // 定常分布
+  let stDist = [0.25, 0.25, 0.25, 0.25];
+  try {
+    const raw = computeStationaryDist(tmValues);
+    const sum = raw.reduce((a,b)=>a+b,0);
+    stDist = raw.map(v=>v/sum);
+  } catch(e) {}
 
-        const row = document.createElement('tr');
-        row.style.borderBottom = "1px solid var(--border)";
-        row.innerHTML = `
-            <td style="padding: 10px; border: 1px solid var(--border); text-align: center; font-weight: bold;">${labels[i]}</td>
-            <td style="padding: 10px; border: 1px solid var(--border); text-align: right;">${(muS * 100).toFixed(1)}%</td>
-            <td style="padding: 10px; border: 1px solid var(--border); text-align: right; background: rgba(255,255,255,0.02);">${(gs * 100).toFixed(2)}%</td>
-            <td style="padding: 10px; border: 1px solid var(--border); text-align: right;">${(gb * 100).toFixed(1)}%</td>
-            <td style="padding: 10px; border: 1px solid var(--border); text-align: right; font-weight: bold; color: ${premium >= 0 ? '#4caf50' : '#f44336'};">
-                ${premium >= 0 ? '+' : ''}${(premium * 100).toFixed(2)}%
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
+  const p  = v => (v*100).toFixed(1)+'%';
+  const pp = v => (v>=0?'+':'')+(v*100).toFixed(1)+'%';
+  const col = v => v>=0.05?'#a8ff78':v>=0?'#ffd166':'#ff4757';
+
+  grid.innerHTML = '';
+
+  REGIMES.forEach((rg, i) => {
+    const m    = meta[i];
+    const muS  = rg.mu[0];
+    const sigS = rg.sigma[0];
+    const gs   = muS - sigS*sigS/2;
+    const gb   = rg.mu[1] - rg.sigma[1]*rg.sigma[1]/2;
+    const prem = gs - gb;
+    const inf  = rg.inf || 0;
+    const wt   = stDist[i];
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+      background:${m.bg};
+      border:1px solid ${m.border};
+      border-radius:8px;
+      padding:12px 10px;
+      font-family:var(--font-mono);
+      min-width:0;
+    `;
+    card.innerHTML = `
+      <!-- ヘッダー -->
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;border-bottom:1px solid ${m.border};padding-bottom:8px;">
+        <span style="font-size:20px;">${m.emoji}</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:${m.color};">${m.label}</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:1px;">定常確率 <b style="color:${m.color};">${(wt*100).toFixed(0)}%</b></div>
+        </div>
+      </div>
+      <!-- 指標グリッド -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div style="background:rgba(0,0,0,0.2);border-radius:4px;padding:6px 8px;">
+          <div style="font-size:10px;color:var(--text-dim);margin-bottom:3px;">株式G★</div>
+          <div style="font-size:16px;font-weight:700;color:${col(gs)};">${p(gs)}</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:4px;padding:6px 8px;">
+          <div style="font-size:10px;color:var(--text-dim);margin-bottom:3px;">σ（ボラ）</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text);">${p(sigS)}</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:4px;padding:6px 8px;">
+          <div style="font-size:10px;color:var(--text-dim);margin-bottom:3px;">プレミアム</div>
+          <div style="font-size:14px;font-weight:700;color:${col(prem)};">${pp(prem)}</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:4px;padding:6px 8px;">
+          <div style="font-size:10px;color:var(--text-dim);margin-bottom:3px;">インフレ超過</div>
+          <div style="font-size:14px;font-weight:700;color:${inf>0.005?'#ff9a3c':inf<-0.005?'#00d4ff':'var(--text-dim)'};">${pp(inf)}</div>
+        </div>
+      </div>
+      <!-- μ補足 -->
+      <div style="margin-top:8px;font-size:10px;color:var(--text-dim);text-align:right;">μ(算術)=${p(muS)} / 債券G=${p(gb)}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // 長期期待値（加重平均）
+  let wGS=0, wGB=0, wPrem=0, wSig=0, wInf=0;
+  REGIMES.forEach((rg,i)=>{
+    const w  = stDist[i];
+    const gs = rg.mu[0] - rg.sigma[0]*rg.sigma[0]/2;
+    const gb = rg.mu[1] - rg.sigma[1]*rg.sigma[1]/2;
+    wGS   += w*gs;
+    wGB   += w*gb;
+    wPrem += w*(gs-gb);
+    wSig  += w*rg.sigma[0];
+    wInf  += w*(rg.inf||0);
+  });
+
+  if (footer) {
+    footer.innerHTML = `
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">⚖️ 長期期待値（定常分布で加重平均）</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:8px;">
+        <div style="text-align:center;">
+          <div style="font-size:10px;color:var(--text-dim);">株式G（幾何）</div>
+          <div style="font-size:18px;font-weight:700;color:${col(wGS)};">${p(wGS)}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:10px;color:var(--text-dim);">σ（ボラ）</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text);">${p(wSig)}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:10px;color:var(--text-dim);">株式プレミアム</div>
+          <div style="font-size:18px;font-weight:700;color:${col(wPrem)};">${pp(wPrem)}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:10px;color:var(--text-dim);">インフレ超過</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text-dim);">${pp(wInf)}</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);border-top:1px solid var(--border);padding-top:8px;">
+        💡 <b style="color:var(--accent);">株式G★</b> = μ − σ²/2。複利効果でσが大きいほど算術平均より低くなります。例えばμ=10%・σ=15%なら G≈${p(0.10-0.15*0.15/2)}。長期投資の実績はこちらで評価してください。
+      </div>
+    `;
+  }
 }
+
+  // 定常分布を取得（なければ均等分布）
+  let stDist = [0.25, 0.25, 0.25, 0.25];
+  try {
+    stDist = computeStationaryDist(tmValues);
+    const sum = stDist.reduce((a,b)=>a+b,0);
+    stDist = stDist.map(v=>v/sum);
+  } catch(e) {}
 
 // 2. 感度分析実行関数
 // ============================================================
@@ -3078,7 +3674,9 @@ function drawHeatmapChart(ratioSteps, grid) {
   if (old) old.remove();
   const canvas = document.createElement('canvas');
   canvas.id = 'sensitivityHeatmap';
-  document.querySelector('#heatmap-wrap > div:nth-child(2) > div:nth-child(2)').appendChild(canvas);
+  const container = document.getElementById('heatmap-canvas-container');
+  if (!container) { console.error('heatmap-canvas-container not found'); return; }
+  container.appendChild(canvas);
 
   const n = ratioSteps.length;
 
@@ -3117,7 +3715,7 @@ function drawHeatmapChart(ratioSteps, grid) {
       responsive: true,
       maintainAspectRatio: true,
       aspectRatio: 1,
-      layout: { padding: { top:10, right:10, bottom:10, left:10 } },
+      layout: { padding: { top:10, right:20, bottom:10, left:10 } },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -3126,37 +3724,65 @@ function drawHeatmapChart(ratioSteps, grid) {
             label: ctx => {
               const d = ctx.raw;
               return [
-                `現役時: ${d.y}%  FIRE後: ${d.x}%`,
-                `成功率: ${(d.val*100).toFixed(1)}%`,
+                `現役時: ${d.y}%  /  FIRE後: ${d.x}%`,
+                `FIRE成功率: ${(d.val*100).toFixed(1)}%`,
               ];
             },
           },
         },
-        // セル内に成功率を描画するカスタムプラグイン
-        datalabels: false,
       },
       scales: {
         x: {
-          type: 'linear', min: -10, max: 110,
-          title: { display:false },
+          type: 'linear',
+          min: -10,
+          max: 110,
+          border: { display: true, color: '#3a5070', width: 1 },
+          grid: {
+            display: true,
+            drawOnChartArea: true,
+            drawTicks: true,
+            color: ctx => ratioSteps.includes(ctx.tick?.value) ? 'rgba(58,80,112,0.8)' : 'transparent',
+            lineWidth: 1,
+          },
           ticks: {
             stepSize: 20,
             color: '#8a9fba',
-            font: { size:11, family:'Space Mono' },
-            callback: v => ratioSteps.includes(v) ? v+'%' : '',
+            font: { size: 11, family: 'Space Mono, monospace' },
+            callback: v => ratioSteps.includes(v) ? v + '%' : '',
           },
-          grid: { color:'rgba(26,45,74,0.5)' },
+          title: {
+            display: true,
+            text: '← FIRE後 株式比率 →',
+            color: '#8a9fba',
+            font: { size: 12, family: 'Space Mono, monospace' },
+            padding: { top: 8 },
+          },
         },
         y: {
-          type: 'linear', min: -10, max: 110,
-          title: { display:false },
+          type: 'linear',
+          min: -10,
+          max: 110,
+          border: { display: true, color: '#3a5070', width: 1 },
+          grid: {
+            display: true,
+            drawOnChartArea: true,
+            drawTicks: true,
+            color: ctx => ratioSteps.includes(ctx.tick?.value) ? 'rgba(58,80,112,0.8)' : 'transparent',
+            lineWidth: 1,
+          },
           ticks: {
             stepSize: 20,
             color: '#8a9fba',
-            font: { size:11, family:'Space Mono' },
-            callback: v => ratioSteps.includes(v) ? v+'%' : '',
+            font: { size: 11, family: 'Space Mono, monospace' },
+            callback: v => ratioSteps.includes(v) ? v + '%' : '',
           },
-          grid: { color:'rgba(26,45,74,0.5)' },
+          title: {
+            display: true,
+            text: '← 現役時 株式比率 →',
+            color: '#8a9fba',
+            font: { size: 12, family: 'Space Mono, monospace' },
+            padding: { bottom: 8 },
+          },
         },
       },
     },
@@ -3396,8 +4022,365 @@ function updateHeatProgress(current, total) {
 
 
 // ============================================================
-// ★ 新機能群（税金計算・共働き・子ども・難易度強化・Regime Dashboard）
+// ★ Fat-tail リスクアナライザー
 // ============================================================
+let ftChart = null;
+
+function initFatTailAnalyzer() {
+  const slider  = document.getElementById('ft-df-slider');
+  const canvas  = document.getElementById('ft-chart');
+  if (!slider || !canvas) return;
+  if (ftChart) { ftChart.destroy(); ftChart = null; }
+
+  // 数学関数
+  function lngamma(z) {
+    return (z-0.5)*Math.log(z) - z + 0.5*Math.log(2*Math.PI);
+  }
+  function tPDF(x, df) {
+    const t1 = Math.exp(lngamma((df+1)/2) - lngamma(df/2));
+    const t2 = Math.sqrt(df * Math.PI);
+    const t3 = Math.pow(1 + x*x/df, -(df+1)/2);
+    return (t1/t2)*t3;
+  }
+  function normalPDF(x) {
+    return Math.exp(-0.5*x*x) / Math.sqrt(2*Math.PI);
+  }
+
+  // X軸ラベル: -5 〜 +5
+  const xs = Array.from({length:101}, (_,i) => -5 + i*0.1);
+  const xlabels = xs.map(x => x.toFixed(1));
+  const normData = xs.map(x => normalPDF(x));
+
+  ftChart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: xlabels,
+      datasets: [
+        {
+          label: 't分布（現実的リスク）',
+          data: [],
+          borderColor: '#00d4ff',
+          borderWidth: 2.5,
+          backgroundColor: 'rgba(0,212,255,0.07)',
+          fill: true,
+          pointRadius: 0,
+          tension: 0.3,
+        },
+        {
+          label: '正規分布（楽観的）',
+          data: normData,
+          borderColor: '#5a7090',
+          borderWidth: 1.5,
+          borderDash: [5,4],
+          pointRadius: 0,
+          fill: false,
+          tension: 0.3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 150 },
+      plugins: {
+        legend: { labels:{ color:'#8a9fba', font:{size:11} } },
+        tooltip: { enabled: false },
+      },
+      scales: {
+        x: {
+          grid: { color:'rgba(26,45,74,0.6)' },
+          ticks: {
+            color:'#5a7090', font:{size:10}, maxTicksLimit:11,
+            callback: (_, i) => i%10===0 ? xs[i].toFixed(0) : '',
+          },
+          title: { display:true, text:'変動の大きさ（σ）', color:'#5a7090', font:{size:11} },
+        },
+        y: {
+          max: 0.42,
+          grid: { color:'rgba(26,45,74,0.6)' },
+          ticks: { display:false },
+        },
+      },
+    },
+  });
+
+  function updateFT() {
+    const df = parseFloat(slider.value);
+    document.getElementById('ft-df-display').textContent = df.toFixed(1);
+
+    ftChart.data.datasets[0].data = xs.map(x => tPDF(x, df));
+    ftChart.update('none');
+
+    const typeEl = document.getElementById('ft-dist-type');
+    if (df < 4) {
+      typeEl.textContent = 'Extreme Fat-tail 💀'; typeEl.style.color = '#ff4757';
+    } else if (df < 10) {
+      typeEl.textContent = 'Moderate Fat-tail 📉'; typeEl.style.color = '#ffd166';
+    } else if (df < 20) {
+      typeEl.textContent = 'Mild Fat-tail 📊'; typeEl.style.color = '#00d4ff';
+    } else {
+      typeEl.textContent = 'Near Normal ✅'; typeEl.style.color = '#a8ff78';
+    }
+  }
+
+  slider.addEventListener('input', updateFT);
+  updateFT();
+}
+
+// ============================================================
+// ★ ボラティリティ・ドラッグ体験ツール
+// ============================================================
+let vdChart = null;
+
+function initVolatilityDragExplorer() {
+  const muEl    = document.getElementById('vd-mu');
+  const sigmaEl = document.getElementById('vd-sigma');
+  const canvas  = document.getElementById('vd-chart');
+  if (!muEl || !sigmaEl || !canvas) return;
+
+  if (vdChart) { vdChart.destroy(); vdChart = null; }
+
+  const years = Array.from({length:21}, (_,i) => i);
+
+  vdChart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: [
+        {
+          label: '算術平均ベース（幻の成長）',
+          borderColor: '#5a7090',
+          backgroundColor: 'transparent',
+          borderDash: [5,3],
+          borderWidth: 1.5,
+          data: [],
+          pointRadius: 0,
+          tension: 0.1,
+        },
+        {
+          label: '幾何平均ベース（実際の成長）★',
+          borderColor: '#00d4ff',
+          backgroundColor: 'rgba(0,212,255,0.08)',
+          borderWidth: 2,
+          data: [],
+          pointRadius: 0,
+          fill: true,
+          tension: 0.1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 200 },
+      plugins: {
+        legend: { labels: { color:'#8a9fba', font:{size:11}, boxWidth:20 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}万円`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color:'rgba(26,45,74,0.6)' },
+          ticks: { color:'#5a7090', font:{size:10} },
+          title: { display:true, text:'経過年数', color:'#5a7090', font:{size:11} },
+        },
+        y: {
+          grid: { color:'rgba(26,45,74,0.6)' },
+          ticks: { color:'#5a7090', font:{size:10}, callback: v => v+'万' },
+          title: { display:true, text:'資産（初期100万円）', color:'#5a7090', font:{size:11} },
+        },
+      },
+    },
+  });
+
+  function updateVD() {
+    const mu    = parseFloat(muEl.value) / 100;
+    const sigma = parseFloat(sigmaEl.value) / 100;
+    const gs    = mu - sigma*sigma/2;
+    const drag  = mu - gs;
+
+    // 表示更新
+    document.getElementById('vd-mu-val').textContent    = (mu*100).toFixed(1)+'%';
+    document.getElementById('vd-sigma-val').textContent = (sigma*100).toFixed(1)+'%';
+    document.getElementById('vd-arithmetic').textContent= (mu*100).toFixed(2)+'%';
+    document.getElementById('vd-geometric').textContent = (gs*100).toFixed(2)+'%';
+    document.getElementById('vd-geometric').style.color = gs >= 0.03 ? '#a8ff78' : gs >= 0 ? '#ffd166' : '#ff4757';
+    document.getElementById('vd-formula').textContent   =
+      `${(mu*100).toFixed(1)}% − (${(sigma*100).toFixed(1)}%²/2) = ${(gs*100).toFixed(2)}%`;
+    document.getElementById('vd-drag-val').textContent  = `−${(drag*100).toFixed(2)}%`;
+    const barPct = Math.min(100, drag/0.15*100);
+    document.getElementById('vd-drag-bar').style.width  = Math.max(0, barPct)+'%';
+
+    // グラフデータ
+    const arithmetic = years.map(i => 100 * Math.pow(1+mu, i));
+    const geometric  = years.map(i => 100 * Math.pow(1+gs, i));
+    vdChart.data.datasets[0].data = arithmetic;
+    vdChart.data.datasets[1].data = geometric;
+    vdChart.update();
+  }
+
+  muEl.addEventListener('input', updateVD);
+  sigmaEl.addEventListener('input', updateVD);
+  updateVD();
+}
+
+// ============================================================
+// ★ マルコフ遷移ビジュアライザー
+// ============================================================
+let vizChart = null;
+let vizStateIdx = 1; // 通常から開始
+let vizCounts = [0, 0, 0, 0];
+let vizTotal = 0;
+const VIZ_LABELS  = ['🐂 強気', '📈 通常', '🐻 弱気', '🔥 インフレ'];
+const VIZ_COLORS  = ['#a8ff78', '#00d4ff', '#ff4757', '#ffd166'];
+
+function initMarkovVisualizer() {
+  const canvas = document.getElementById('viz-dist-chart');
+  if (!canvas) return;
+  if (vizChart) { vizChart.destroy(); vizChart = null; }
+  vizStateIdx = 1; vizCounts = [0,0,0,0]; vizTotal = 0;
+  const el = document.getElementById('viz-current-state');
+  if (el) { el.textContent = '📈 通常'; el.style.color = '#00d4ff'; }
+  const log = document.getElementById('viz-log');
+  if (log) log.innerHTML = '';
+  const cnt = document.getElementById('viz-step-count');
+  if (cnt) cnt.textContent = '0年経過';
+
+  vizChart = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: VIZ_LABELS,
+      datasets: [{ data: [1,1,1,1], backgroundColor: VIZ_COLORS, borderWidth: 2, borderColor: '#0f1a2e' }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position:'bottom', labels:{ color:'#8a9fba', font:{size:11}, padding:8 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${(ctx.parsed/Math.max(1,vizTotal)*100).toFixed(1)}%` } },
+      },
+    },
+  });
+
+  buildVizMatrix();
+}
+
+function buildVizMatrix() {
+  const table = document.getElementById('viz-matrix-table');
+  if (!table) return;
+  const regimeNames = ['強気', '通常', '弱気', 'インフレ'];
+  const normalized = tmValues.map(row => {
+    const s = row.reduce((a,b)=>a+b,0) || 1;
+    return row.map(v=>(v/s*100).toFixed(0)+'%');
+  });
+  const header = `<tr style="background:rgba(0,212,255,0.08);"><th style="padding:6px 8px;color:var(--text-dim);border:1px solid var(--border);">現在↓ 次→</th>${regimeNames.map((n,i)=>`<th style="padding:6px 8px;color:${VIZ_COLORS[i]};border:1px solid var(--border);">${n}</th>`).join('')}</tr>`;
+  const rows = regimeNames.map((name,i) =>
+    `<tr>${[`<td style="padding:6px 8px;color:${VIZ_COLORS[i]};font-weight:700;border:1px solid var(--border);">${name}</td>`,
+      ...normalized[i].map((v,j)=>{
+        const isHigh = parseFloat(v)>=50;
+        const isDiag = i===j;
+        return `<td style="padding:6px 8px;text-align:center;border:1px solid var(--border);background:${isDiag&&isHigh?'rgba(255,71,87,0.12)':isDiag?'rgba(255,255,255,0.03)':'transparent'};color:${isHigh?'#ffd166':'var(--text-mid)'};">${v}</td>`;
+      })].join('')}</tr>`
+  ).join('');
+  table.innerHTML = header + rows;
+}
+
+function vizStep() {
+  const row = tmValues[vizStateIdx];
+  const sum = row.reduce((a,b)=>a+b,0) || 1;
+  const r = Math.random() * sum;
+  let cum = 0, next = 0;
+  for (let i=0; i<row.length; i++) { cum+=row[i]; if(r<cum){next=i;break;} }
+
+  const prev = vizStateIdx;
+  vizStateIdx = next;
+  vizCounts[next]++;
+  vizTotal++;
+
+  const el = document.getElementById('viz-current-state');
+  if (el) { el.textContent = VIZ_LABELS[next]; el.style.color = VIZ_COLORS[next]; }
+
+  const log = document.getElementById('viz-log');
+  if (log) {
+    log.innerHTML = `<span style="color:${VIZ_COLORS[prev]};">${VIZ_LABELS[prev].replace(/\S+\s/,'')}</span> → <span style="color:${VIZ_COLORS[next]};">${VIZ_LABELS[next].replace(/\S+\s/,'')}</span> (${vizTotal}年目)<br>` + log.innerHTML;
+  }
+  const cnt = document.getElementById('viz-step-count');
+  if (cnt) cnt.textContent = `${vizTotal}年経過`;
+
+  if (vizChart) {
+    vizChart.data.datasets[0].data = [...vizCounts];
+    vizChart.update('none');
+  }
+}
+
+function vizReset() { initMarkovVisualizer(); }
+
+// ============================================================
+// ★ レジーム・スイッチング比較チャート（SVGで描画）
+// ============================================================
+function drawRegimeSwitchChart() {
+  const container = document.getElementById('regime-switch-chart');
+  if (!container) return;
+
+  // 簡易シミュレーション: 30年間
+  const years = 30, base = 1000;
+  const uniform = [base]; // 一律5%
+  const markov  = [base]; // マルコフ連鎖
+  const returns = { 0:[0.10,0.15], 1:[0.05,0.12], 2:[-0.10,0.25], 3:[0.02,0.20] }; // [μ, σ]
+  let state = 1;
+  const seed = [0.62,0.18,0.74,0.33,0.91,0.05,0.47,0.82,0.29,0.66,0.11,0.55,0.39,0.77,0.23,0.68,0.04,0.51,0.88,0.15,0.72,0.36,0.93,0.08,0.44,0.79,0.21,0.63,0.07,0.57];
+  const shocks= [0.8,1.2,-0.5,1.1,2.1,-1.8,0.3,1.5,-0.9,0.7,1.3,-0.4,2.3,-1.2,0.6,1.0,-0.8,1.7,0.2,-1.5,0.9,1.4,-0.3,1.1,-1.0,0.5,1.6,-0.7,1.2,0.4];
+
+  for (let t=0;t<years;t++){
+    uniform.push(uniform[uniform.length-1]*1.05);
+    const [mu,sigma] = returns[state];
+    const ret = mu + sigma * (shocks[t]||0) * 0.4;
+    markov.push(Math.max(100, markov[markov.length-1]*(1+ret)));
+    // 簡易遷移
+    const r = seed[t]||0.5;
+    const row = tmValues[state]; const s = row.reduce((a,b)=>a+b,0)||1;
+    let cum=0; let ns=0; for(let i=0;i<row.length;i++){cum+=row[i]/s;if(r<cum){ns=i;break;}} state=ns;
+  }
+
+  const maxVal = Math.max(...uniform, ...markov);
+  const minVal = Math.min(...markov) * 0.95;
+  const W=300, H=140, PL=40, PR=10, PT=10, PB=24;
+  const cW=W-PL-PR, cH=H-PT-PB;
+  const xS = t => PL + t/years*cW;
+  const yS = v => PT + cH - (v-minVal)/(maxVal-minVal)*cH;
+  const pathU = uniform.map((v,i)=>`${i===0?'M':'L'}${xS(i)},${yS(v)}`).join(' ');
+  const pathM = markov .map((v,i)=>`${i===0?'M':'L'}${xS(i)},${yS(v)}`).join(' ');
+
+  // ゼロライン
+  const y0 = yS(base);
+
+  container.innerHTML = `
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;font-family:var(--font-mono);">資産推移イメージ（初期資産1,000万円・30年）</div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;" xmlns="http://www.w3.org/2000/svg">
+      <!-- グリッド -->
+      ${[0.25,0.5,0.75,1].map(f=>{
+        const yg=PT+cH*(1-f);
+        return `<line x1="${PL}" y1="${yg}" x2="${W-PR}" y2="${yg}" stroke="#1e2d45" stroke-width="0.5"/>
+                <text x="${PL-2}" y="${yg+3}" fill="#5a7090" font-size="8" text-anchor="end">${Math.round(minVal+(maxVal-minVal)*f)}万</text>`;
+      }).join('')}
+      <!-- X軸ラベル -->
+      ${[0,10,20,30].map(t=>`<text x="${xS(t)}" y="${H-4}" fill="#5a7090" font-size="8" text-anchor="middle">${t}年</text>`).join('')}
+      <!-- 一律リターン（青） -->
+      <path d="${pathU}" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>
+      <!-- マルコフ連鎖（オレンジ） -->
+      <path d="${pathM}" fill="none" stroke="#ff9a3c" stroke-width="2" opacity="0.9"/>
+      <!-- 凡例 -->
+      <line x1="${PL}" y1="${PT+6}" x2="${PL+18}" y2="${PT+6}" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="${PL+22}" y="${PT+10}" fill="#00d4ff" font-size="9">一律リターン(5%/年)</text>
+      <line x1="${PL+105}" y1="${PT+6}" x2="${PL+123}" y2="${PT+6}" stroke="#ff9a3c" stroke-width="2"/>
+      <text x="${PL+127}" y="${PT+10}" fill="#ff9a3c" font-size="9">マルコフ連鎖</text>
+    </svg>
+  `;
+}
+
+
 
 // ============================================================
 // ★ 新機能 1: 簡易税金計算エンジン
@@ -3660,9 +4643,14 @@ function setDifficultyEnhanced(mode) {
 // ============================================================
 
 // ============================================================
-// 軽量シングルシム：資産寿命スコアを返す
-// 資産寿命スコア = 資産が持った年齢の中央値（破綻しなければ95歳）
-// → 破綻シナリオでも「何歳まで持ったか」で各パラメータの影響を比較可能
+// 軽量シングルシム：期待資産寿命スコアを返す
+//
+// スコア = Σ(各試行の生存年齢) / N  ← 全試行の平均
+//   成功(95歳到達) → 95
+//   失敗(60歳で破綻) → 60
+//   全成功なら95、全失敗なら早期の平均年齢
+//
+// これにより 0%/100% どちらでも差分が出る
 // ============================================================
 function runSingleSimFast(cfg) {
   const N = 300;
@@ -3670,22 +4658,23 @@ function runSingleSimFast(cfg) {
     const s = row.reduce((a,b)=>a+b,0)||1;
     return row.map(v=>v/s);
   });
-  const lifetimes = []; // 各試行で資産が持った年齢
+
+  let totalAge = 0;
 
   for (let n=0; n<N; n++) {
     let assets = cfg.initAssets;
     let retired = false;
     let cumInf = 1.0;
     let regIdx = 1;
-    let surviveAge = 95; // 破綻しなければ95歳まで持ったとみなす
+    let surviveAge = 95;
 
     for (let age=cfg.startAge; age<=95; age++) {
       const t = age - cfg.startAge;
       const rg = REGIMES[regIdx];
       const w  = retired ? cfg.wRetire : cfg.wWork;
 
-      const zS = tRandom(cfg.tDof);
-      const zB = normalRandom();
+      const zS  = tRandom(cfg.tDof);
+      const zB  = normalRandom();
       const zBc = rg.corr*zS + Math.sqrt(Math.max(0,1-rg.corr*rg.corr))*zB;
       assets *= (w*(1+rg.mu[0]+rg.sigma[0]*zS) + (1-w)*(1+rg.mu[1]+rg.sigma[1]*zBc));
 
@@ -3699,10 +4688,7 @@ function runSingleSimFast(cfg) {
       const exp = getExpenseForAge(age) * cumInf * cfg.expScale;
       assets = assets + income - exp;
 
-      if (assets <= 0) {
-        surviveAge = age; // 破綻した年齢を記録
-        break;
-      }
+      if (assets <= 0) { surviveAge = age; break; }
 
       // レジーム遷移
       let r=Math.random(), s2=0;
@@ -3711,11 +4697,11 @@ function runSingleSimFast(cfg) {
         if(r<s2){regIdx=ri;break;}
       }
     }
-    lifetimes.push(surviveAge);
+    totalAge += surviveAge;
   }
 
-  lifetimes.sort((a,b)=>a-b);
-  return lifetimes[Math.floor(lifetimes.length*0.5)]; // 資産寿命の中央値（歳）
+  // 平均生存年齢（期待資産寿命）
+  return totalAge / N;
 }
 
 // 現在のUI設定からベースラインcfgを作る
@@ -3874,7 +4860,7 @@ function drawTornadoChart(results, baseVal) {
       plugins: {
         title: {
           display: true,
-          text: `各パラメータ変動時の資産寿命への影響（ベース: ${baseVal}歳まで持続）`,
+          text: `各パラメータ変動時の影響（ベース期待資産寿命: ${baseVal.toFixed(1)}歳）`,
           color: '#dce8f5',
           font: { size: 12, family: 'Noto Sans JP' },
           padding: { bottom: 12 },
@@ -3897,7 +4883,7 @@ function drawTornadoChart(results, baseVal) {
             color: '#8a9fba', font: { size: 11 },
             callback: v => `${v >= 0 ? '+' : ''}${v.toFixed(0)}年`,
           },
-          title: { display: true, text: '資産寿命の増減（年）', color: '#5a7090', font: { size: 11 } },
+          title: { display: true, text: '期待資産寿命の増減（年）', color: '#5a7090', font: { size: 11 } },
         },
         y: {
           stacked: false,
@@ -3992,9 +4978,9 @@ function displaySafetyResults({ safetyFactor, worstVal, planVal, requiredExtraIn
 
   document.getElementById('worst-scenario-detail').innerHTML = `
     <span style="color:var(--text-dim);font-size:11px;">${sourceLabel}</span><br><br>
-    計画シナリオ 資産寿命中央値: <b style="color:#a8ff78;">${planVal}歳まで持続</b><br>
-    最悪ケース 資産寿命中央値: <b style="color:#ff4757;">${worstVal}歳で枯渇</b><br>
-    差分: <b style="color:#ffd166;">${(planVal - worstVal).toFixed(0)}年の差</b>
+    計画シナリオ 期待資産寿命: <b style="color:#a8ff78;">${planVal.toFixed(1)}歳</b><br>
+    最悪ケース 期待資産寿命: <b style="color:#ff4757;">${worstVal.toFixed(1)}歳</b><br>
+    差分: <b style="color:#ffd166;">${(planVal - worstVal).toFixed(1)}年の差</b>
     ${worstSource === 'sim' && lastFinalAssets
       ? `<br><span style="font-size:11px;color:var(--text-dim);">試行数 ${lastFinalAssets.length}件の下位10%分布から推定</span>`
       : ''}
