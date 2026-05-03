@@ -1105,46 +1105,51 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
 
 <!-- 5. 暴落リスク（Fat-tail）と t分布の採用 -->
 <div class="panel" style="margin-top: 40px;">
-    <h3 style="color: var(--accent); margin: 20px 0 10px 0;">5. 暴落リスク（Fat-tail）と t分布の採用</h3>
-    <p>
-        標準的な正規分布は「ブラックスワン（大暴落）」のリスクを過小評価します。
-        本ツールでは、裾の厚い<strong>t分布（自由度 $df=5$ 推奨）</strong>を採用することでファットテイルを生成し、歴史的な金融危機を現実的な頻度で発生させています。
-    </p>
-
-    <!-- 視覚化グラフ: 正規分布 vs t分布 -->
-    <div style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e0e6ed; margin: 20px 0; text-align: center;">
-        <p style="font-weight: bold; font-size: 13px; color: #333; margin-bottom: 10px;">【概念図】正規分布 vs t分布（ファットテイル）</p>
-        <svg viewBox="0 0 400 200" style="width: 100%; max-width: 400px; height: auto;">
-            <!-- 背景グリッド -->
-            <line x1="20" y1="180" x2="380" y2="180" stroke="#ccc" stroke-width="1" />
-            <line x1="200" y1="20" x2="200" y2="180" stroke="#eee" stroke-width="1" />
-            
-            <!-- 正規分布 (Normal Distribution) - 細い/高い -->
-            <path d="M 50,178 Q 200,10 350,178" fill="none" stroke="#999" stroke-width="2" stroke-dasharray="4" />
-            <text x="280" y="60" fill="#999" font-size="10">正規分布 (薄い裾)</text>
-            
-            <!-- t分布 (t-Distribution) - 裾が厚い -->
-            <path d="M 20,175 C 100,175 150,50 200,50 C 250,50 300,175 380,175" fill="none" stroke="#e74c3c" stroke-width="3" />
-            <text x="310" y="155" fill="#e74c3c" font-size="11" font-weight="bold">t分布 (厚い裾)</text>
-            
-            <!-- 暴落エリアの強調 -->
-            <circle cx="50" cy="175" r="8" fill="rgba(231, 76, 60, 0.2)" />
-            <text x="30" y="195" fill="#e74c3c" font-size="10" font-weight="bold">← 記録的な大暴落</text>
-        </svg>
-        <p style="font-size: 12px; color: #666; margin-top: 10px;">
-            ※正規分布（点線）では無視される左端の「大暴落」が、<br>
-            t分布（赤線）では<strong>現実的な確率</strong>として計算に含まれます。
+    <div class="panel-header">📉 暴落リスクの数理：Fat-tailとt分布</div>
+    <div class="panel-body" style="line-height: 1.8; color: var(--text-mid); font-size: 14px;">
+        <p>
+            標準的な正規分布は「ブラックスワン（大暴落）」のリスクを過小評価します。
+            本ツールでは、裾の厚い<strong>t分布（自由度 $df=5$ 推奨）</strong>を採用することでファットテイルを生成し、歴史的な金融危機を現実的な頻度で発生させています。
         </p>
-    </div>
 
-    <ul style="margin-bottom: 15px; font-size: 0.95em;">
-        <li><strong>分散の正規化:</strong> $\sqrt{df/(df-2)}$ による補正を行い、分布の分散を $1$ に正規化しています。これにより、設定された標準偏差 $\sigma$ との整合性を厳密に保ち、数学的妥当性を担保しています。</li>
-        <li><strong>ブラックスワンの再現:</strong> 正規分布では「数万年に一度」と片付けられてしまうリーマンショック級の変動を、統計学的に正しくシミュレーションに組み込みます。</li>
-    </ul>
+        <!-- 視覚化グラフ: 正規分布 vs t分布 -->
+        <div style="background: var(--surface2); padding: 20px; border-radius: 12px; border: 1px solid rgba(var(--accent-rgb), 0.1); margin: 20px 0; text-align: center;">
+            <p style="font-weight: bold; font-size: 13px; color: var(--accent); margin-bottom: 15px;">【比較図】正規分布 vs t分布（ファットテイル）</p>
+            <svg viewBox="0 0 400 220" style="width: 100%; max-width: 400px; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));">
+                <!-- 背景グリッド -->
+                <line x1="20" y1="180" x2="380" y2="180" stroke="var(--text-mid)" stroke-width="0.5" opacity="0.3" />
+                <line x1="200" y1="20" x2="200" y2="180" stroke="var(--text-mid)" stroke-width="0.5" opacity="0.1" />
+                
+                <!-- 正規分布 (Normal Distribution) -->
+                <path d="M 50,178 Q 200,10 350,178" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
+                <text x="270" y="55" fill="#94a3b8" font-size="10" font-family="var(--font-mono)">正規分布 (薄い裾)</text>
+                
+                <!-- t分布 (t-Distribution) -->
+                <path d="M 20,175 C 100,175 150,50 200,50 C 250,50 300,175 380,175" fill="none" stroke="var(--accent3)" stroke-width="3" />
+                <text x="300" y="150" fill="var(--accent3)" font-size="11" font-weight="bold" font-family="var(--font-mono)">t分布 (厚い裾)</text>
+                
+                <!-- 暴落エリアの強調 -->
+                <rect x="25" y="160" width="50" height="30" rx="4" fill="rgba(var(--accent3-rgb), 0.1)" />
+                <circle cx="50" cy="175" r="6" fill="var(--accent3)" opacity="0.6">
+                    <animate attributeName="r" values="5;8;5" dur="2s" repeatCount="indefinite" />
+                </circle>
+                <text x="30" y="205" fill="var(--accent3)" font-size="10" font-weight="bold">← 歴史的大暴落</text>
+            </svg>
+            <p style="font-size: 12px; color: var(--text-mid); margin-top: 15px; line-height: 1.5;">
+                ※正規分布（点線）では統計的に「無視」される左端の領域が、<br>
+                t分布（青線）では<strong>現実的な発生確率</strong>として保持されます。
+            </p>
+        </div>
 
-    <div style="background: #fff8f8; padding: 15px; border-radius: 8px; border: 1px solid #ffdada; font-size: 0.9em; color: #a94442;">
-        <strong>⚠️ なぜ重要か：</strong>
-        多くのシミュレーターが「楽観的」すぎるのは、この裾の厚さを無視しているからです。本ツールでは、あえて「稀に起こる最悪の事態」を想定することで、よりタフなFIRE計画の策定を支援します。
+        <ul style="margin-bottom: 20px; padding-left: 20px;">
+            <li><strong>分散の正規化:</strong> $\sqrt{df/(df-2)}$ による補正を行い、分布の分散を $1$ に正規化しています。これにより、設定された標準偏差 $\sigma$ との整合性を厳密に保ちつつ、形状のみを「暴落が起きやすい形」へ変形させています。</li>
+            <li><strong>ブラックスワンの再現:</strong> 正規分布では「数万年に一度」と片付けられてしまうリーマンショック級の変動を、数学的妥当性を持ってシミュレーションに組み込みます。</li>
+        </ul>
+
+        <div style="background: rgba(var(--accent3-rgb), 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(var(--accent3-rgb), 0.2); font-size: 13px;">
+            <strong style="color: var(--accent3);">⚠️ なぜ重要か：</strong>
+            多くのシミュレーターが「楽観的」になりがちなのは、この裾の厚さを計算に入れていないためです。本ツールではあえて「稀に起こる最悪の事態」を計算に含めることで、真に堅牢なFIRE計画の策定を支援します。
+        </div>
     </div>
 </div>
 
