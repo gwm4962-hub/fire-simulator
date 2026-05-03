@@ -1246,15 +1246,15 @@ input[type="range"]:active::-webkit-slider-thumb {
             </div>
             <div class="regime-card">
               <div style="font-size:9px;font-family:var(--font-mono);color:var(--normal);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px;">📈 通常</div>
-              <div style="font-size:11px;line-height:2;color:var(--text-mid);">株式: <b style="color:var(--normal);">+5%</b> σ=15%<br>債券: +1% σ=2%<br>インフレ超過: <b style="color:var(--text);">0%</b></div>
+              <div style="font-size:11px;line-height:2;color:var(--text-mid);">株式: <b style="color:var(--normal);">+5%</b> σ=18%<br>債券: +1% σ=2%<br>インフレ超過: <b style="color:var(--text);">0%</b></div>
             </div>
             <div class="regime-card">
               <div style="font-size:9px;font-family:var(--font-mono);color:var(--bear);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px;">🐻 弱気</div>
-              <div style="font-size:11px;line-height:2;color:var(--text-mid);">株式: <b style="color:var(--bear);">-10%</b> σ=25%<br>債券: 0% σ=4%<br>インフレ超過: <b style="color:var(--text);">-1%</b></div>
+              <div style="font-size:11px;line-height:2;color:var(--text-mid);">株式: <b style="color:var(--bear);">-10%</b> σ=30%<br>債券: 0% σ=4%<br>インフレ超過: <b style="color:var(--text);">-1%</b></div>
             </div>
             <div class="regime-card">
               <div style="font-size:9px;font-family:var(--font-mono);color:var(--infla);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px;">🔥 インフレ</div>
-              <div style="font-size:11px;line-height:2;color:var(--text-mid);">株式: <b style="color:var(--infla);">+2%</b> σ=20%<br>債券: +4% σ=5%<br>インフレ超過: <b style="color:var(--text);">+4%</b></div>
+              <div style="font-size:11px;line-height:2;color:var(--text-mid);">株式: <b style="color:var(--infla);">+2%</b> σ=22%<br>債券: +4% σ=5%<br>インフレ超過: <b style="color:var(--text);">+4%</b></div>
             </div>
           </div>
           <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.6;">(t) = t分布ショック（自由度 df 設定に従う） / (N) = 正規分布ショック</div>
@@ -3158,10 +3158,10 @@ const DIFFICULTY_MODES = {
     label: '📊 普通モード',
     desc:  '歴史的な市場平均に基づく標準設定。長期的な株式投資の期待値に近い前提。',
     regimes: [
-      {mu:[0.10, 0.02], sigma:[0.15, 0.03], corr:0.1,  inf: 0.01},
-      {mu:[0.08, 0.01], sigma:[0.15, 0.02], corr:0.0,  inf: 0.00},
-      {mu:[-0.07,0.01], sigma:[0.10, 0.04], corr:0.2,  inf:-0.01},
-      {mu:[0.02, 0.00], sigma:[0.10, 0.05], corr:0.4,  inf: 0.01},
+      {mu:[0.12, 0.02], sigma:[0.18, 0.03], corr:0.1,  inf: 0.01},
+      {mu:[0.10, 0.01], sigma:[0.18, 0.02], corr:0.0,  inf: 0.00},
+      {mu:[-0.07,0.01], sigma:[0.25, 0.04], corr:0.2,  inf:-0.01},
+      {mu:[0.02, 0.00], sigma:[0.22, 0.05], corr:0.4,  inf: 0.01},
     ],
     tm: [
       [70, 20,  5,  5],
