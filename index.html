@@ -1135,6 +1135,67 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
   </div>
 </div>
 
+<!-- ★ トルネードチャート & 安全率パネル -->
+<div class="panel sensitivity-section" style="margin-top:0;" id="tornado-panel">
+  <div class="panel-header">🌪️ 感度分析：トルネードチャート & 安全率</div>
+  <div class="panel-body">
+    <p style="font-size:11px;color:var(--text-dim);margin-bottom:14px;">
+      各パラメータを ±10% 変動させたときの最終資産中央値への影響を可視化します。影響度が大きい順に並べたトルネード形状が、リスク要因の優先順位を示します。
+    </p>
+
+    <button id="btn-tornado"
+            onclick="runTornadoAnalysis()"
+            style="width:100%; padding:14px; background:linear-gradient(135deg,#b388ff 0%,#7c4dff 100%);
+                   border:none; border-radius:6px; color:#fff; font-family:var(--font-mono);
+                   font-size:13px; font-weight:700; letter-spacing:2px; cursor:pointer;
+                   transition:all .25s; margin-bottom:14px;">
+      🌪️ トルネード分析を実行
+    </button>
+
+    <!-- 進捗バー -->
+    <div id="tornado-progress-wrap" style="display:none;background:var(--border);border-radius:2px;height:4px;margin-bottom:14px;">
+      <div id="tornado-progress-bar" style="width:0%;height:100%;background:#b388ff;transition:width 0.15s;"></div>
+    </div>
+
+    <!-- トルネードチャート -->
+    <div id="tornado-chart-wrap" style="display:none;position:relative;height:320px;margin-bottom:20px;">
+      <canvas id="tornadoChart"></canvas>
+    </div>
+
+    <!-- 安全率 & トレードオフ -->
+    <div id="safety-section" style="display:none;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <!-- 安全率カード -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#a8ff78,transparent);"></div>
+          <div style="font-size:10px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">安全率（Safety Factor）</div>
+          <div style="font-size:32px;font-weight:700;font-family:var(--font-mono);" id="safety-factor-val">—</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:6px;" id="safety-factor-desc">最悪ケース / 計画値の比率</div>
+          <div style="margin-top:10px;font-size:11px;color:var(--text-dim);">
+            <span style="color:#a8ff78;">≥ 1.5</span> 堅牢 ／ 
+            <span style="color:#ffd166;">1.2〜1.5</span> 許容 ／ 
+            <span style="color:#ff4757;">&lt; 1.2</span> 要注意
+          </div>
+        </div>
+        <!-- トレードオフカード -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#ffd166,transparent);"></div>
+          <div style="font-size:10px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">利回り −1% の補填額</div>
+          <div style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:#ffd166;" id="tradeoff-val">—</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:6px;">年間収入の追加増加が必要</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:4px;" id="tradeoff-desc"></div>
+        </div>
+      </div>
+
+      <!-- 最悪シナリオ詳細 -->
+      <div style="background:rgba(255,71,87,.05);border:1px solid rgba(255,71,87,.2);border-radius:6px;padding:12px;">
+        <div style="font-size:11px;color:var(--danger);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;">⚠️ 最悪ケース（SIMULATE下位10%の中央値）</div>
+        <div id="worst-scenario-detail" style="font-size:12px;color:var(--text-mid);line-height:2;font-family:var(--font-mono);"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- レジーム別の実質リターン計算表 -->
 <div class="regime-summary-table" style="margin-bottom: 24px;">
     <div style="font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; color: var(--accent); display: flex; align-items: center; gap: 8px;">
@@ -2183,6 +2244,7 @@ function chooseRegime(probs) {
 // ============================================================
 let chartInstance=null;
 let lastMedianFireAge=null; // runSimulation完了後にFIRE年齢中央値を保持
+let lastFinalAssets=null;   // runSimulation完了後の死亡時最終資産（昇順ソート済み、円単位）
 function getAgeAtSurvivalRate(targetPercent, params, currentAge, medicalAdv) {
     const { alpha, beta, gamma } = params;
     let low = currentAge;
@@ -2635,6 +2697,9 @@ if(dead[i]) continue; // skip financials if died this step
     if(deathAt[i]>=0){ darr.push(deathAt[i]); finalA.push(assets[i]+cashBuf[i]); }
   }
   farr.sort((a,b)=>a-b); darr.sort((a,b)=>a-b); finalA.sort((a,b)=>a-b);
+
+  // グローバルに保存（トルネード分析で下位10%を参照するため）
+  lastFinalAssets = finalA.slice();
 
   const pfa=p=>farr.length===0?'未達成':farr[Math.floor(p/100*farr.length)]+'歳';
   const mf =finalA.length>0?finalA[Math.floor(finalA.length*.5)]/1e8:0;
@@ -3394,8 +3459,315 @@ function setDifficultyEnhanced(mode) {
 }
 
 // ============================================================
-// ★ 新機能 5: Regime Dashboard — 定常分布円グラフ
+// ★ 新機能 6: トルネードチャート & 安全率計算
 // ============================================================
+
+// 軽量シングルシム（N=300回、最終資産中央値を返す）
+function runSingleSimFast(cfg) {
+  const N = 300;
+  const TM = tmValues.map(row => {
+    const s = row.reduce((a,b)=>a+b,0)||1;
+    return row.map(v=>v/s);
+  });
+  const finals = [];
+  for (let n=0; n<N; n++) {
+    let assets = cfg.initAssets;
+    let retired = false;
+    let cumInf = 1.0;
+    let regIdx = 1;
+    for (let age=cfg.startAge; age<=95; age++) {
+      const t = age - cfg.startAge;
+      const rg = REGIMES[regIdx];
+      const w  = retired ? cfg.wRetire : cfg.wWork;
+      // リターン
+      const zS = tRandom(cfg.tDof);
+      const zB = normalRandom();
+      const zBc = rg.corr*zS + Math.sqrt(Math.max(0,1-rg.corr*rg.corr))*zB;
+      assets *= (w*(1+rg.mu[0]+rg.sigma[0]*zS) + (1-w)*(1+rg.mu[1]+rg.sigma[1]*zBc));
+      // FIRE判定
+      if (!retired && assets >= cfg.fireThr) retired = true;
+      // 収入
+      let income = 0;
+      if (!retired && age<60) income = cfg.annualIncome * cfg.takeHome * Math.pow(1+cfg.raiseRate,t);
+      if (age>=65) income += cfg.monthlyPension*12*0.85;
+      // 支出（インフレ反映）
+      cumInf *= (1 + cfg.baseInfl + rg.inf);
+      const exp = getExpenseForAge(age) * cumInf * cfg.expScale;
+      assets = Math.max(0, assets + income - exp);
+      // レジーム遷移
+      let r=Math.random(), s=0;
+      for (let ri=0;ri<TM[regIdx].length;ri++){
+        s+=TM[regIdx][ri];
+        if(r<s){regIdx=ri;break;}
+      }
+      if (assets<=0) break;
+    }
+    finals.push(assets);
+  }
+  finals.sort((a,b)=>a-b);
+  return finals[Math.floor(finals.length*0.5)]; // 中央値
+}
+
+// 現在のUI設定からベースラインcfgを作る
+function buildBaselineCfg() {
+  const annualIncome = parseInt(document.getElementById('income').value)*10000;
+  return {
+    startAge:      parseInt(document.getElementById('start-age').value)||30,
+    initAssets:    parseInt(document.getElementById('initial-assets').value)*10000,
+    fireThr:       parseInt(document.getElementById('fire-threshold').value)*10000,
+    annualIncome,
+    takeHome:      calcTax(annualIncome).rate,
+    raiseRate:     parseFloat(document.getElementById('raise').value)/100,
+    monthlyPension:parseInt(document.getElementById('pension').value)*10000,
+    baseInfl:      parseFloat(document.getElementById('base-infl').value)/100,
+    wWork:         parseInt(document.getElementById('w-working').value)/100,
+    wRetire:       parseInt(document.getElementById('w-retired').value)/100,
+    tDof:          parseInt(document.getElementById('tdof').value)||5,
+    expScale:      1.0, // 支出スケール係数（感度分析で変動させる）
+  };
+}
+
+// トルネード分析本体
+let tornadoChartInstance = null;
+
+async function runTornadoAnalysis() {
+  const btn = document.getElementById('btn-tornado');
+  const progWrap = document.getElementById('tornado-progress-wrap');
+  const progBar  = document.getElementById('tornado-progress-bar');
+  btn.disabled = true;
+  btn.textContent = '計算中…';
+  progWrap.style.display = 'block';
+  progBar.style.width = '0%';
+
+  const base = buildBaselineCfg();
+  const baseVal = runSingleSimFast(base); // ベースライン中央値
+
+  // 感度対象パラメータ定義
+  const factors = [
+    { key:'annualIncome',   label:'年間収入',         delta: 0.10,
+      plus: c=>({...c, annualIncome: c.annualIncome*1.10, takeHome: calcTax(c.annualIncome*1.10).rate }),
+      minus:c=>({...c, annualIncome: c.annualIncome*0.90, takeHome: calcTax(c.annualIncome*0.90).rate }) },
+    { key:'expScale',       label:'年間支出',          delta: 0.10,
+      plus: c=>({...c, expScale:0.90}),   // 支出−10%（資産に有利）
+      minus:c=>({...c, expScale:1.10}) },  // 支出+10%（資産に不利）
+    { key:'baseInfl',       label:'インフレ率',        delta: 0.10,
+      plus: c=>({...c, baseInfl:c.baseInfl*0.90}),
+      minus:c=>({...c, baseInfl:Math.min(0.10,c.baseInfl*1.10+0.005)}) },
+    { key:'wWork',          label:'株式比率（現役）',  delta: 0.10,
+      plus: c=>({...c, wWork:Math.min(1,c.wWork+0.10)}),
+      minus:c=>({...c, wWork:Math.max(0,c.wWork-0.10)}) },
+    { key:'raiseRate',      label:'昇給率',            delta: 0.10,
+      plus: c=>({...c, raiseRate:c.raiseRate+0.005}),
+      minus:c=>({...c, raiseRate:Math.max(0,c.raiseRate-0.005)}) },
+    { key:'monthlyPension', label:'月額年金',          delta: 0.10,
+      plus: c=>({...c, monthlyPension:c.monthlyPension*1.20}),
+      minus:c=>({...c, monthlyPension:c.monthlyPension*0.80}) },
+  ];
+
+  const results = [];
+  for (let i=0; i<factors.length; i++) {
+    const f = factors[i];
+    progBar.style.width = `${(i/factors.length*70).toFixed(0)}%`;
+    await new Promise(r=>setTimeout(r,0));
+    const valPlus  = runSingleSimFast(f.plus(base));
+    const valMinus = runSingleSimFast(f.minus(base));
+    results.push({
+      label: f.label,
+      high:  (valPlus  - baseVal)/1e8,  // 億円単位
+      low:   (valMinus - baseVal)/1e8,
+      range: Math.abs(valPlus - valMinus)/1e8,
+    });
+  }
+
+  // 影響度順にソート
+  results.sort((a,b)=>b.range-a.range);
+  progBar.style.width = '85%';
+  await new Promise(r=>setTimeout(r,0));
+
+  // チャート描画
+  drawTornadoChart(results, baseVal);
+
+  // 安全率 & トレードオフ計算
+  progBar.style.width = '92%';
+  await new Promise(r=>setTimeout(r,0));
+  const safetyResult = calcSafetyAndTradeoff(base, baseVal);
+
+  progBar.style.width = '100%';
+  await new Promise(r=>setTimeout(r,50));
+  progWrap.style.display = 'none';
+  btn.disabled = false;
+  btn.textContent = '🌪️ 再実行';
+
+  displaySafetyResults(safetyResult, baseVal);
+}
+
+function drawTornadoChart(results, baseVal) {
+  const wrap = document.getElementById('tornado-chart-wrap');
+  wrap.style.display = 'block';
+
+  if (tornadoChartInstance) { tornadoChartInstance.destroy(); tornadoChartInstance = null; }
+
+  const ctx = document.getElementById('tornadoChart').getContext('2d');
+  const labels = results.map(r => r.label);
+
+  // トルネードチャートの正しいデータ構造：
+  // 各ファクターで high/low のどちらが「有利」かは値の大小で決まる
+  // → max(high,low) を緑（好転）、min(high,low) を赤（悪化）として表示
+  const favorable   = results.map(r => Math.max(r.high, r.low));  // 有利な方向（緑）
+  const unfavorable = results.map(r => Math.min(r.high, r.low));  // 不利な方向（赤）
+
+  tornadoChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '好転時の影響',
+          data: favorable,
+          backgroundColor: favorable.map(v => v >= 0 ? 'rgba(168,255,120,0.75)' : 'rgba(255,71,87,0.75)'),
+          borderColor:     favorable.map(v => v >= 0 ? 'rgba(168,255,120,1)'    : 'rgba(255,71,87,1)'),
+          borderWidth: 1,
+          borderRadius: 3,
+        },
+        {
+          label: '悪化時の影響',
+          data: unfavorable,
+          backgroundColor: unfavorable.map(v => v < 0 ? 'rgba(255,71,87,0.75)' : 'rgba(168,255,120,0.75)'),
+          borderColor:     unfavorable.map(v => v < 0 ? 'rgba(255,71,87,1)'    : 'rgba(168,255,120,1)'),
+          borderWidth: 1,
+          borderRadius: 3,
+        },
+      ],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: {
+          display: true,
+          text: `各パラメータ ±変動時の最終資産への影響（ベース: ${(baseVal/1e8).toFixed(2)}億円）`,
+          color: '#dce8f5',
+          font: { size: 12, family: 'Noto Sans JP' },
+          padding: { bottom: 12 },
+        },
+        legend: {
+          labels: { color: '#8a9fba', font: { size: 11 } },
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.x;
+              return `${ctx.dataset.label}: ${v >= 0 ? '+' : ''}${v.toFixed(2)}億円`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: false,
+          grid:  { color: 'rgba(26,45,74,0.8)' },
+          ticks: {
+            color: '#8a9fba',
+            font: { size: 11 },
+            callback: v => `${v >= 0 ? '+' : ''}${v.toFixed(1)}億`,
+          },
+          title: { display: true, text: '最終資産の増減（億円）', color: '#5a7090', font: { size: 11 } },
+        },
+        y: {
+          stacked: false,
+          grid:  { color: 'rgba(26,45,74,0.6)' },
+          ticks: { color: '#dce8f5', font: { size: 12, family: 'Noto Sans JP' } },
+        },
+      },
+    },
+  });
+}
+
+function calcSafetyAndTradeoff(base, planVal) {
+  // ── 安全率：runSimulation の下位10%中央値を「最悪ケース」として使用 ──
+  let worstVal = null;
+  let worstSource = 'sim'; // データソース識別用
+
+  if (lastFinalAssets && lastFinalAssets.length >= 10) {
+    // 下位10%のスライス
+    const bottom10 = lastFinalAssets.slice(0, Math.ceil(lastFinalAssets.length * 0.10));
+    // その中央値
+    worstVal = bottom10[Math.floor(bottom10.length * 0.5)];
+    worstSource = 'sim';
+  } else {
+    // SIMULATEが未実行の場合はrunSingleSimFastで近似（フォールバック）
+    const worst = {
+      ...base,
+      baseInfl: Math.min(0.10, base.baseInfl * 1.5 + 0.01),
+      expScale: 1.20,
+      wWork:    Math.max(0, base.wWork - 0.20),
+      wRetire:  Math.max(0, base.wRetire - 0.20),
+    };
+    worstVal = runSingleSimFast(worst);
+    worstSource = 'approx';
+  }
+
+  // 安全率 = 計画値（中央値） / (計画値 - 最悪値)
+  // 最悪値が計画値以上なら安全率∞ → 表示上は "≥2.0" とする
+  let safetyFactor;
+  if (worstVal >= planVal) {
+    safetyFactor = '≥2.0';
+  } else if (worstVal <= 0) {
+    safetyFactor = '0.00';
+  } else {
+    safetyFactor = (planVal / Math.max(1, planVal - worstVal)).toFixed(2);
+  }
+
+  // トレードオフ：実質コスト増（expScale+0.03）で生じる損失を収入増で補う年額
+  const degraded = { ...base, expScale: base.expScale + 0.03 };
+  const degradedVal = runSingleSimFast(degraded);
+  const gap = Math.max(0, planVal - degradedVal);
+  const requiredExtraIncome = gap > 0 ? Math.round(gap / 30 / 10000) : 0; // 万円/年
+
+  return { safetyFactor, worstVal, planVal, requiredExtraIncome, worstSource };
+}
+
+function displaySafetyResults({ safetyFactor, worstVal, planVal, requiredExtraIncome, worstSource }) {
+  document.getElementById('safety-section').style.display = 'block';
+
+  // safetyFactor は "≥2.0" などの文字列の場合があるため、
+  // 数値比較用に別途 sfNum を算出する
+  const sfNum = (safetyFactor === '≥2.0') ? 99 :
+                (safetyFactor === '0.00')  ? 0  :
+                parseFloat(safetyFactor)   || 0;
+
+  const sfEl = document.getElementById('safety-factor-val');
+  sfEl.textContent = safetyFactor;
+  sfEl.style.color = sfNum >= 1.5 ? '#a8ff78' : sfNum >= 1.2 ? '#ffd166' : '#ff4757';
+
+  const sfDescEl = document.getElementById('safety-factor-desc');
+  if      (sfNum >= 1.5) sfDescEl.textContent = '✅ 堅牢なポートフォリオです';
+  else if (sfNum >= 1.2) sfDescEl.textContent = '⚠️ 許容範囲ですが改善余地あり';
+  else if (sfNum >  0  ) sfDescEl.textContent = '❌ リスクが高い状態です';
+  else                   sfDescEl.textContent = '❌ 最悪ケースで資産が枯渇します';
+
+  document.getElementById('tradeoff-val').textContent =
+    requiredExtraIncome > 0 ? `+${requiredExtraIncome.toLocaleString()}万円/年` : '影響軽微';
+  document.getElementById('tradeoff-desc').textContent =
+    `利回り実質低下分を補うには年間約 ${requiredExtraIncome.toLocaleString()}万円の収入増が必要`;
+
+  // 最悪シナリオの説明
+  const sourceLabel = worstSource === 'sim'
+    ? 'SIMULATEで得られた下位10%シナリオの中央値'
+    : '近似計算（先にSIMULATEを実行すると精度が上がります）';
+
+  document.getElementById('worst-scenario-detail').innerHTML = `
+    <span style="color:var(--text-dim);font-size:11px;">${sourceLabel}</span><br><br>
+    最悪ケース最終資産（下位10%中央値）: <b style="color:#ff4757;">${(worstVal/1e8).toFixed(2)}億円</b><br>
+    計画値（全体中央値）との差: <b style="color:#ffd166;">${((planVal - worstVal)/1e8).toFixed(2)}億円</b><br>
+    ${worstSource === 'sim' && lastFinalAssets
+      ? `試行数 ${lastFinalAssets.length}件中 下位${Math.ceil(lastFinalAssets.length*0.10)}件の中央値を使用`
+      : ''}
+  `;
+}
+
+
 function computeStationaryDist(tm) {
   // べき乗法で定常分布を近似
   let dist = [0.25, 0.25, 0.25, 0.25];
