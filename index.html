@@ -17,11 +17,7 @@
 
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-<!-- PWA用の設定 -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="icon-192.png">
+<!-- PWA設定はサーバー上でのみ有効 -->
 
     <!-- 外部リソース -->
 
@@ -31,14 +27,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 
-<script>
-      // サービスワーカーの登録（これでオフラインでも動くようになります）
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js');
-        });
-      }
-    </script>
+
+
 
 
 
@@ -1173,36 +1163,175 @@ document.querySelectorAll('input[type="range"]').forEach(s => {
 
 
 
-// --- 既存の変数定義の近く ---
+// ============================================================
+// 設定の自動保存・復元システム
+// ============================================================
+const STORAGE_KEY = "FIRE_SIM_V4_SETTINGS";
 
-  // --- 【追加場所 A】関数の定義 ---
-  function saveSettings() {
-      const settings = {
-          expStages: expStages,
-          startAge: document.getElementById('start-age').value,
-          initialAssets: document.getElementById('num-initial-assets').value,
-          // 他の入力項目（income, raise等）も必要に応じて追加
-      };
-      localStorage.setItem('fire_sim_settings', JSON.stringify(settings));
-      console.log("Settings saved to localStorage.");
+// 保存対象のスライダー／数値入力ID一覧
+const PARAM_INPUT_IDS = [
+  "start-age", "num-initial-assets", "initial-assets", "fire-threshold",
+  "income", "take-home", "raise", "pension", "inheritance", "base-infl",
+  "w-working", "w-retired", "tdof", "med-adv", "nsims"
+];
+
+// ロード中フラグ（ロード中はscheduleSaveを無視する）
+let _isLoading = false;
+let _saveTimer = null;
+
+// ---- デバウンス ----
+function scheduleSave() {
+  if (_isLoading) return; // ロード中は保存しない
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveParameters, 500);
+}
+
+// ---- バッジ表示 ----
+let _badgeTimer = null;
+function flashBadge(text, color) {
+  const badge = document.getElementById("status-badge");
+  if (!badge || badge.textContent === 'RUNNING') return;
+  clearTimeout(_badgeTimer);
+  const prevText = badge.textContent;
+  const prevStyle = badge.style.cssText;
+  badge.textContent = text;
+  badge.style.color = color || 'var(--accent3)';
+  _badgeTimer = setTimeout(() => {
+    badge.textContent = prevText;
+    badge.style.cssText = prevStyle;
+  }, 1500);
+}
+
+// ---- 保存 ----
+function saveParameters() {
+  const s = {};
+
+  // スライダー・数値入力
+  PARAM_INPUT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) s[id] = el.value;
+  });
+
+  // 性別
+  const maleBtn = document.getElementById("btn-male");
+  s.gender = (maleBtn && maleBtn.classList.contains("active-m")) ? "male" : "female";
+
+  // 難易度
+  s.difficulty = (typeof currentDifficulty !== 'undefined') ? currentDifficulty : 'normal';
+
+  // 遷移行列
+  if (typeof tmValues !== 'undefined') {
+    s.tmValues = JSON.stringify(tmValues);
   }
 
-  function loadSettings() {
-      const saved = localStorage.getItem('fire_sim_settings');
-      if (saved) {
-          const data = JSON.parse(saved);
-          expStages = data.expStages;
-          
-          if(data.startAge) document.getElementById('start-age').value = data.startAge;
-          if(data.initialAssets) document.getElementById('num-initial-assets').value = data.initialAssets;
-          
-          // ステージ一覧の再描画関数（既存）を呼び出す
-          if (typeof renderStages === "function") {
-              renderStages(); 
-          }
-          console.log("Settings loaded from localStorage.");
+  // REGIMES
+  if (typeof REGIMES !== 'undefined') {
+    s.regimes = JSON.stringify(REGIMES);
+  }
+
+  // ライフステージ
+  if (typeof expStages !== 'undefined') {
+    s.expenseStages = JSON.stringify(expStages);
+  }
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    flashBadge('SAVED ✓', 'var(--accent3)');
+    console.log('[FIRE-SIM] 設定を保存しました');
+  } catch(e) {
+    console.warn('[FIRE-SIM] 保存失敗:', e);
+  }
+}
+
+// ---- 復元 ----
+function loadParameters() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return false;
+
+  let s;
+  try { s = JSON.parse(raw); }
+  catch(e) { console.warn('[FIRE-SIM] 読み込み失敗:', e); return false; }
+
+  _isLoading = true; // ← 復元中はscheduleSaveを止める
+
+  try {
+    // スライダー・数値入力（dispatchEventしてラベル表示も更新）
+    PARAM_INPUT_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && s[id] !== undefined) {
+        el.value = s[id];
+        el.dispatchEvent(new Event('input'));
       }
+    });
+
+    // 性別
+    if (s.gender && typeof setGender === 'function') {
+      setGender(s.gender);
+    }
+
+    // 難易度（TM・REGIMESより先に適用してから後で上書き）
+    if (s.difficulty && typeof setDifficulty === 'function') {
+      setDifficulty(s.difficulty);
+    }
+
+    // 遷移行列（難易度のデフォルト値を上書き）
+    if (s.tmValues && typeof tmValues !== 'undefined') {
+      try {
+        const loaded = JSON.parse(s.tmValues);
+        loaded.forEach((row, ri) => {
+          row.forEach((v, ci) => {
+            tmValues[ri][ci] = v;
+            const sl   = document.getElementById(`tms-${ri}-${ci}`);
+            const disp = document.getElementById(`tmv-${ri}-${ci}`);
+            if (sl)   sl.value = v;
+            if (disp) disp.textContent = v + '%';
+          });
+          if (typeof updateSum === 'function') updateSum(ri);
+        });
+      } catch(e) { console.warn('[FIRE-SIM] TM復元失敗:', e); }
+    }
+
+    // REGIMES
+    if (s.regimes && typeof REGIMES !== 'undefined') {
+      try {
+        const loaded = JSON.parse(s.regimes);
+        loaded.forEach((r, i) => Object.assign(REGIMES[i], r));
+        if (typeof updateRegimeCards === 'function') updateRegimeCards();
+      } catch(e) { console.warn('[FIRE-SIM] REGIMES復元失敗:', e); }
+    }
+
+    // ライフステージ
+    if (s.expenseStages && typeof expStages !== 'undefined') {
+      try {
+        const loaded = JSON.parse(s.expenseStages);
+        if (Array.isArray(loaded) && loaded.length > 0) {
+          expStages = loaded;
+          stageIdCounter = Math.max(...loaded.map(st => st.id || 0), 0);
+          if (typeof renderStages === 'function') renderStages();
+        }
+      } catch(e) { console.warn('[FIRE-SIM] ライフステージ復元失敗:', e); }
+    }
+
+    console.log('[FIRE-SIM] 設定を復元しました');
+  } finally {
+    _isLoading = false; // ← 必ずフラグを戻す
   }
+  return true;
+}
+
+// ---- イベント委任（動的要素にも対応） ----
+function registerAutoSaveListeners() {
+  document.addEventListener('input', e => {
+    if (e.target.matches('input, textarea')) scheduleSave();
+  });
+  document.addEventListener('change', e => {
+    if (e.target.matches('input, select, textarea')) scheduleSave();
+  });
+}
+
+// ---- 後方互換 ----
+const saveAllSettings = saveParameters;
+const loadAllSettings = loadParameters;
   
   // ... 以降、既存のロジック ...
 // 1. データの定義（ここがプログラムの実質的なスタート）
@@ -1372,9 +1501,17 @@ function deleteStage(id) {
   renderStages();
 }
 
-function addExpStage() {
-  const lastTo = expStages.length ? Math.max(...expStages.map(s=>s.to)) : getStartAge();
-  expStages.push({ id:++stageIdCounter, label:'新しいステージ', from:lastTo, to:Math.min(120,lastTo+10), exp:300 });
+function addExpStage(label="", start="", end="", exp="") {
+  const fromVal = start !== "" ? parseInt(start) : (getStartAge() || 30);
+  const toVal   = end   !== "" ? parseInt(end)   : fromVal + 10;
+  const expVal  = exp   !== "" ? parseInt(exp)   : 300;
+  expStages.push({
+    id:    ++stageIdCounter,
+    label: label || "新しいステージ",
+    from:  fromVal,
+    to:    toVal,
+    exp:   expVal,
+  });
   renderStages();
 }
 
@@ -1410,8 +1547,10 @@ function getExpenseForAge(age) {
 // 開始年齢変更時にタイムライン再描画
 document.getElementById('start-age').addEventListener('input', renderTimeline);
 
-// 初期プリセット適用
+// 初期プリセット適用（初期化なのでscheduleSaveさせない）
+_isLoading = true;
 applyExpPreset('family');
+_isLoading = false;
 /**
  * プリセットボタン専用のハンドラ
  * 見た目のハイライト処理と、データの適用を同時に行います
@@ -1442,12 +1581,24 @@ function handlePresetClick(btn, type) {
 
 // 初期化時に「子育て世帯(family)」のボタンを光らせるための処理
 window.addEventListener('DOMContentLoaded', () => {
-    // ページ読み込み完了後、familyボタンを探してクリック状態を再現
-    const familyBtn = document.querySelector('button[onclick*="family"]');
-    if (familyBtn) {
-        // handlePresetClickにボタン要素を渡して実行
+  // setTimeout(0) での setDifficulty('normal') 初期化が終わった後に実行
+  setTimeout(() => {
+    // 1. 保存済み設定を復元（_isLoadingフラグで誤保存を防ぐ）
+    const restored = loadParameters();
+
+    // 2. 保存データがない場合のみ、初期プリセットのボタン表示を適用
+    if (!restored) {
+      const familyBtn = document.querySelector('button[onclick*="family"]');
+      if (familyBtn) {
+        _isLoading = true;
         handlePresetClick(familyBtn, 'family');
+        _isLoading = false;
+      }
     }
+
+    // 3. イベント委任リスナーを登録（復元後なのでscheduleSaveが安全に動く）
+    registerAutoSaveListeners();
+  }, 50); // setTimeout(0) の setDifficulty より後に実行されるよう少し遅らせる
 });
 
 
@@ -1515,6 +1666,7 @@ function buildTM() {
         tmValues[ri][ci]=parseInt(this.value);
         document.getElementById(`tmv-${ri}-${ci}`).textContent=this.value+'%';
         updateSum(ri);
+        scheduleSave();
       });
       addSliderTouchGuard(sl);
     });
@@ -1544,8 +1696,12 @@ function normalizeAll(){
   });
 }
 buildTM();
-// 初期難易度を「普通」で設定（レジームカード表示・説明文を初期化）
-setTimeout(() => setDifficulty('normal'), 0);
+// 初期難易度を「普通」で設定（ロード前の初期化なのでscheduleSaveさせない）
+setTimeout(() => {
+  _isLoading = true;
+  setDifficulty('normal');
+  _isLoading = false;
+}, 0);
 
 // ============================================================
 // Random number generators
@@ -1825,6 +1981,9 @@ function setDifficulty(mode) {
 
   // 6. 説明文を更新
   document.getElementById('difficulty-desc').textContent = def.desc;
+
+  // 7. 保存（ロード中は除く）
+  scheduleSave();
 }
 
 function updateRegimeCards() {
@@ -1862,8 +2021,8 @@ async function runSimulation() {
     if(!confirm('遷移確率の合計が100%でない行があります。自動正規化してから実行しますか？')) return;
     normalizeAll();
   }
-// --- 【追加】計算開始と同時に現在の設定を保存 ---
-    saveSettings();
+// --- 計算開始と同時に現在の設定を確実に保存 ---
+  saveParameters();
 
 
 
@@ -2376,6 +2535,7 @@ async function runLightweightSim(wWork, wRet) {
     const REGIMES_local = REGIMES; // グローバル定数を参照
 
 
+
     const N = 200;
     let successCount = 0;
 
@@ -2522,33 +2682,6 @@ function updateHeatProgress(current, total) {
     }
 }
 //////////
-
-const CACHE_NAME = 'fire-sim-v1';
-const urlsToCache = [
-  'index.html',
-  'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
-  'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap'
-];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
-  );
-});
-
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => response || fetch(event.request))
-  );
-});
-
-// --- 【追加場所 B】HTML読み込み完了時の自動復元 ---
-  window.addEventListener('DOMContentLoaded', () => {
-      loadSettings(); 
-      
-      // もし初期表示で計算を一度走らせたい場合はここに追加
-      // runSimulation(); 
-  });
 
 </script>
     <!-- 投げ銭ボタン開始 -->
