@@ -615,9 +615,92 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
   }
   /* ↑ここまで */
 
+/* ===== UI/UX IMPROVEMENTS ===== */
+
+/* アコーディオン形式のパラメータセクション */
+.param-section-label { cursor:pointer; user-select:none; }
+.param-section-label::after {
+  content:'▾'; margin-left:auto; color:var(--text-dim);
+  font-size:13px; transition:transform .2s; flex-shrink:0;
+}
+.param-section.collapsed .param-section-label::after { transform:rotate(-90deg); }
+.param-section.collapsed .param-section-body { display:none; }
+
+/* 入力完了度インジケーター */
+#setup-progress-wrap { margin-bottom:12px; }
+#setup-progress-bar-fill {
+  height:3px; background:linear-gradient(90deg,var(--accent),var(--accent3));
+  border-radius:2px; transition:width .4s ease; width:0%;
+}
+#setup-progress-track { height:3px; background:var(--border); border-radius:2px; margin-top:4px; overflow:hidden; }
+#setup-progress-label { font-size:10px; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:3px; }
+
+/* フローティングSIMULATEボタン */
+#floating-simulate {
+  position:fixed; bottom:20px; right:16px; z-index:1000;
+  background:linear-gradient(135deg,var(--accent) 0%,#007ab8 100%);
+  color:#000; border:none; border-radius:50px;
+  padding:12px 22px;
+  font-family:var(--font-mono); font-size:13px; font-weight:700; letter-spacing:1.5px;
+  cursor:pointer;
+  box-shadow:0 4px 20px rgba(0,212,255,.45),0 2px 8px rgba(0,0,0,.5);
+  transition:transform .2s,box-shadow .2s,opacity .3s;
+  display:flex; align-items:center; gap:8px;
+  opacity:1;
+}
+#floating-simulate:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,212,255,.6); }
+#floating-simulate:active { transform:translateY(0); }
+#floating-simulate.hidden { opacity:0; pointer-events:none; transform:translateY(16px); }
+
+/* スライダーアクティブ強化 */
+input[type="range"]:focus::-webkit-slider-thumb,
+input[type="range"]:active::-webkit-slider-thumb {
+  transform:scale(1.4);
+  box-shadow:0 0 0 5px rgba(0,212,255,.2),0 0 16px rgba(0,212,255,.9);
+}
+
+/* ツールチップ */
+[data-tip] { position:relative; }
+[data-tip]:hover::before {
+  content:attr(data-tip);
+  position:absolute; bottom:calc(100% + 6px); left:50%;
+  transform:translateX(-50%);
+  background:#1e2d45; color:var(--text); font-size:11px;
+  padding:5px 9px; border-radius:5px; border:1px solid var(--border);
+  white-space:normal; z-index:100; pointer-events:none;
+  max-width:220px; text-align:center; line-height:1.5;
+}
+
+/* KPI結果アニメーション */
+@keyframes kpiReveal {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.kpi-card.revealed { animation:kpiReveal .35s ease both; }
+.kpi-card:nth-child(2).revealed { animation-delay:.05s; }
+.kpi-card:nth-child(3).revealed { animation-delay:.10s; }
+.kpi-card:nth-child(4).revealed { animation-delay:.15s; }
+
+/* 難易度ボタン ホバー */
+.diff-btn { transition:transform .15s,box-shadow .15s; }
+.diff-btn:hover:not(.diff-btn-active) { transform:translateY(-2px); border-color:var(--accent); }
+
+/* スクロールダウンヒント */
+.scroll-hint { text-align:center; padding:6px; color:var(--text-dim); font-size:12px; }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
+.scroll-hint span { display:inline-block; animation:bounce 1.6s ease-in-out infinite; }
+
+@media(max-width:600px){
+  #floating-simulate { bottom:16px; right:12px; padding:11px 16px; font-size:12px; }
+}
 </style>
 </head>
 <body>
+<!-- フローティングSIMULATEボタン -->
+<button id="floating-simulate" onclick="runSimulation()" class="hidden">
+  ▶ SIMULATE
+</button>
+
 <div class="app">
   <div class="header">
     <div class="header-logo">🔥</div>
@@ -710,6 +793,15 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
       <div class="panel">
         <div class="panel-header">基本設定</div>
         <div class="panel-body">
+          <!-- 入力完了度インジケーター -->
+          <div id="setup-progress-wrap" style="margin-bottom:14px;">
+            <div id="setup-progress-label" style="font-size:10px;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:3px;display:flex;justify-content:space-between;">
+              <span>設定完了度</span><span id="setup-pct">0%</span>
+            </div>
+            <div id="setup-progress-track" style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+              <div id="setup-progress-bar-fill" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:2px;transition:width .4s ease;width:20%;"></div>
+            </div>
+          </div>
 
           <!-- 初期条件 -->
           <div class="param-section">
@@ -902,8 +994,8 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
                 <span class="param-label">株式ショック分布（自由度 df）</span>
                 <span class="param-value" id="val-tdof" style="color:var(--warning);">t(df=5)</span>
               </div>
-              <input type="range" id="tdof" min="2" max="100" step="1" value="5">
-              <div class="range-labels"><span>df=2（裾が最も厚い）</span><span>df=100≒正規分布</span></div>
+              <input type="range" id="tdof" min="2" max="30" step="1" value="5">
+              <div class="range-labels"><span>df=2（裾が最も厚い）</span><span>df=30≒正規分布</span></div>
               <div class="hint-text">
                 df が小さいほど暴騰・暴落が起きやすくなります。債券は正規分布のままです。<br>
                 df=5がおススメ<br>
@@ -1279,6 +1371,104 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
         <div id="worst-scenario-detail" style="font-size:12px;color:var(--text-mid);line-height:2;font-family:var(--font-mono);"></div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ★ 暴落リスク（Fat-tail）と t分布の採用 -->
+<div class="panel sensitivity-section" style="margin-top:0;margin-bottom:0;">
+  <div class="panel-header">📉 暴落リスクの数理：Fat-tailとt分布</div>
+  <div class="panel-body" style="line-height:1.8;color:var(--text-mid);font-size:14px;">
+
+    <p>標準的な正規分布は「ブラックスワン（大暴落）」のリスクを過小評価します。
+    本ツールでは、裾の厚い<strong style="color:var(--text);">t分布（自由度 df=5 推奨）</strong>を採用することでファットテイルを生成し、歴史的な金融危機を現実的な頻度で発生させています。</p>
+
+    <!-- 模式図 -->
+    <div style="background:var(--surface2);padding:20px;border-radius:12px;border:1px solid var(--border);margin:16px 0;text-align:center;">
+      <p style="font-weight:bold;font-size:13px;color:var(--accent);margin-bottom:14px;">【模式図】正規分布 vs t分布（暴落リスクの可視化）</p>
+      <svg viewBox="0 0 400 240" style="width:100%;max-width:400px;height:auto;">
+        <line x1="20" y1="200" x2="380" y2="200" stroke="var(--text-mid)" stroke-width="1" opacity="0.4"/>
+        <path d="M 120,200 C 150,200 170,20 200,20 C 230,20 250,200 280,200" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4"/>
+        <text x="280" y="50" fill="#94a3b8" font-size="10" font-family="monospace">正規分布（薄い裾）</text>
+        <text x="280" y="65" fill="#94a3b8" font-size="9" opacity="0.8">→ 暴落を「ゼロ」とみなす</text>
+        <path d="M 20,195 C 100,195 160,70 200,70 C 240,70 300,195 380,195" fill="none" stroke="var(--accent3)" stroke-width="3"/>
+        <text x="310" y="160" fill="var(--accent3)" font-size="11" font-weight="bold" font-family="monospace">t分布（厚い裾）</text>
+        <g transform="translate(40,210)">
+          <rect x="-25" y="-5" width="130" height="25" rx="4" fill="rgba(168,255,120,0.08)"/>
+          <circle cx="0" cy="8" r="6" fill="var(--accent3)">
+            <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
+          </circle>
+          <text x="12" y="12" fill="var(--accent3)" font-size="10" font-weight="bold">← 歴史的大暴落（t分布のみが捕捉）</text>
+        </g>
+      </svg>
+      <p style="font-size:12px;color:var(--text-mid);margin-top:12px;line-height:1.5;">
+        正規分布（点線）は暴落を「あり得ないこと」として切り捨てますが、<br>
+        t分布（青線）は<strong>「起こり得るリスク」</strong>として計算に含め続けます。
+      </p>
+    </div>
+
+    <ul style="margin-bottom:16px;padding-left:20px;">
+      <li><strong>分散の正規化:</strong> √(df/(df-2)) による補正を行い、設定されたσとの整合性を維持しつつ、形状のみを「暴落が起きやすい形」へ変形させています。</li>
+      <li><strong>ブラックスワンの再現:</strong> 正規分布では無視されるリーマンショック級の変動を、統計学的に正しくシミュレーションに組み込みます。</li>
+    </ul>
+
+    <div style="background:rgba(168,255,120,0.05);padding:14px;border-radius:8px;border:1px solid rgba(168,255,120,0.2);font-size:13px;margin-bottom:20px;">
+      <strong style="color:var(--accent3);">⚠️ なぜ重要か：</strong>
+      多くのシミュレーターが「楽観的」になりがちなのは、正規分布が持つ「極端な外れ値を排除する」性質のためです。本ツールではあえて裾を厚くすることで、資産寿命を削り取る「真の暴落リスク」への耐性をテストできます。
+    </div>
+
+    <!-- ★ FAT-TAIL_RISK_ANALYZER（添付の改良版） -->
+    <div style="margin-top:0;padding-top:18px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:4px;font-family:var(--font-mono);letter-spacing:1px;">FAT-TAIL_RISK_ANALYZER</div>
+      <div style="font-size:12px;color:var(--text-mid);margin-bottom:14px;">自由度スライダーを動かして、t分布の「裾の厚さ」が変化する様子を体験できます。</div>
+
+      <!-- 推奨設定ガイド -->
+      <div style="background:rgba(0,212,255,0.07);padding:12px 15px;border-radius:8px;border:1px dashed var(--accent);margin-bottom:16px;font-size:13px;line-height:1.7;">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:6px;">🎯 推奨設定ガイド</div>
+        <div style="color:var(--text-mid);">
+          ・本ツールでは「リーマンショック級の歴史的大暴落」が<b style="color:var(--text);">約66年に1回</b>となる <strong style="color:var(--accent);">自由度5（ν=5）を推奨</strong>します。<br>
+          ・より厳しくシミュレーションしたい方は、同規模の暴落が<b style="color:var(--text);">約21年に1回</b>の頻度で起こる <strong style="color:#ff4757;">自由度2（ν=2）</strong> を選択してください。
+        </div>
+      </div>
+
+      <!-- スライダー -->
+      <div style="background:rgba(255,255,255,0.03);padding:12px 14px;border-radius:8px;border:1px solid var(--border);margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono);">自由度 ν (Degrees of Freedom)</span>
+          <span id="ft-df-display" style="font-size:16px;font-weight:700;font-family:var(--font-mono);color:var(--accent);">5.0</span>
+        </div>
+        <input type="range" id="ft-df-slider" min="2.1" max="30" value="5" step="0.1" style="width:100%;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-top:4px;">
+          <span>ν=2 (極端なFat-tail)</span><span>ν=30 (ほぼ正規分布)</span>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text-dim);">※ 自由度が低いほど「ブラックスワン」が発生しやすい市場を再現します</div>
+      </div>
+
+      <!-- 分布タイプバッジ -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div style="padding:10px 12px;border-radius:6px;background:rgba(0,0,0,0.2);border-left:3px solid #5a7090;">
+          <div style="font-size:11px;color:var(--text-dim);">正規分布（点線）</div>
+          <div style="font-size:14px;font-weight:700;color:#8a9fba;">薄い裾 (Thin-tail)</div>
+          <div style="font-size:11px;color:var(--text-dim);">-3σ確率：約0.13%</div>
+        </div>
+        <div style="padding:10px 12px;border-radius:6px;background:rgba(0,212,255,0.05);border-left:3px solid var(--accent);">
+          <div style="font-size:11px;color:var(--text-dim);">t分布（実線）</div>
+          <div id="ft-dist-type" style="font-size:14px;font-weight:700;color:var(--accent);">Standard Fat-tail</div>
+          <div style="font-size:11px;color:var(--text-dim);">-3σ確率：約1.5% (ν=5)</div>
+        </div>
+      </div>
+
+      <!-- グラフ -->
+      <div style="position:relative;height:240px;margin-bottom:12px;">
+        <canvas id="ft-chart"></canvas>
+      </div>
+
+      <!-- 解説 -->
+      <div style="padding:10px 12px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:6px;font-size:12px;color:var(--text-mid);line-height:1.8;">
+        <b style="color:var(--accent);">📉 裾（テール）の厚さが「生存率」を決めます。</b><br>
+        多くのシミュレーターが破綻するのは、リーマンショック級の変動を「あり得ない」として排除していたからです。本ツールではt分布による「厚い裾」をあえて計算に含めることで、<strong>真に堅牢な資産計画</strong>を導き出します。
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1684,107 +1874,7 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
 
 
 
-<!-- 5. 暴落リスク（Fat-tail）と t分布の採用 -->
-        <h3 style="color: var(--accent); margin: 20px 0 10px 0;">5. 暴落リスク（Fat-tail）と t分布の採用</h3>
-        <ul style="margin-bottom: 15px; font-size: 0.95em;">
-          
 
-          
-<div class="panel" style="margin-top: 40px;">
-    <div class="panel-header">📉 暴落リスクの数理：Fat-tailとt分布</div>
-    <div class="panel-body" style="line-height: 1.8; color: var(--text-mid); font-size: 14px;">
-        <p>
-            標準的な正規分布は「ブラックスワン（大暴落）」のリスクを過小評価します。
-            本ツールでは、裾の厚い<strong>t分布（自由度 $df=5$ 推奨）</strong>を採用することでファットテイルを生成し、歴史的な金融危機を現実的な頻度で発生させています。
-        </p>
-
-        <!-- 視覚化グラフ: 模式図としてわかりやすさを優先 -->
-        <div style="background: var(--surface2); padding: 20px; border-radius: 12px; border: 1px solid rgba(var(--accent-rgb), 0.1); margin: 20px 0; text-align: center;">
-            <p style="font-weight: bold; font-size: 13px; color: var(--accent); margin-bottom: 15px;">【模式図】正規分布 vs t分布（暴落リスクの可視化）</p>
-            <svg viewBox="0 0 400 240" style="width: 100%; max-width: 400px; height: auto;">
-                <!-- 地面 -->
-                <line x1="20" y1="200" x2="380" y2="200" stroke="var(--text-mid)" stroke-width="1" opacity="0.4" />
-                
-                <!-- 正規分布（点線）：中央は高いが、端はすぐに地面に着く -->
-                <path d="M 120,200 C 150,200 170,20 200,20 C 230,20 250,200 280,200" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
-                <text x="280" y="50" fill="#94a3b8" font-size="10" font-family="var(--font-mono)">正規分布（薄い裾）</text>
-                <text x="280" y="65" fill="#94a3b8" font-size="9" opacity="0.8">→ 暴落を「ゼロ」とみなす</text>
-                
-                <!-- t分布（実線）：裾が地面に着かず、遠くまで厚みを保つ -->
-                <path d="M 20,195 C 100,195 160,70 200,70 C 240,70 300,195 380,195" fill="none" stroke="var(--accent3)" stroke-width="3" />
-                <text x="310" y="160" fill="var(--accent3)" font-size="11" font-weight="bold" font-family="var(--font-mono)">t分布（厚い裾）</text>
-                
-                <!-- 暴落エリアの強調：線の下に配置して被りを回避 -->
-                <g transform="translate(40, 210)">
-                    <rect x="-25" y="-5" width="130" height="25" rx="4" fill="rgba(var(--accent3-rgb), 0.1)" />
-                    <circle cx="0" cy="8" r="6" fill="var(--accent3)">
-                        <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite" />
-                    </circle>
-                    <text x="12" y="12" fill="var(--accent3)" font-size="10" font-weight="bold">← 歴史的大暴落（t分布のみが捕捉）</text>
-                </g>
-            </svg>
-            <p style="font-size: 12px; color: var(--text-mid); margin-top: 15px; line-height: 1.5;">
-                正規分布（点線）は暴落を「あり得ないこと」として切り捨てますが、<br>
-                t分布（青線）は<strong>「起こり得るリスク」</strong>として計算に含め続けます。
-            </p>
-        </div>
-
-        <ul style="margin-bottom: 20px; padding-left: 20px;">
-            <li><strong>分散の正規化:</strong> $\sqrt{df/(df-2)}$ による補正を行い、設定された標準偏差 $\sigma$ との整合性を維持しつつ、形状のみを「暴落が起きやすい形」へ変形させています。</li>
-            <li><strong>ブラックスワンの再現:</strong> 正規分布では無視されるリーマンショック級の変動を、統計学的に正しくシミュレーションに組み込みます。</li>
-        </ul>
-
-        <div style="background: rgba(var(--accent3-rgb), 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(var(--accent3-rgb), 0.2); font-size: 13px;">
-            <strong style="color: var(--accent3);">⚠️ なぜ重要か：</strong>
-            多くのシミュレーターが「楽観的」になりがちなのは、正規分布が持つ「極端な外れ値を排除する」性質のためです。本ツールではあえて裾を厚くすることで、資産寿命を削り取る「真の暴落リスク」への耐性をテストできます。
-        </div>
-
-        <!-- ★ Fat-tail インタラクティブビジュアライザー -->
-        <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border);">
-          <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:4px;font-family:var(--font-mono);letter-spacing:1px;">FAT-TAIL_RISK_ANALYZER</div>
-          <div style="font-size:12px;color:var(--text-mid);margin-bottom:14px;">自由度スライダーを動かして、t分布の「裾の厚さ」が変化する様子を体験できます。</div>
-
-          <!-- スライダー -->
-          <div style="background:rgba(255,255,255,0.03);padding:12px 14px;border-radius:8px;border:1px solid var(--border);margin-bottom:14px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono);">自由度 ν (Degrees of Freedom)</span>
-              <span id="ft-df-display" style="font-size:16px;font-weight:700;font-family:var(--font-mono);color:var(--accent);">3.0</span>
-            </div>
-            <input type="range" id="ft-df-slider" min="2.1" max="30" value="3" step="0.1" style="width:100%;">
-            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-top:4px;">
-              <span>ν=2 (極端なFat-tail)</span>
-              <span>ν=30 (ほぼ正規分布)</span>
-            </div>
-            <div style="margin-top:8px;font-size:11px;color:var(--text-dim);">※ 自由度が低い（3〜5）ほどリーマンショック級の暴落が発生しやすくなります</div>
-          </div>
-
-          <!-- 分布タイプバッジ -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-            <div style="padding:10px 12px;border-radius:6px;background:rgba(0,0,0,0.2);border-left:3px solid #5a7090;">
-              <div style="font-size:11px;color:var(--text-dim);">正規分布（点線）</div>
-              <div style="font-size:14px;font-weight:700;color:#8a9fba;">薄い裾 (Thin-tail)</div>
-              <div style="font-size:11px;color:var(--text-dim);">暴落を「無視」する楽観モデル</div>
-            </div>
-            <div style="padding:10px 12px;border-radius:6px;background:rgba(0,212,255,0.05);border-left:3px solid var(--accent);">
-              <div style="font-size:11px;color:var(--text-dim);">t分布（実線）</div>
-              <div id="ft-dist-type" style="font-size:14px;font-weight:700;color:#ff4757;">Extreme Fat-tail</div>
-              <div style="font-size:11px;color:var(--text-dim);">ブラックスワンを捕捉する現実モデル</div>
-            </div>
-          </div>
-
-          <!-- グラフ -->
-          <div style="position:relative;height:240px;margin-bottom:12px;">
-            <canvas id="ft-chart"></canvas>
-          </div>
-
-          <!-- 解説 -->
-          <div style="padding:10px 12px;background:rgba(255,71,87,0.05);border:1px solid rgba(255,71,87,0.2);border-radius:6px;font-size:12px;color:var(--text-mid);line-height:1.8;">
-            <b style="color:var(--danger);">📉 グラフの両端（裾）に注目してください。</b><br>
-            正規分布（点線）は端の確率がほぼゼロになりますが、<b style="color:var(--accent);">t分布（青実線）</b>は端でも高さが残ります。これが<b style="color:var(--danger);">「ファットテイル（厚い裾）」</b>です。自由度を下げるほど裾が厚くなり、暴落が起きやすい市場を表現します。
-          </div>
-        </div>
-    </div>
-</div>
 
         <!-- 6. 試行回数と結果解析 -->
         <h3 style="color: var(--accent); margin: 20px 0 10px 0;">6. シミュレーション試行回数と結果の解析</h3>
@@ -2280,7 +2370,7 @@ bindSlider('base-infl',     'val-base-infl',      v=>`${Number(v).toFixed(1)}%`)
 // exp-active / exp-mid は廃止 → ライフステージシステムに統合
 bindSlider('w-working',     'val-w-working',      v=>`${v}%`);
 bindSlider('w-retired',     'val-w-retired',      v=>`${v}%`);
-bindSlider('tdof',          'val-tdof',           v=>Number(v)>=120?'正規分布相当':`t(df=${v})`);
+bindSlider('tdof',          'val-tdof',           v=>Number(v)>=30?'ほぼ正規分布':`t(df=${v})`);
 bindSlider('med-adv',       'val-med-adv',        v=>`${Number(v).toFixed(1)}%/年`);
 bindSlider('nsims',         'val-nsims',          v=>`${Number(v).toLocaleString()}回`);
 // 「現在の資産」の連動は下部のIIFEで一元管理
@@ -2511,6 +2601,63 @@ window.addEventListener('DOMContentLoaded', () => {
       initMarkovVisualizer();
       drawRegimeSwitchChart();
     }, 200);
+
+    // ── アコーディオン初期化 ──
+    document.querySelectorAll('.param-section-label').forEach(label => {
+      // param-section-labelの次の兄弟要素をbodyとしてwrap
+      const section = label.parentElement;
+      if (!section || !section.classList.contains('param-section')) return;
+      // ラベル以外の子要素をparam-section-bodyで包む
+      const children = Array.from(section.children).filter(c => !c.classList.contains('param-section-label'));
+      if (children.length === 0) return;
+      const body = document.createElement('div');
+      body.className = 'param-section-body';
+      children.forEach(c => body.appendChild(c));
+      section.appendChild(body);
+      // クリックで開閉
+      label.addEventListener('click', () => {
+        section.classList.toggle('collapsed');
+      });
+    });
+
+    // ── フローティングSIMULATEボタン（スクロール制御） ──
+    const floatBtn = document.getElementById('floating-simulate');
+    const mainBtn  = document.getElementById('run-btn');
+    function updateFloatBtn() {
+      if (!floatBtn || !mainBtn) return;
+      const rect = mainBtn.getBoundingClientRect();
+      // メインボタンが画面外に出たらフローティングを表示
+      if (rect.bottom < 0 || rect.top > window.innerHeight) {
+        floatBtn.classList.remove('hidden');
+      } else {
+        floatBtn.classList.add('hidden');
+      }
+    }
+    window.addEventListener('scroll', updateFloatBtn, { passive:true });
+    updateFloatBtn();
+
+    // ── 設定完了度インジケーター ──
+    function updateSetupProgress() {
+      const checks = [
+        document.getElementById('start-age')?.value > 0,
+        document.getElementById('initial-assets')?.value > 0,
+        document.getElementById('fire-threshold')?.value > 0,
+        document.getElementById('income')?.value > 0,
+        document.getElementById('pension')?.value > 0,
+        document.getElementById('w-working')?.value > 0,
+      ];
+      const done = checks.filter(Boolean).length;
+      const pct  = Math.round(done / checks.length * 100);
+      const fill = document.getElementById('setup-progress-bar-fill');
+      const pctEl = document.getElementById('setup-pct');
+      if (fill)  fill.style.width = pct + '%';
+      if (pctEl) pctEl.textContent = pct + '%';
+      if (pctEl) pctEl.style.color = pct >= 80 ? '#a8ff78' : pct >= 50 ? '#ffd166' : 'var(--text-dim)';
+    }
+    document.querySelectorAll('input[type="range"], input[type="number"]').forEach(el => {
+      el.addEventListener('input', updateSetupProgress);
+    });
+    updateSetupProgress();
 
     // ★ 収入スライダーに税金計算を連動
     ['income','income-b','raise','raise-b'].forEach(id => {
@@ -3494,6 +3641,17 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
   badge.style.cssText='display:inline-flex;align-items:center;gap:6px;background:rgba(168,255,120,.1);border:1px solid rgba(168,255,120,.3);color:#a8ff78;font-size:10px;font-family:var(--font-mono);padding:5px 12px;border-radius:3px;letter-spacing:1.5px;';
   btn.disabled=false;
   pBar.style.display='none';
+
+  // 結果エリアへスムーズスクロール（スマホで特に有効）
+  setTimeout(() => {
+    const target = document.getElementById('kpi-section') || document.getElementById('goal-panel');
+    if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+    // KPIカードにアニメーション付与
+    document.querySelectorAll('.kpi-card').forEach((c,i) => {
+      c.classList.remove('revealed');
+      setTimeout(() => c.classList.add('revealed'), i * 60);
+    });
+  }, 100);
 }
 // スライダーと数値入力ボックスを完全に連動させる
 (function() {
