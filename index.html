@@ -995,32 +995,70 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
 
 <!-- ===== 解説・コンテンツセクション ===== -->
 <div class="content-section" style="margin-top: 40px; padding-top: 40px; border-top: 1px solid var(--border);">
-    
-    <!-- 1. ガイド・解説テキスト -->
+  
+<!-- 1. ガイド・解説テキスト -->
     <div class="panel" style="margin-bottom: 24px;">
         <div class="panel-header">FIREシミュレーション徹底ガイド</div>
         <div class="panel-body" style="line-height: 1.8; color: var(--text-mid);">
-            <h3 style="color: var(--accent); margin-bottom: 10px;">1. FIRE（早期リタイア）とは何か？</h3>
-            <p>
-                FIRE（Financial Independence, Retire Early）は、経済的自立と早期リタイアを指すライフスタイルです。
-                単なる「仕事を辞めること」ではなく、「資産収入が生活費を上回る状態」を作ることで、自分の時間を自由にコントロールすることを目指します。
-            </p>
             
-            <h3>2. このシミュレーターの使い方</h3>
-            <p>
-                本ツールは、一般的な平均利回り計算（定額成長モデル）ではなく、<strong>モンテカルロ法</strong>を採用しています。
-                「普通」モードでは歴史的平均をベースに、「ハード」モードでは過去の金融危機を模した高いボラティリティを再現します。
-                まずは現在の資産と目標額を入力し、1,000回以上の試行を行うことで、ご自身のプランが「何％の確率で成功するか」を確認してください。
-            </p>
+            <div style="background: rgba(var(--accent-rgb), 0.05); padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent); margin-bottom: 20px;">
+                <h3 style="color: var(--accent); margin-top: 0; margin-bottom: 10px;">🚀 はじめての方へ：基本的な使い方</h3>
+                <ol style="margin: 0; padding-left: 20px;">
+                    <li><strong>データの入力:</strong> 「1. 基本設定」から順に、現在の資産や将来の支出予定を入力します。</li>
+                    <li><strong>シミュレーションの実行:</strong> 「6. 結果の解析」にある「SIMULATE」ボタンをクリックします。</li>
+                    <li><strong>確率の確認:</strong> 1,000回以上の試行を行い、ご自身のプランが「何％の確率で成功するか」を確認してください。成功確率が<strong>80%以上</strong>であれば、一般的に堅実なプランと言えます。</li>
+                </ol>
+            </div>
 
-            <h3>3. シミュレーション結果の解釈</h3>
-            <p>
-                成功確率が80%以上であれば、一般的なプランとしては非常に堅実と言えます。
-                しかし、金融市場には「ファットテール（極端な暴落）」が存在するため、本シミュレーターでは<strong>t分布（自由度df=5推奨）</strong>を使用し、正規分布では予測しきれないリスクを可視化しています。
-                もし資産が枯渇するシナリオが多い場合は、FIRE後の株式比率を下げるか、医療進歩による長寿リスクを見越した予備費を検討してください。
+            <h3 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">1. 基本設定：あなたの「現在」と「目標」を定義する</h3>
+            <p>まずはシミュレーションの土台となる数値を入力します。</p>
+            <ul style="margin-bottom: 15px;">
+                <li><strong>開始年齢と現在の資産:</strong> シミュレーションを開始する時点のステータスです。</li>
+                <li><strong>FIRE達成目標資産:</strong> FIREに踏み切る基準となる総資産額です。この額に達すると、プログラムは自動的に「現役モード」から「FIREモード」へ働き方や資産配分を切り替えます。</li>
+                <li><strong>収入と昇給率:</strong> 額面年収と昇給率を設定します。これらはFIRE達成までの積立スピードに直結します。</li>
+                <li><strong>年金・相続:</strong> 65歳からの公的年金や、将来見込まれる相続額も組み込むことが可能です。</li>
+            </ul>
+
+            <h3 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">2. ライフステージ別支出：精緻なキャッシュフロー設計</h3>
+            <p>人生のフェーズごとに支出は大きく変動します。本ツールでは「ライフステージ」を複数追加することで、動的な支出設定が可能です。</p>
+            <ul style="margin-bottom: 15px;">
+                <li><strong>プリセットの活用:</strong> 「一人暮らし」「夫婦共働き」などのテンプレートを選択すると、標準的なモデルが自動展開されます。</li>
+                <li><strong>ステージのカスタマイズ:</strong> 住宅ローン完済や教育費のピークなど、ライフプランに合わせて開始・終了年齢と支出額を調整してください。</li>
+                <li><strong>インフレ補正:</strong> 設定した「ベースインフレ率」が複利で自動適用され、将来の購買力低下をシミュレートします。</li>
+            </ul>
+
+            <h3 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">3. ポートフォリオとリスクモデル：暴落のリアリティを追求</h3>
+            <p>資産運用の成功は「リターン」だけでなく「リスク（ボラティリティ）」の制御にあります。</p>
+            <ul style="margin-bottom: 15px;">
+                <li><strong>現役時 vs FIRE後の株式比率:</strong> 形成期と取り崩し期でリスク許容度を変える戦略を反映できます。一般的にFIRE後は株式比率を下げ、資産寿命を延ばすのが定石です。</li>
+                <li><strong>t分布による暴落シミュレーション:</strong> 通常の「正規分布」では過小評価されがちな「ブラックスワン（数十年の一回の暴落）」を考慮するため、裾の厚い<strong>t分布（df=5推奨）</strong>を採用しています。</li>
+            </ul>
+
+            <h3 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">4. レジーム遷移確率：景気のサイクルを読み解く</h3>
+            <p>市場の「強気」「通常」「弱気」「インフレ」の4つの状態をモデル化しています。</p>
+            <ul style="margin-bottom: 15px;">
+                <li><strong>マルコフ連鎖モデル:</strong> 「弱気相場に入ると翌年も弱気になりやすい」といった景気の粘着性を再現します。</li>
+                <li><strong>難易度モード:</strong> 「ハード」では弱気相場への遷移確率を高め、過酷なシナリオをテストできます。</li>
+            </ul>
+
+            <h3 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">5. 寿命モデル：長生きリスクの可視化</h3>
+            <p>FIRE後の最大の不確実性である「寿命」を統計的に扱います。</p>
+            <ul style="margin-bottom: 15px;">
+                <li><strong>Gompertz-Makehamモデル:</strong> 最新の生命表に基づき、加齢とともに死亡率が指数関数的に上昇する生物学的モデルを採用しています。</li>
+                <li><strong>医療進歩の考慮:</strong> 死亡率低下を設定することで、平均寿命が延びた場合の「長生きリスク」を厳密に評価できます。</li>
+            </ul>
+
+            <h3 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">6. 結果の解析：モンテカルロ試行から導かれる結論</h3>
+            <p>数千回の人生を擬似的に実行し、統計的な結果を算出します。</p>
+            <ul style="margin-bottom: 15px;">
+                <li><strong>成功率と破綻率:</strong> 資産が尽きずに天寿を全うできる確率です。80%以上が目安です。</li>
+                <li><strong>感度分析（ヒートマップ）:</strong> 「株式比率を変えたら成功率はどう変わるか？」を網羅的に計算し、最適な資産配分の特定を助けます。</li>
+            </ul>
+
+            <p style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 0.9em;">
+                <strong>💡 ヒント:</strong> 初めての方は、まず「難易度：普通」で「試行回数：2,000回」から開始し、ヒートマップ分析で自身のプランの限界点を探ることをお勧めします。
             </p>
         </div>
-
     </div>
     
 <!-- ===== 数理モデルの解説セクション始まり ===== -->
