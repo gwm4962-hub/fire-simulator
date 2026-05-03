@@ -669,7 +669,7 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
 
           <!-- 性別・寿命 -->
           <div class="param-section" style="margin-bottom:0">
-            <div class="param-section-label">性別・寿命モデル（Gompertz-Makeham）</div>
+            <div class="param-section-label">性別・寿命モデル（）</div>
             <div class="param-row" style="margin-bottom:8px;">
               <span class="param-label">性別</span>
               <div class="gender-toggle">
@@ -807,7 +807,7 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
           <div class="kpi-card pink">
             <div class="kpi-label">中央値 寿命</div>
             <div class="kpi-value" id="kpi-death-age">—</div>
-            <div class="kpi-sub">Gompertz-Makeham モデル</div>
+            <div class="kpi-sub"> モデル</div>
           </div>
         </div>
 
@@ -1005,46 +1005,46 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
             <div style="background: rgba(var(--accent-rgb), 0.05); padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent); margin-bottom: 25px;">
                 <h3 style="color: var(--accent); margin-top: 0; margin-bottom: 10px; font-size: 1.1em;">🚀 はじめての方へ：基本的な使い方</h3>
                 <ol style="margin: 0; padding-left: 20px; font-size: 0.95em;">
-                    <li><strong>データの入力:</strong> 「1. 基本設定」から順に、現在の資産や将来の支出予定を入力します[cite: 1]。</li>
-                    <li><strong>シミュレーションの実行:</strong> 最下部の「6. 結果の解析」にある「SIMULATE」ボタンをクリックします[cite: 1]。</li>
-                    <li><strong>成功確率の確認:</strong> 1,000回以上の試行を行い、プランが「何％の確率で成功するか」を確認してください。<strong>80%以上</strong>が堅実な目安です[cite: 1]。</li>
+                    <li><strong>データの入力:</strong> 「1. 基本設定」から順に、現在の資産や将来の支出予定を入力します。</li>
+                    <li><strong>シミュレーションの実行:</strong> 最下部の「6. 結果の解析」にある「SIMULATE」ボタンをクリックします。</li>
+                    <li><strong>成功確率の確認:</strong> 1,000回以上の試行を行い、プランが「何％の確率で成功するか」を確認してください。<strong>80%以上</strong>が堅実な目安です。</li>
                 </ol>
             </div>
 
             <h3 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">1. 性別・寿命モデル（Gompertz-Makeham）</h3>
-            <p>資産運用における最大の計算ミスは「想定より長生きしてしまうこと（長寿リスク）」です[cite: 1]。</p>
+            <p>資産運用における最大の計算ミスは「想定より長生きしてしまうこと（長寿リスク）」です。</p>
             <ul style="margin-bottom: 15px; font-size: 0.95em;">
-                <li><strong>Gompertz-Makeham（ゴンパーツ・メイカム）法則:</strong> 人間の死亡率は、ある年齢を過ぎると指数関数的に上昇するという生物学的な法則を採用しています[cite: 1]。性別を切り替えると、JavaScriptで保持された男女別の死亡率パラメータが動的に入れ替わります[cite: 1]。</li>
-                <li><strong>医療進歩による死亡率低下 (med-adv):</strong> 本ツールの非常にユニークな機能です。「未来の医療進化」を予測値として入力できます[cite: 1]。たとえば $0.8\%/年$ に設定すると、毎年「その年齢での死亡確率」が前年より0.8%ずつ減衰します[cite: 1]。これにより、100歳を超える「超長寿シナリオ」を意図的に発生させ、プランの真の堅牢性をテストできます[cite: 1]。</li>
+                <li><strong>Gompertz-Makeham法則:</strong> 人間の死亡率は、ある年齢を過ぎると指数関数的に上昇するという生物学的な法則を採用しています。性別を切り替えると、JavaScriptで保持された男女別の死亡率パラメータが動的に入れ替わります。</li>
+                <li><strong>医療進歩による死亡率低下 (med-adv):</strong> 本ツールの非常にユニークな機能です。「未来の医療進化」を予測値として入力できます。たとえば $0.8\%/年$ に設定すると、毎年「その年齢での死亡確率」が前年より0.8%ずつ減衰します。これにより、100歳を超える「超長寿シナリオ」を意図的に発生させ、プランの真の堅牢性をテストできます。</li>
             </ul>
 
             <h3 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">2. 難易度モード（マーケット・シナリオ）</h3>
-            <p>個別の数値をいじるのが難しい方のために、一括で「世界線の厳しさ」を変更する機能です[cite: 1]。</p>
+            <p>個別の数値をいじるのが難しい方のために、一括で「世界線の厳しさ」を変更する機能です。</p>
             <ul style="margin-bottom: 15px; font-size: 0.95em;">
-                <li><strong>💀 ハード:</strong> 単にリターンを下げるだけでなく、「弱気レジーム（BEAR）から抜け出しにくくなる確率設定」に書き換えます[cite: 1]。資産が減り続ける中で心が折れるような過酷なシナリオを生成します[cite: 1]。</li>
-                <li><strong>📊 普通:</strong> 過去100年程度の米国株・債券市場の平均データをベースにした、標準的な設定です[cite: 1]。</li>
-                <li><strong>🌈 楽観:</strong> 強気相場（BULL）が長く続き、暴落が起きてもすぐに回復する「黄金時代」を想定します[cite: 1]。</li>
+                <li><strong>💀 ハード:</strong> 単にリターンを下げるだけでなく、「弱気レジーム（BEAR）から抜け出しにくくなる確率設定」に書き換えます。資産が減り続ける中で心が折れるような過酷なシナリオを生成します。</li>
+                <li><strong>📊 普通:</strong> 過去100年程度の米国株・債券市場の平均データをベースにした、標準的な設定です。</li>
+                <li><strong>🌈 楽観:</strong> 強気相場（BULL）が長く続き、暴落が起きてもすぐに回復する「黄金時代」を想定します。</li>
             </ul>
 
             <h3 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">3. シミュレーション試行回数 (nsims)</h3>
-            <p>「たまたま運が良かっただけ」の結果を排除し、統計的な精度を高める設定です[cite: 1]。</p>
+            <p>「たまたま運が良かっただけ」の結果を排除し、統計的な精度を高める設定です。</p>
             <ul style="margin-bottom: 15px; font-size: 0.95em;">
-                <li><strong>モンテカルロ法の精度:</strong> 試行回数を増やすほど結果は統計的に「収束」し、信頼性が向上します[cite: 1]。</li>
-                <li><strong>200回:</strong> 計算は高速ですが、結果にムラが出やすく、運に左右されます[cite: 1]。</li>
-                <li><strong>5,000回:</strong> 計算負荷は高いですが、「現実的に起こりうる最悪のシナリオ（外れ値）」まで網羅した、極めて精度の高い成功確率を算出できます[cite: 1]。</li>
+                <li><strong>モンテカルロ法の精度:</strong> 試行回数を増やすほど結果は統計的に「収束」し、信頼性が向上します。</li>
+                <li><strong>200回:</strong> 計算は高速ですが、結果にムラが出やすく、運に左右されます。</li>
+                <li><strong>5,000回:</strong> 計算負荷は高いですが、「現実的に起こりうる最悪のシナリオ（外れ値）」まで網羅した、極めて精度の高い成功確率を算出できます。</li>
             </ul>
 
             <h3 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">4. ポートフォリオとリスクモデル</h3>
-            <p>資産形成期と取り崩し期でリスク許容度を変える戦略を反映できます[cite: 1]。</p>
+            <p>資産形成期と取り崩し期でリスク許容度を変える戦略を反映できます。</p>
             <ul style="margin-bottom: 15px; font-size: 0.95em;">
-                <li><strong>t分布（Fat-tail）の採用:</strong> 通常の正規分布では過小評価される「ブラックスワン（極端な暴落）」を再現するため、裾の厚い<strong>t分布（自由度df=5推奨）</strong>を使用しています[cite: 1]。</li>
+                <li><strong>t分布（Fat-tail）の採用:</strong> 通常の正規分布では過小評価される「ブラックスワン（極端な暴落）」を再現するため、裾の厚い<strong>t分布（自由度df=5推奨）</strong>を使用しています。</li>
             </ul>
 
             <h3 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">5. 結果の解析：ヒートマップと感度分析</h3>
             <p>数千回の人生を擬似的に実行し、多角的な視点からプランを評価します。</p>
             <ul style="margin-bottom: 15px; font-size: 0.95em;">
-                <li><strong>成功率と破綻率:</strong> 資産が尽きずに天寿を全うできる確率です。80%以上が目安です[cite: 1]。</li>
-                <li><strong>感度分析（ヒートマップ）:</strong> 株式比率や支出額の変化が成功率に与える影響を網羅的に可視化し、最適な資産配分の特定を助けます[cite: 1]。</li>
+                <li><strong>成功率と破綻率:</strong> 資産が尽きずに天寿を全うできる確率です。80%以上が目安です。</li>
+                <li><strong>感度分析（ヒートマップ）:</strong> 株式比率や支出額の変化が成功率に与える影響を網羅的に可視化し、最適な資産配分の特定を助けます。</li>
             </ul>
 
             <!-- 詳しい人向け：数理モデル解説 -->
@@ -1054,9 +1054,9 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
                     本ツールは、相場の「状態（レジーム）」をマルコフ連鎖で管理しており、単一のリターン分布では再現できない「相場の粘着性」を考慮しています。
                 </p>
                 <ul style="font-size: 0.9em; color: #445566; padding-left: 20px;">
-                    <li style="margin-bottom: 6px;"><strong>ボラティリティ・クラスタリング:</strong> 「一度弱気相場に入ると、翌年も弱気相場に留まりやすい（自己遷移確率）」という設定を反映し、数年にわたる長期低迷シナリオへの耐性をテストできます[cite: 1]。</li>
-                    <li style="margin-bottom: 6px;"><strong>インフレ・レジームの独立:</strong> インフレ率そのものが高止まりする状態への遷移確率を調整することで、購買力低下が資産寿命に与える影響を多角的に分析可能です[cite: 1]。</li>
-                    <li style="margin-bottom: 6px;"><strong>自動正規化の活用:</strong> パラメータ変更後は必ず「自動正規化」を実行してください。各状態からの遷移確率の合計を $1.0$ に収束させ、数学的整合性を保ちます[cite: 1]。</li>
+                    <li style="margin-bottom: 6px;"><strong>ボラティリティ・クラスタリング:</strong> 「一度弱気相場に入ると、翌年も弱気相場に留まりやすい（自己遷移確率）」という設定を反映し、数年にわたる長期低迷シナリオへの耐性をテストできます。</li>
+                    <li style="margin-bottom: 6px;"><strong>インフレ・レジームの独立:</strong> インフレ率そのものが高止まりする状態への遷移確率を調整することで、購買力低下が資産寿命に与える影響を多角的に分析可能です。</li>
+                    <li style="margin-bottom: 6px;"><strong>自動正規化の活用:</strong> パラメータ変更後は必ず「自動正規化」を実行してください。各状態からの遷移確率の合計を $1.0$ に収束させ、数学的整合性を保ちます。</li>
                 </ul>
             </div>
 
