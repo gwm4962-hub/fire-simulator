@@ -1116,24 +1116,26 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
         <div style="background: var(--surface2); padding: 20px; border-radius: 12px; border: 1px solid rgba(var(--accent-rgb), 0.1); margin: 20px 0; text-align: center;">
             <p style="font-weight: bold; font-size: 13px; color: var(--accent); margin-bottom: 15px;">【比較図】正規分布 vs t分布（ファットテイル）</p>
             <svg viewBox="0 0 400 220" style="width: 100%; max-width: 400px; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));">
-                <!-- 背景グリッド -->
+                <!-- 背景グリッド（地面） -->
                 <line x1="20" y1="180" x2="380" y2="180" stroke="var(--text-mid)" stroke-width="0.5" opacity="0.3" />
-                <line x1="200" y1="20" x2="200" y2="180" stroke="var(--text-mid)" stroke-width="0.5" opacity="0.1" />
                 
                 <!-- 正規分布 (Normal Distribution) -->
-                <path d="M 50,178 Q 200,10 350,178" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
-                <text x="270" y="55" fill="#94a3b8" font-size="10" font-family="var(--font-mono)">正規分布 (薄い裾)</text>
+                <!-- 数学的に正しい釣鐘型を意識：端が急速に0に収束する様子 -->
+                <path d="M 100,180 C 130,180 160,20 200,20 C 240,20 270,180 300,180" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
+                <text x="280" y="45" fill="#94a3b8" font-size="10" font-family="var(--font-mono)">正規分布（薄い裾）</text>
+                <text x="280" y="58" fill="#94a3b8" font-size="9" opacity="0.8">→ 暴落を「ほぼゼロ」とみなす</text>
                 
                 <!-- t分布 (t-Distribution) -->
-                <path d="M 20,175 C 100,175 150,50 200,50 C 250,50 300,175 380,175" fill="none" stroke="var(--accent3)" stroke-width="3" />
-                <text x="300" y="150" fill="var(--accent3)" font-size="11" font-weight="bold" font-family="var(--font-mono)">t分布 (厚い裾)</text>
+                <!-- 裾が地面から浮いており、遠くまで伸びる様子 -->
+                <path d="M 20,175 C 100,175 160,60 200,60 C 240,60 300,175 380,175" fill="none" stroke="var(--accent3)" stroke-width="3" />
+                <text x="310" y="145" fill="var(--accent3)" font-size="11" font-weight="bold" font-family="var(--font-mono)">t分布（厚い裾）</text>
                 
-                <!-- 暴落エリアの強調 -->
-                <rect x="25" y="160" width="50" height="30" rx="4" fill="rgba(var(--accent3-rgb), 0.1)" />
+                <!-- 暴落エリアの強調：正規分布が消えている領域をハイライト -->
+                <rect x="20" y="160" width="80" height="35" rx="4" fill="rgba(var(--accent3-rgb), 0.1)" />
                 <circle cx="50" cy="175" r="6" fill="var(--accent3)" opacity="0.6">
                     <animate attributeName="r" values="5;8;5" dur="2s" repeatCount="indefinite" />
                 </circle>
-                <text x="30" y="205" fill="var(--accent3)" font-size="10" font-weight="bold">← 歴史的大暴落</text>
+                <text x="25" y="210" fill="var(--accent3)" font-size="10" font-weight="bold">← 歴史的大暴落（正規分布では無視される領域）</text>
             </svg>
             <p style="font-size: 12px; color: var(--text-mid); margin-top: 15px; line-height: 1.5;">
                 ※正規分布（点線）では統計的に「無視」される左端の領域が、<br>
@@ -1143,12 +1145,12 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
 
         <ul style="margin-bottom: 20px; padding-left: 20px;">
             <li><strong>分散の正規化:</strong> $\sqrt{df/(df-2)}$ による補正を行い、分布の分散を $1$ に正規化しています。これにより、設定された標準偏差 $\sigma$ との整合性を厳密に保ちつつ、形状のみを「暴落が起きやすい形」へ変形させています。</li>
-            <li><strong>ブラックスワンの再現:</strong> 正規分布では「数万年に一度」と片付けられてしまうリーマンショック級の変動を、数学的妥当性を持ってシミュレーションに組み込みます。</li>
+            <li><strong>ブラックスワンの再現:</strong> 正規分布では「数万年に一度」と片付けられてしまうリーマンショック級の変動を、統計学的に正しくシミュレーションに組み込みます。</li>
         </ul>
 
         <div style="background: rgba(var(--accent3-rgb), 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(var(--accent3-rgb), 0.2); font-size: 13px;">
             <strong style="color: var(--accent3);">⚠️ なぜ重要か：</strong>
-            多くのシミュレーターが「楽観的」になりがちなのは、この裾の厚さを計算に入れていないためです。本ツールではあえて「稀に起こる最悪の事態」を計算に含めることで、真に堅牢なFIRE計画の策定を支援します。
+            多くのシミュレーターが「楽観的」になりがちなのは、正規分布が持つ「極端な外れ値を排除する」性質のためです。本ツールではあえて裾を厚くすることで、資産寿命を削り取る「真の暴落リスク」への耐性をテストできます。
         </div>
     </div>
 </div>
@@ -1241,9 +1243,6 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
                     <li style="margin-bottom: 6px;"><strong>自動正規化の活用:</strong> パラメータ変更後は必ず「自動正規化」を実行してください。各状態からの遷移確率の合計を $1.0$ に収束させ、数学的整合性を保ちます。</li>
                 </ul>
             </div>
-
-            <p style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 0.9em; margin-top: 20px; border-left: 4px solid #ccc;">
-                <strong>💡 ヒント:</strong> まずは「難易度：普通」で「試行回数：2,000回」から開始し、ヒートマップ分析で自身のプランがどの変数の変化に対して最も脆弱（センシティブ）かを確認してください。
             </p>
         </div>
     </div>
