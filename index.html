@@ -1006,29 +1006,50 @@ input[type="range"]:active::-webkit-slider-thumb {
           </div>
 
           <!-- 性別・寿命 -->
-          <div class="param-section" style="margin-bottom:0">
-            <div class="param-section-label">性別・寿命モデル（）</div>
-            <div class="param-row" style="margin-bottom:8px;">
-              <span class="param-label">性別</span>
-              <div class="gender-toggle">
-                <button id="btn-male"   class="gender-btn active-m" onclick="setGender('male')">♂ 男性</button>
-                <button id="btn-female" class="gender-btn"           onclick="setGender('female')">♀ 女性</button>
-              </div>
-            </div>
-            <div class="mortality-box" id="mortality-box">
-              <!-- filled by setGender() -->
-            </div>
-            <div style="height:10px;"></div>
-            <div class="param-control" style="margin-bottom:0;">
-              <div class="param-row">
-                <span class="param-label">医療進歩による死亡率低下（年）</span>
-                <span class="param-value" id="val-med-adv">0.8%/年</span>
-              </div>
-              <input type="range" id="med-adv" min="0" max="3" step="0.1" value="0.8">
-              <div class="range-labels"><span>0%（なし）</span><span>3%（急速）</span></div>
-              <div class="hint-text">値が大きいほど将来の死亡率が低下し、長寿シナリオが増えます。</div>
-            </div>
-          </div>
+     <div class="param-section">
+  <div class="param-section-label">属性設定</div>
+  <div class="param-control">
+    <div class="param-label" style="margin-bottom: 8px;">性別（生存確率計算に影響）</div>
+    <div class="gender-toggle">
+      <!-- IDと引数は「元」を維持 -->
+      <button class="gender-btn active-m" id="btn-male" onclick="setGender('male')">MALE</button>
+      <button class="gender-btn" id="btn-female" onclick="setGender('female')">FEMALE</button>
+    </div>
+  </div>
+
+  <!-- 以前の結果表示枠が必要なら残す -->
+  <div id="mortality-box"></div>
+
+  <div class="param-control">
+    <div class="param-row">
+      <span class="param-label">医療進歩による死亡率低下</span>
+      <!-- IDは「元」を維持 -->
+      <span class="param-value" id="val-med-adv">0.8%</span>
+    </div>
+    <input type="range" id="med-adv" min="0" max="3" step="0.1" value="0.8">
+    <div class="range-labels"><span>0%</span><span>3%</span></div>
+    <div class="hint-text">医療技術の向上により、将来的な死亡率が毎年どの程度改善するかを設定します。</div>
+  </div>
+</div>
+
+<!-- 数式セクションはそのまま追加でOK -->
+<div class="panel">
+  <!-- ...中略... -->
+  <div class="panel-body">
+    <div class="chart-wrapper">
+      <canvas id="mainChart"></canvas>
+    </div>
+    <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px solid var(--border);">
+      <div style="font-size: 10px; color: var(--accent); font-family: var(--font-mono); margin-bottom: 10px; letter-spacing: 1px;">CORE_ALGORITHM</div>
+      <div style="overflow-x: auto; color: var(--text-mid); font-size: 14px;">
+        $$A_{t+1} = (A_t + I_t - E_t) \times (1 + r_t - i_t)$$
+      </div>
+      <div style="font-size: 10px; color: var(--text-dim); margin-top: 10px; font-family: var(--font-mono);">
+        * $A$: 資産額(Assets), $I$: 収入(Income), $E$: 支出(Expense), $r$: 運用利回り(Return), $i$: インフレ率(Inflation)
+      </div>
+    </div>
+  </div>
+</div>
 
           <!-- シミュレーション回数 -->
           <div class="param-section" style="margin-bottom:0;margin-top:14px;">
@@ -1779,6 +1800,58 @@ input[type="range"]:active::-webkit-slider-thumb {
 
   </div>
 </div>
+
+
+<div class="panel" style="margin-bottom: 24px;">
+    <div class="panel-header">🧪 長寿リスク・シミュレーター（寿命モデルの視覚化）</div>
+    <div class="panel-body">
+        <p style="font-size: 0.9em; color: var(--text-mid); margin-bottom: 20px;">
+            「平均寿命」はあくまで平均に過ぎません。FIRE計画で最も危険なのは、想定外の長生きです。
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <!-- 操作系 -->
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 0.85em; color: var(--accent);">性別選択</label>
+                    <select id="sim-gender" class="input-field" style="margin-top:5px;">
+                        <option value="male">男性</option>
+                        <option value="female">女性</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 0.85em; color: var(--accent);">未来の医療進歩 (med-adv): <span id="sim-med-val">0.0</span>%</label>
+                    <input type="range" id="sim-med-adv" min="0" max="3" step="0.1" value="0" style="width:100%;">
+                    <div style="font-size: 0.75em; color: var(--text-dark); margin-top: 5px;">
+                        ※毎年、死亡確率をこの数値分だけ減衰させます。
+                    </div>
+                </div>
+            </div>
+
+            <!-- 計算結果のKPI -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div style="background: rgba(var(--accent-rgb), 0.1); padding: 10px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.75em; color: var(--text-mid);">95歳生存確率</div>
+                    <div id="prob-95" style="font-size: 1.4em; font-weight: bold; color: var(--accent);">--%</div>
+                </div>
+                <div style="background: rgba(var(--accent-rgb), 0.1); padding: 10px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.75em; color: var(--text-mid);">100歳生存確率</div>
+                    <div id="prob-100" style="font-size: 1.4em; font-weight: bold; color: var(--accent);">--%</div>
+                </div>
+                <div style="grid-column: span 2; background: rgba(168, 255, 120, 0.1); padding: 10px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.75em; color: var(--text-mid);">シミュレーション上の最大寿命目安</div>
+                    <div id="max-age-est" style="font-size: 1.2em; font-weight: bold; color: #a8ff78;">--歳</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- グラフ描画エリア -->
+        <div style="height: 250px; position: relative;">
+            <canvas id="longevity-chart"></canvas>
+        </div>
+    </div>
+</div>
+
 
 
 
@@ -5992,6 +6065,89 @@ function renderRegimeDashboard() {
     </div>`;
 }
 
+/////長寿リスクシミュレータ
+let longevityChart = null;
+
+function initLongevityExplorer() {
+    const genderEl = document.getElementById('sim-gender');
+    const medEl    = document.getElementById('sim-med-adv');
+    const canvas   = document.getElementById('longevity-chart');
+    if (!genderEl || !medEl || !canvas) return;
+
+    if (longevityChart) { longevityChart.destroy(); }
+
+    const startAge = 32; // ユーザーの現在年齢に合わせる
+    const ages = Array.from({length: 115 - startAge + 1}, (_, i) => startAge + i);
+
+    longevityChart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: ages,
+            datasets: [{
+                label: '生存確率 (%)',
+                borderColor: '#00d4ff',
+                backgroundColor: 'rgba(0,212,255,0.1)',
+                fill: true,
+                data: [],
+                pointRadius: 0,
+                tension: 0.2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { min: 0, max: 100, ticks: { callback: v => v + '%' } },
+                x: { title: { display: true, text: '年齢' } }
+            },
+            plugins: {
+                annotation: { // 95歳や100歳のラインを入れるとより分かりやすい
+                    annotations: {
+                        line1: { type: 'line', xMin: 95 - startAge, xMax: 95 - startAge, borderColor: 'rgba(255,255,255,0.3)', borderDash: [5,5] }
+                    }
+                }
+            }
+        }
+    });
+
+    function updateLongevity() {
+        const gender = genderEl.value;
+        const medAdv = parseFloat(medEl.value) / 100;
+        document.getElementById('sim-med-val').textContent = (medAdv * 100).toFixed(1);
+
+        let survivalProb = 100;
+        const data = [];
+        let p95 = 0, p100 = 0, maxAge = startAge;
+
+        ages.forEach((age, t) => {
+            // 既存の deathProb 関数を利用
+            const dp = deathProb(age, t, gender, medAdv);
+            survivalProb *= (1 - dp);
+            
+            const displayVal = Math.max(0, survivalProb);
+            data.push(displayVal);
+
+            if (age === 95) p95 = displayVal;
+            if (age === 100) p100 = displayVal;
+            if (displayVal > 0.1) maxAge = age;
+        });
+
+        longevityChart.data.datasets[0].data = data;
+        longevityChart.update();
+
+        document.getElementById('prob-95').textContent = p95.toFixed(1) + '%';
+        document.getElementById('prob-100').textContent = p100.toFixed(1) + '%';
+        document.getElementById('max-age-est').textContent = maxAge + '歳';
+    }
+
+    genderEl.addEventListener('change', updateLongevity);
+    medEl.addEventListener('input', updateLongevity);
+    updateLongevity();
+}
+// スクリプトの最後にこれを追加
+document.addEventListener('DOMContentLoaded', () => {
+    initLongevityExplorer();
+});
 </script>
     <!-- 投げ銭ボタン開始 -->
 <div style="margin: 30px 0; text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
