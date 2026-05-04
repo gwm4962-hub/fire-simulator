@@ -25,6 +25,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 
 
 
@@ -693,6 +694,164 @@ input[type="range"]:active::-webkit-slider-thumb {
 @media(max-width:600px){
   #floating-simulate { bottom:16px; right:12px; padding:11px 16px; font-size:12px; }
 }
+
+/* ===== GLASSMORPHISM ENHANCEMENTS ===== */
+.kpi-card {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, rgba(13,20,36,.85) 0%, rgba(17,29,48,.9) 100%) !important;
+}
+.panel {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.kpi-card.success {
+  background: linear-gradient(135deg, rgba(13,20,36,.85) 0%, rgba(11,28,20,.85) 100%) !important;
+}
+.kpi-card.danger {
+  background: linear-gradient(135deg, rgba(13,20,36,.85) 0%, rgba(36,12,15,.85) 100%) !important;
+}
+.kpi-card.info {
+  background: linear-gradient(135deg, rgba(13,20,36,.85) 0%, rgba(10,25,40,.85) 100%) !important;
+}
+
+/* ===== ADVANCED SETTINGS ACCORDION ===== */
+.adv-section {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.adv-section:hover { border-color: var(--border-bright); }
+
+.adv-toggle {
+  width: 100%;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, var(--surface2), var(--surface3));
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all .2s;
+}
+.adv-toggle:hover { color: var(--text-mid); background: var(--surface3); }
+.adv-toggle-left { display: flex; align-items: center; gap: 8px; }
+.adv-toggle-icon {
+  font-size: 12px;
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+.adv-toggle.open .adv-toggle-icon { transform: rotate(90deg); }
+.adv-badge {
+  font-size: 9px;
+  padding: 2px 7px;
+  background: rgba(0,212,255,.08);
+  border: 1px solid rgba(0,212,255,.2);
+  color: var(--accent);
+  border-radius: 3px;
+  letter-spacing: 1px;
+}
+
+.adv-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .4s cubic-bezier(.4,0,.2,1);
+}
+.adv-body.open { max-height: 9999px; }
+.adv-body-inner { padding: 12px 14px; border-top: 1px solid var(--border); }
+
+/* ===== ACTION PLAN PANEL ===== */
+#action-plan-panel {
+  display: none;
+  animation: slideUp .4s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes slideUp {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.action-item {
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform .2s, box-shadow .2s;
+}
+.action-item:hover { transform: translateX(4px); }
+.action-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+
+/* ===== CASH BUFFER METER ===== */
+.buffer-meter {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 12px;
+}
+.buffer-gauge {
+  height: 12px;
+  background: var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+.buffer-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width .8s cubic-bezier(.4,0,.2,1);
+}
+
+/* ===== CHART ANNOTATION TOOLTIP ===== */
+.chart-annotation-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ===== SCENARIO COMPARE BADGES ===== */
+.scenario-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.compare-cell {
+  text-align: center;
+  padding: 10px 8px;
+  border-radius: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  transition: all .2s;
+}
+.compare-cell:hover { border-color: var(--border-bright); }
+.compare-cell .c-label { font-size: 9px; color: var(--text-dim); font-family: var(--font-mono); letter-spacing: 1px; margin-bottom: 4px; }
+.compare-cell .c-val { font-size: 16px; font-weight: 700; font-family: var(--font-mono); }
+.compare-cell .c-sub { font-size: 9px; color: var(--text-dim); margin-top: 3px; }
 </style>
 </head>
 <body>
@@ -977,8 +1136,17 @@ input[type="range"]:active::-webkit-slider-thumb {
           </div>
 
           <!-- ポートフォリオ & t分布 -->
-          <div class="param-section">
-            <div class="param-section-label">ポートフォリオ・リターン分布</div>
+          <div class="adv-section" id="adv-portfolio-section">
+            <button class="adv-toggle" onclick="toggleAdv('adv-portfolio-section')" type="button">
+              <span class="adv-toggle-left">
+                <span class="adv-toggle-icon">▶</span>
+                <span>📊 ポートフォリオ・リターン分布</span>
+              </span>
+              <span class="adv-badge">ADVANCED</span>
+            </button>
+            <div class="adv-body">
+              <div class="adv-body-inner">
+          <div class="param-section" style="margin-bottom:0;">
             <div class="param-control">
               <div class="param-row"><span class="param-label">株式比率（現役中）</span><span class="param-value" id="val-w-working">70%</span></div>
               <input type="range" id="w-working" min="0" max="100" step="5" value="70">
@@ -1004,8 +1172,21 @@ input[type="range"]:active::-webkit-slider-thumb {
               </div>
             </div>
           </div>
+              </div>
+            </div>
+          </div>
 
-          <!-- 性別・寿命設定セクション -->
+          <!-- 性別・寿命設定セクション（高度な設定） -->
+<div class="adv-section" id="adv-longevity-section" style="margin-bottom:14px;">
+  <button class="adv-toggle" onclick="toggleAdv('adv-longevity-section')" type="button">
+    <span class="adv-toggle-left">
+      <span class="adv-toggle-icon">▶</span>
+      <span>🧬 寿命・属性設定（高度）</span>
+    </span>
+    <span class="adv-badge">ADVANCED</span>
+  </button>
+  <div class="adv-body">
+    <div class="adv-body-inner">
 <div class="param-section" style="margin-bottom:0">
   <div class="param-section-label">属性設定</div>
   <div class="param-row" style="margin-bottom:8px;">
@@ -1033,7 +1214,7 @@ input[type="range"]:active::-webkit-slider-thumb {
 </div>
 
 <!-- グラフ・結果表示パネル -->
-<div class="panel" style="margin-bottom: 24px;">
+<div class="panel" style="margin-bottom: 0; margin-top: 14px;">
     <div class="panel-header">🧪 長寿リスク・シミュレーター</div>
     <div class="panel-body">
         <p style="font-size: 0.9em; color: var(--text-mid); margin-bottom: 20px;">
@@ -1063,6 +1244,9 @@ input[type="range"]:active::-webkit-slider-thumb {
         <p>ハザード関数 $h(x)$ において、毎年「その年に生存している」条件の下で翌年の死力を逐次計算することで、長寿化の影響を保守的に見積もります。</p>
 
     </div>
+</div>
+    </div>
+  </div>
 </div>
 
 
@@ -1283,6 +1467,26 @@ input[type="range"]:active::-webkit-slider-thumb {
         <div class="panel" id="sim-commentary-panel" style="display:none;">
           <div class="panel-header">📋 シミュレーション結果の解説</div>
           <div class="panel-body" id="sim-commentary-body"></div>
+        </div>
+
+        <!-- ★ アクションプラン：成功率90%への道 -->
+        <div class="panel" id="action-plan-panel">
+          <div class="panel-header" style="justify-content:space-between;">
+            <span>🎯 成功率 90% への改善シミュレーター</span>
+            <span id="action-plan-badge" style="font-size:9px;padding:3px 8px;background:rgba(168,255,120,.1);border:1px solid rgba(168,255,120,.2);color:#a8ff78;border-radius:3px;font-family:var(--font-mono);letter-spacing:1px;">LIVE</span>
+          </div>
+          <div class="panel-body">
+            <div id="action-plan-body">
+              <div style="color:var(--text-dim);font-size:11px;text-align:center;padding:20px 0;">シミュレーション後に表示されます</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ★ 安全キャッシュバッファ評価 -->
+        <div class="panel" id="cash-buffer-panel" style="display:none;">
+          <div class="panel-header">🛡️ 安全資金（キャッシュバッファ）評価</div>
+          <div class="panel-body" id="cash-buffer-body">
+          </div>
         </div>
       </div>
 
@@ -1878,6 +2082,27 @@ input[type="range"]:active::-webkit-slider-thumb {
 
 <script>
 // ============================================================
+// ============================================================
+// Advanced Settings Accordion
+// ============================================================
+function toggleAdv(sectionId) {
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+  const btn = section.querySelector('.adv-toggle');
+  const body = section.querySelector('.adv-body');
+  const isOpen = body.classList.contains('open');
+  
+  if (isOpen) {
+    body.classList.remove('open');
+    btn.classList.remove('open');
+  } else {
+    body.classList.add('open');
+    btn.classList.add('open');
+    // Re-init sliders inside if needed
+    section.querySelectorAll('input[type="range"]').forEach(s => updateSliderFill(s));
+  }
+}
+
 // ============================================================
 // Dynamic slider gradient (shows fill progress)
 // ============================================================
@@ -2987,6 +3212,232 @@ function updatePurchasingPowerKPI(baseInfl, T, startAge) {
     <span style="font-size:11px;color:var(--text-dim);">グラフの黄色破線（実質価値）は名目資産をこのインフレ率で割り引いた「今のお金の価値」で表示しています。</span>
   `;
 }
+// ============================================================
+// アクションプラン：成功率90%への改善シミュレーター
+// ============================================================
+function renderActionPlan({ successRate, bankruptRate, fireAgeMed, startAge, surplus65, expAt65, pensionAnnual, assets65, needAt65, fireThr, initAssets, monthlyRetire }) {
+  const panel = document.getElementById('action-plan-panel');
+  const body  = document.getElementById('action-plan-body');
+  if (!panel || !body) return;
+  panel.style.display = 'block';
+
+  const fmt万 = v => Math.abs(v) >= 1e8 ? (v/1e8).toFixed(1)+'億円' : Math.round(v/1e4).toLocaleString()+'万円';
+  const pct   = v => (v*100).toFixed(1) + '%';
+
+  const target = 0.90;
+  const gap    = Math.max(0, target - successRate);
+  const isOk   = successRate >= target;
+
+  // ── トレードオフ試算 ──
+  // 1. 節約効果：月5万円節約で成功率+7pt程度（近似）
+  const savingMonthly = gap > 0 ? Math.ceil(gap * 100 / 7) * 5 : 0; // 万円/月
+  const savingAnnual  = savingMonthly * 12;
+
+  // 2. FIRE延期効果：1年延期≒+4pt（近似）
+  const delayYears = gap > 0 ? Math.ceil(gap * 100 / 4) : 0;
+  const newFireAge = fireAgeMed ? fireAgeMed + delayYears : null;
+
+  // 3. 収入増：月3万円増≒+5pt
+  const incomeIncrease = gap > 0 ? Math.ceil(gap * 100 / 5) * 3 : 0;
+
+  // 成功率のカラー
+  const successColor = successRate >= 0.90 ? '#a8ff78' : successRate >= 0.70 ? '#ffd166' : '#ff4757';
+
+  // シナリオ比較テーブルデータ
+  const scenarios = [
+    { label: '現在の設定', rate: pct(successRate), note: '現在のパラメータ', color: successColor },
+    { label: `月${savingMonthly}万円節約`, rate: gap > 0 ? '≈' + pct(Math.min(1, successRate + 0.07*(savingMonthly/5))) : '—', note: '支出削減シナリオ', color: '#00d4ff' },
+    { label: `${delayYears}年FIRE延期`, rate: gap > 0 ? '≈' + pct(Math.min(1, successRate + 0.04*delayYears)) : '—', note: newFireAge ? `${newFireAge}歳FIRE` : '—', color: '#ffd166' },
+  ];
+
+  let html = '';
+
+  if (isOk) {
+    html = `
+      <div style="padding:14px 16px;border-radius:8px;background:rgba(168,255,120,.07);border:1px solid rgba(168,255,120,.2);margin-bottom:14px;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:28px;">🏆</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#a8ff78;margin-bottom:4px;">成功率 ${pct(successRate)} — すでに90%超の堅牢プラン</div>
+          <div style="font-size:11px;color:var(--text-mid);line-height:1.7;">
+            現在の設定は非常に安全な水準です。さらに生活の質を高める、または遺産・資産承継を検討するフェーズに入れます。
+          </div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-mid);line-height:1.8;padding:12px 14px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.15);border-radius:6px;">
+        💡 過剰貯蓄の可能性もあります。月支出を増やしても目標水準を維持できるか、<b style="color:var(--accent);">ヒートマップ分析</b>で最適化してください。
+      </div>
+    `;
+  } else {
+    html = `
+      <!-- 現状ギャップ表示 -->
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);">現在の成功率</span>
+          <span style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);">目標 90%</span>
+        </div>
+        <div style="position:relative;height:20px;background:var(--border);border-radius:10px;overflow:hidden;">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:${(successRate*100).toFixed(1)}%;background:linear-gradient(90deg,${successColor},${successColor}99);border-radius:10px;transition:width .8s;"></div>
+          <div style="position:absolute;left:90%;top:0;bottom:0;width:2px;background:rgba(168,255,120,.6);box-shadow:0 0 6px #a8ff78;"></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--font-mono);font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);">${pct(successRate)} → 目標 90%（あと +${(gap*100).toFixed(1)}pt）</div>
+        </div>
+      </div>
+
+      <!-- トレードオフ3択 -->
+      <div style="font-size:10px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-family:var(--font-mono);">── 成功率を 90% に引き上げる3つの方法</div>
+      
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+        <!-- 案1：節約 -->
+        <div class="action-item" style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#00d4ff;border-radius:3px 0 0 3px;"></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="font-size:18px;">💳</span>
+            <span style="font-size:12px;font-weight:700;color:#00d4ff;">月支出を約 ${savingMonthly}万円削減する</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-mid);line-height:1.7;padding-left:26px;">
+            年間 <b style="color:var(--text);">${fmt万(savingAnnual*10000)}</b> の節約で成功率が概算 +${Math.round(gap*100/7*7)}pt程度改善します。<br>
+            📌 固定費（通信費・保険・サブスク）の見直しから始めると達成しやすいです。
+          </div>
+        </div>
+
+        <!-- 案2：FIRE延期 -->
+        <div class="action-item" style="background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.2);">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#ffd166;border-radius:3px 0 0 3px;"></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="font-size:18px;">⏳</span>
+            <span style="font-size:12px;font-weight:700;color:#ffd166;">FIRE時期を ${delayYears}年 遅らせる</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-mid);line-height:1.7;padding-left:26px;">
+            ${newFireAge ? `<b style="color:var(--text);">${newFireAge}歳FIRE</b>（現在の中央値より${delayYears}年遅延）にシフトすることで` : '就労期間を延長することで'} 資産積み上げ期間が増え、成功率が大幅に改善します。<br>
+            📌 社会保険加入期間の延長で年金受給額も増加します。
+          </div>
+        </div>
+
+        <!-- 案3：収入増 -->
+        <div class="action-item" style="background:rgba(168,255,120,.06);border:1px solid rgba(168,255,120,.2);">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#a8ff78;border-radius:3px 0 0 3px;"></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="font-size:18px;">💰</span>
+            <span style="font-size:12px;font-weight:700;color:#a8ff78;">月収入を約 ${incomeIncrease}万円 増やす</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-mid);line-height:1.7;padding-left:26px;">
+            副業・スキルアップによる収入増、または配偶者の就労促進でも同等の効果が見込めます。<br>
+            📌 節約より収入増の方が精神的負担が少なく持続しやすい傾向があります。
+          </div>
+        </div>
+      </div>
+
+      <!-- シナリオ比較サマリー -->
+      <div style="font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;font-family:var(--font-mono);">── シナリオ別 概算成功率</div>
+      <div class="scenario-compare">
+        ${scenarios.map(s => `
+          <div class="compare-cell">
+            <div class="c-label">${s.label}</div>
+            <div class="c-val" style="color:${s.color};">${s.rate}</div>
+            <div class="c-sub">${s.note}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="font-size:9px;color:var(--text-dim);margin-top:8px;text-align:center;">※概算値。実際の改善幅はシミュレーターで確認してください</div>
+    `;
+  }
+
+  body.innerHTML = html;
+}
+
+// ============================================================
+// 安全キャッシュバッファ評価
+// ============================================================
+function renderCashBuffer({ assets65, expAt65, surplus65, successRate, bankruptRate, monthlyRetire, pensionAnnual }) {
+  const panel = document.getElementById('cash-buffer-panel');
+  const body  = document.getElementById('cash-buffer-body');
+  if (!panel || !body) return;
+  panel.style.display = 'block';
+
+  const monthlyExpense = expAt65 / 12; // 月支出（円）
+  const monthlyNet     = monthlyExpense - (pensionAnnual / 12); // 年金引後の月純支出
+  const bufferNeeded3  = Math.max(0, monthlyNet) * 3;   // 3ヶ月分
+  const bufferNeeded6  = Math.max(0, monthlyNet) * 6;   // 6ヶ月分
+  const bufferNeeded12 = Math.max(0, monthlyNet) * 12;  // 12ヶ月分
+
+  // 現在の余剰資産から推計
+  const availBuffer = Math.max(0, surplus65);
+  const months = monthlyNet > 0 ? Math.floor(availBuffer / monthlyNet) : 999;
+  const monthsCapped = Math.min(months, 36);
+
+  const fmt万 = v => Math.round(v/1e4).toLocaleString() + '万円';
+
+  // 安全水準判定
+  let bufferGrade, bufferColor, bufferIcon, bufferMsg;
+  if (months >= 24) {
+    bufferGrade = '非常に安全';    bufferColor = '#a8ff78'; bufferIcon = '🛡️';
+    bufferMsg = '24ヶ月以上の安全資金があります。暴落が長期化しても生活水準を維持できます。';
+  } else if (months >= 12) {
+    bufferGrade = '安全圏';        bufferColor = '#00d4ff'; bufferIcon = '✅';
+    bufferMsg = '12ヶ月以上の安全資金があります。1年程度の暴落・無収入期間に耐えられます。';
+  } else if (months >= 6) {
+    bufferGrade = '最低ライン';    bufferColor = '#ffd166'; bufferIcon = '⚠️';
+    bufferMsg = '6〜12ヶ月分の安全資金です。生活費の変動リスクがあるため、固定費削減を検討してください。';
+  } else if (months >= 3) {
+    bufferGrade = '要注意';        bufferColor = '#ff9a3c'; bufferIcon = '🔴';
+    bufferMsg = '3〜6ヶ月分しかありません。急な出費や暴落に弱い状態です。生活防衛資金の積み増しを優先してください。';
+  } else {
+    bufferGrade = '危険水準';      bufferColor = '#ff4757'; bufferIcon = '💀';
+    bufferMsg = '3ヶ月分未満です。暴落直後に資産を売却せざるを得ないリスクが高い状態です。';
+  }
+
+  const fillPct = Math.min(100, (monthsCapped / 36) * 100);
+
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:14px;background:rgba(${bufferColor.startsWith('#a8') ? '168,255,120' : bufferColor.startsWith('#00') ? '0,212,255' : bufferColor.startsWith('#ff') && bufferColor.includes('4757') ? '255,71,87' : '255,209,102'},.06);border:1px solid ${bufferColor}33;border-radius:8px;">
+      <span style="font-size:28px;">${bufferIcon}</span>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${bufferColor};margin-bottom:4px;">${bufferGrade}：約 ${months < 999 ? months + 'ヶ月分' : '36ヶ月以上'} の安全資金</div>
+        <div style="font-size:11px;color:var(--text-mid);line-height:1.6;">${bufferMsg}</div>
+      </div>
+    </div>
+
+    <!-- バッファゲージ -->
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:6px;">
+        <span>安全資金の充足度（月数）</span>
+        <span style="color:${bufferColor};">${months < 999 ? months + 'ヶ月' : '36ヶ月超'}</span>
+      </div>
+      <div class="buffer-gauge">
+        <div class="buffer-fill" style="width:${fillPct.toFixed(1)}%;background:linear-gradient(90deg,${bufferColor}aa,${bufferColor});"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-dim);margin-top:4px;">
+        <span>0ヶ月</span>
+        <span style="color:#ffd166;">⚠️ 6ヶ月</span>
+        <span style="color:#00d4ff;">✅ 12ヶ月</span>
+        <span style="color:#a8ff78;">🛡️ 24ヶ月</span>
+        <span>36ヶ月</span>
+      </div>
+    </div>
+
+    <!-- 詳細数値 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:var(--text-dim);margin-bottom:4px;font-family:var(--font-mono);">月純支出（年金後）</div>
+        <div style="font-size:15px;font-weight:700;font-family:var(--font-mono);color:var(--text);">${fmt万(Math.max(0, monthlyNet))}</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:var(--text-dim);margin-bottom:4px;font-family:var(--font-mono);">推奨安全資金（12ヶ月）</div>
+        <div style="font-size:15px;font-weight:700;font-family:var(--font-mono);color:#00d4ff;">${fmt万(bufferNeeded12)}</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:var(--text-dim);margin-bottom:4px;font-family:var(--font-mono);">現在の余裕資産</div>
+        <div style="font-size:15px;font-weight:700;font-family:var(--font-mono);color:${surplus65 >= 0 ? bufferColor : '#ff4757'};">${surplus65 >= 0 ? fmt万(surplus65) : '▲'+fmt万(-surplus65)}</div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:var(--text-dim);line-height:1.7;padding:10px 12px;background:rgba(0,0,0,.15);border-radius:6px;">
+      💡 <b style="color:var(--text);">シーケンス・オブ・リターン・リスク対策：</b>
+      FIRE直後に暴落が起きた場合でも投資資産を売却せずに生活できるよう、別口座に現金バッファを確保することが推奨されています。
+      最低でも <b style="color:#ffd166;">6ヶ月分</b>、理想は <b style="color:#a8ff78;">12〜24ヶ月分</b> を目安にしてください。
+    </div>
+  `;
+}
+
 // ページ読み込み完了後、またはグラフ作成後に実行
 // 見た目と中身を強制的に同期させる
 toggleRealValue(); // 1回目は !_realValueOn で false になるので、直前に _realValueOn = false; にしておくか、関数を微調整してください
@@ -3435,6 +3886,33 @@ if(dead[i]) continue; // skip financials if died this step
     N, mf,
   });
 
+  // ---- アクションプラン（成功率90%への改善案）----
+  renderActionPlan({
+    successRate: nS/N,
+    bankruptRate: nB/N,
+    fireAgeMed,
+    startAge,
+    surplus65,
+    expAt65,
+    pensionAnnual,
+    assets65,
+    needAt65,
+    fireThr,
+    initAssets,
+    monthlyRetire,
+  });
+
+  // ---- 安全キャッシュバッファ評価 ----
+  renderCashBuffer({
+    assets65,
+    expAt65,
+    surplus65,
+    successRate: nS/N,
+    bankruptRate: nB/N,
+    monthlyRetire,
+    pensionAnnual,
+  });
+
   // ---- Chart ----
   const cont=document.getElementById('chart-container');
   cont.innerHTML='<div class="chart-wrapper"><canvas id="myChart"></canvas></div>';
@@ -3462,9 +3940,27 @@ if(dead[i]) continue; // skip financials if died this step
 // --- ここから入れ替え ---
   // 表示する年齢（x軸の右端）までのデータだけを取り出し、その範囲の最大値をy軸の基準にする
   const displayLimit = getAgeAtSurvivalRate(0.1, MORTALITY[selectedGender], parseInt(document.getElementById('start-age').value), parseFloat(document.getElementById('med-adv').value)) - parseInt(document.getElementById('start-age').value);
-  const p90Visible = Array.from(p90).slice(0, displayLimit + 1).filter(v => isFinite(v));
-  const yMax = Math.ceil(Math.max(...p90Visible) * 1.1 * 10) / 10;
+
+  // yMax: P90ではなく「中央値のピーク × 2.0」を上限にして中央値が潰れないようにする
+  // P90が極端に大きい（外れ値パス由来）場合でも中央値が読みやすい縦軸を維持
+  const medVisible  = Array.from(med).slice(0, displayLimit + 1).filter(v => isFinite(v) && v > 0);
+  const p90Visible  = Array.from(p90).slice(0, displayLimit + 1).filter(v => isFinite(v) && v > 0);
+  const medPeak     = medVisible.length > 0 ? Math.max(...medVisible) : 1;
+  const p90Peak     = p90Visible.length > 0 ? Math.max(...p90Visible) : medPeak;
+  // 中央値ピークの2倍とP90ピークの1.1倍の小さい方を上限にし、中央値が常に上半分に収まるようにする
+  const yMaxCandidate1 = medPeak * 2.2;
+  const yMaxCandidate2 = p90Peak * 1.1;
+  const yMaxRaw = Math.min(yMaxCandidate1, yMaxCandidate2);
+  // 最低でも中央値ピーク×1.4は確保（P90が小さい場合の下限）
+  const yMax = Math.max(yMaxRaw, medPeak * 1.4);
+  // 小数点1桁に丸める
+  const yMaxFinal = Math.ceil(yMax * 10) / 10;
   // --- ここまで入れ替え ---
+
+  // x軸ラベル配列（年齢の文字列）から65歳のインデックスを算出
+  // アノテーションのxMin/xMaxはカテゴリ軸ではラベル文字列を使う
+  const age65label  = String(65);
+  const fireAgeLabel = lastMedianFireAge ? String(lastMedianFireAge) : null;
 
 
   document.getElementById('chart-legend-note').textContent =
@@ -3492,18 +3988,58 @@ if(dead[i]) continue; // skip financials if died this step
           boxWidth:18,padding:10}},
         annotation:{
           annotations:{
-            fireLine: lastMedianFireAge && lastMedianFireAge >= startAge ? {
-              type:'line',xMin:lastMedianFireAge,xMax:lastMedianFireAge,
-              borderColor:'rgba(255,209,102,.7)',borderWidth:1.5,borderDash:[5,3],
-              label:{content:'🎯 FIRE',display:true,color:'#ffd166',font:{size:9},
-                     position:'start',backgroundColor:'rgba(0,0,0,.5)',padding:{x:4,y:2}},
+            fireLine: fireAgeLabel && lastMedianFireAge >= startAge ? {
+              type:'line',xMin:fireAgeLabel,xMax:fireAgeLabel,
+              borderColor:'rgba(255,209,102,.8)',borderWidth:2,borderDash:[5,3],
+              label:{content:'🎯 FIRE達成',display:true,color:'#ffd166',font:{size:10,weight:'bold'},
+                     position:'start',backgroundColor:'rgba(20,30,50,.85)',padding:{x:6,y:3},
+                     borderRadius:4},
             } : undefined,
             age65Line: 65 >= startAge ? {
-              type:'line',xMin:65,xMax:65,
-              borderColor:'rgba(179,136,255,.6)',borderWidth:1.5,borderDash:[4,3],
-              label:{content:'🏦 65歳',display:true,color:'#b388ff',font:{size:9},
-                     position:'start',backgroundColor:'rgba(0,0,0,.5)',padding:{x:4,y:2}},
+              type:'line',xMin:age65label,xMax:age65label,
+              borderColor:'rgba(179,136,255,.7)',borderWidth:1.5,borderDash:[4,3],
+              label:{content:'🏦 年金開始(65)',display:true,color:'#b388ff',font:{size:9},
+                     position:'start',backgroundColor:'rgba(20,30,50,.85)',padding:{x:4,y:2},
+                     borderRadius:4},
             } : undefined,
+            // 資産中央値の最高値（ピーク点）
+            peakAnnotation: (() => {
+              const peakIdx = Array.from(med).reduce((bestIdx, v, idx) => (isFinite(v) && v > (isFinite(med[bestIdx]) ? med[bestIdx] : 0)) ? idx : bestIdx, 0);
+              const peakAge = startAge + peakIdx;
+              const peakVal = med[peakIdx];
+              if (!isFinite(peakVal) || peakVal <= 0) return undefined;
+              return {
+                type: 'point',
+                xValue: String(peakAge),
+                yValue: peakVal,
+                backgroundColor: 'rgba(168,255,120,.25)',
+                borderColor: '#a8ff78',
+                borderWidth: 2,
+                radius: 6,
+                label: { content: `▲ピーク`, display: true, color: '#a8ff78', font: {size:9}, position: 'start', backgroundColor:'rgba(20,30,50,.85)', padding:{x:4,y:2}, borderRadius:4, yAdjust:-18 },
+              };
+            })(),
+            // 資産中央値のトラフ（底打ち点） - FIREより後
+            troughAnnotation: (() => {
+              if (!lastMedianFireAge) return undefined;
+              const fireIdx = lastMedianFireAge - startAge;
+              const subMed  = Array.from(med).slice(fireIdx);
+              const troughLocal = subMed.reduce((bestIdx, v, idx) => (isFinite(v) && v < (isFinite(subMed[bestIdx]) ? subMed[bestIdx] : Infinity)) ? idx : bestIdx, 0);
+              const troughIdx   = fireIdx + troughLocal;
+              const troughAge   = startAge + troughIdx;
+              const troughVal   = med[troughIdx];
+              if (!isFinite(troughVal) || troughVal <= 0 || troughLocal === 0) return undefined;
+              return {
+                type: 'point',
+                xValue: String(troughAge),
+                yValue: troughVal,
+                backgroundColor: 'rgba(255,71,87,.2)',
+                borderColor: '#ff4757',
+                borderWidth: 2,
+                radius: 5,
+                label: { content: '▼底打ち', display: true, color: '#ff6b6b', font: {size:9}, position: 'end', backgroundColor:'rgba(20,30,50,.85)', padding:{x:4,y:2}, borderRadius:4, yAdjust:18 },
+              };
+            })(),
           }
         },
         tooltip:{mode:'index',intersect:false,backgroundColor:'#111827',borderColor:'#1e2d45',borderWidth:1,
@@ -3518,7 +4054,7 @@ if(dead[i]) continue; // skip financials if died this step
 max: getAgeAtSurvivalRate(0.1, MORTALITY[selectedGender], parseInt(document.getElementById('start-age').value), parseFloat(document.getElementById('med-adv').value)),
 grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:10},maxTicksLimit:12},
            title:{display:true,text:'年齢',color:'#6b7a99',font:{size:11}}},
-        y:{min:0,max:yMax,grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},
+        y:{min:0,max:yMaxFinal,grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},
            ticks:{color:'#6b7a99',font:{size:10},callback:v=>v.toFixed(1)+'億'},
            title:{display:true,text:'総資産（億円）',color:'#6b7a99',font:{size:11}}}
       }
