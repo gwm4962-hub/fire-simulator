@@ -6078,18 +6078,21 @@ function renderRegimeDashboard() {
     </div>`;
 }
 
-/////長寿リスクシミュレータ
+///// 長寿リスクシミュレータ
 let longevityChart = null;
+let currentGender = 'male'; // 現在選択されている性別を保持する変数
 
 function initLongevityExplorer() {
-    const genderEl = document.getElementById('sim-gender');
+    // HTMLのIDに合わせて取得対象を修正
     const medEl    = document.getElementById('sim-med-adv');
     const canvas   = document.getElementById('longevity-chart');
-    if (!genderEl || !medEl || !canvas) return;
+    
+    // 要素が見つからない場合は中断
+    if (!medEl || !canvas) return;
 
     if (longevityChart) { longevityChart.destroy(); }
 
-    const startAge = 32; // ユーザーの現在年齢に合わせる
+    const startAge = 32; // ユーザーの現在年齢
     const ages = Array.from({length: 115 - startAge + 1}, (_, i) => startAge + i);
 
     longevityChart = new Chart(canvas.getContext('2d'), {
@@ -6112,29 +6115,42 @@ function initLongevityExplorer() {
             scales: {
                 y: { min: 0, max: 100, ticks: { callback: v => v + '%' } },
                 x: { title: { display: true, text: '年齢' } }
-            },
-            plugins: {
-                annotation: { // 95歳や100歳のラインを入れるとより分かりやすい
-                    annotations: {
-                        line1: { type: 'line', xMin: 95 - startAge, xMax: 95 - startAge, borderColor: 'rgba(255,255,255,0.3)', borderDash: [5,5] }
-                    }
-                }
             }
         }
     });
 
+    // 性別ボタンを切り替えるための関数をグローバル（window）に定義
+    window.setGender = function(gender) {
+        currentGender = gender;
+        
+        // ボタンの見た目（アクティブ状態）を更新
+        const btnMale = document.getElementById('btn-male');
+        const btnFemale = document.getElementById('btn-female');
+        
+        if (btnMale && btnFemale) {
+            btnMale.classList.toggle('active-m', gender === 'male');
+            btnFemale.classList.toggle('active-f', gender === 'female');
+        }
+        
+        // 性別が変わったので再計算
+        updateLongevity();
+    };
+
     function updateLongevity() {
-        const gender = genderEl.value;
+        // スライダーの値を取得
         const medAdv = parseFloat(medEl.value) / 100;
-        document.getElementById('sim-med-val').textContent = (medAdv * 100).toFixed(1);
+        
+        // 数値表示の更新（HTML側のIDに合わせて sim-med-val を使用）
+        const valDisp = document.getElementById('sim-med-val');
+        if (valDisp) valDisp.textContent = (medAdv * 100).toFixed(1);
 
         let survivalProb = 100;
         const data = [];
         let p95 = 0, p100 = 0, maxAge = startAge;
 
         ages.forEach((age, t) => {
-            // 既存の deathProb 関数を利用
-            const dp = deathProb(age, t, gender, medAdv);
+            // 現在保持している currentGender を使用
+            const dp = deathProb(age, t, currentGender, medAdv);
             survivalProb *= (1 - dp);
             
             const displayVal = Math.max(0, survivalProb);
@@ -6148,19 +6164,27 @@ function initLongevityExplorer() {
         longevityChart.data.datasets[0].data = data;
         longevityChart.update();
 
-        document.getElementById('prob-95').textContent = p95.toFixed(1) + '%';
-        document.getElementById('prob-100').textContent = p100.toFixed(1) + '%';
-        document.getElementById('max-age-est').textContent = maxAge + '歳';
+        // 各種表示の更新
+        const p95El = document.getElementById('prob-95');
+        const p100El = document.getElementById('prob-100');
+        const maxAgeEl = document.getElementById('max-age-est');
+
+        if (p95El) p95El.textContent = p95.toFixed(1) + '%';
+        if (p100El) p100El.textContent = p100.toFixed(1) + '%';
+        if (maxAgeEl) maxAgeEl.textContent = maxAge + '歳';
     }
 
-    genderEl.addEventListener('change', updateLongevity);
+    // スライダーのイベントリスナー
     medEl.addEventListener('input', updateLongevity);
+    
+    // 初回実行
     updateLongevity();
 }
-// スクリプトの最後にこれを追加
+
 document.addEventListener('DOMContentLoaded', () => {
     initLongevityExplorer();
 });
+
 </script>
     <!-- 投げ銭ボタン開始 -->
 <div style="margin: 30px 0; text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
