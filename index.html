@@ -1005,51 +1005,64 @@ input[type="range"]:active::-webkit-slider-thumb {
             </div>
           </div>
 
-          <!-- 性別・寿命 -->
-     <div class="param-section">
+          <!-- 性別・寿命設定セクション -->
+<div class="param-section" style="margin-bottom:0">
   <div class="param-section-label">属性設定</div>
-  <div class="param-control">
-    <div class="param-label" style="margin-bottom: 8px;">性別（生存確率計算に影響）</div>
+  <div class="param-row" style="margin-bottom:8px;">
+    <span class="param-label">性別</span>
     <div class="gender-toggle">
-      <!-- IDと引数は「元」を維持 -->
-      <button class="gender-btn active-m" id="btn-male" onclick="setGender('male')">MALE</button>
-      <button class="gender-btn" id="btn-female" onclick="setGender('female')">FEMALE</button>
+      <button id="btn-male" class="gender-btn active-m" onclick="setGender('male')">♂ 男性</button>
+      <button id="btn-female" class="gender-btn" onclick="setGender('female')">♀ 女性</button>
     </div>
   </div>
+  
+  <div class="mortality-box" id="mortality-box"></div>
+  <div style="height:10px;"></div>
 
-  <!-- 以前の結果表示枠が必要なら残す -->
-  <div id="mortality-box"></div>
-
-  <div class="param-control">
+  <div class="param-control" style="margin-bottom:0;">
     <div class="param-row">
-      <span class="param-label">医療進歩による死亡率低下</span>
-      <!-- IDは「元」を維持 -->
-      <span class="param-value" id="val-med-adv">0.8%</span>
+      <span class="param-label">医療進歩による死亡率低下（年）</span>
+      <!-- JS側の更新対象ID: sim-med-val -->
+      <span class="param-value" id="sim-med-val">0.8%</span>
     </div>
-    <input type="range" id="med-adv" min="0" max="3" step="0.1" value="0.8">
-    <div class="range-labels"><span>0%</span><span>3%</span></div>
-    <div class="hint-text">医療技術の向上により、将来的な死亡率が毎年どの程度改善するかを設定します。</div>
+    <!-- JS側の取得対象ID: sim-med-adv -->
+    <input type="range" id="sim-med-adv" min="0" max="3" step="0.1" value="0.8">
+    <div class="range-labels"><span>0%（なし）</span><span>3%（急速）</span></div>
+    <div class="hint-text">値が大きいほど将来の死亡率が低下し、長寿シナリオが増えます。</div>
   </div>
 </div>
 
-<!-- 数式セクションはそのまま追加でOK -->
-<div class="panel">
-  <!-- ...中略... -->
-  <div class="panel-body">
-    <div class="chart-wrapper">
-      <canvas id="mainChart"></canvas>
+<!-- グラフ・結果表示パネル -->
+<div class="panel" style="margin-bottom: 24px;">
+    <div class="panel-header">🧪 長寿リスク・シミュレーター</div>
+    <div class="panel-body">
+        <p style="font-size: 0.9em; color: var(--text-mid); margin-bottom: 20px;">
+            「平均寿命」はあくまで平均に過ぎません。FIRE計画で最も危険なのは、想定外の長生きです。
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; grid-column: span 2;">
+                <div style="background: rgba(var(--accent-rgb), 0.1); padding: 10px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.75em; color: var(--text-mid);">95歳生存確率</div>
+                    <div id="prob-95" style="font-size: 1.4em; font-weight: bold; color: var(--accent);">--%</div>
+                </div>
+                <div style="background: rgba(var(--accent-rgb), 0.1); padding: 10px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.75em; color: var(--text-mid);">100歳生存確率</div>
+                    <div id="prob-100" style="font-size: 1.4em; font-weight: bold; color: var(--accent);">--%</div>
+                </div>
+                <div style="grid-column: span 2; background: rgba(168, 255, 120, 0.1); padding: 10px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.75em; color: var(--text-mid);">シミュレーション上の最大寿命目安</div>
+                    <div id="max-age-est" style="font-size: 1.2em; font-weight: bold; color: #a8ff78;">--歳</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="height: 250px; position: relative;">
+            <canvas id="longevity-chart"></canvas>
+        </div>
     </div>
-    <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px solid var(--border);">
-      <div style="font-size: 10px; color: var(--accent); font-family: var(--font-mono); margin-bottom: 10px; letter-spacing: 1px;">CORE_ALGORITHM</div>
-      <div style="overflow-x: auto; color: var(--text-mid); font-size: 14px;">
-        $$A_{t+1} = (A_t + I_t - E_t) \times (1 + r_t - i_t)$$
-      </div>
-      <div style="font-size: 10px; color: var(--text-dim); margin-top: 10px; font-family: var(--font-mono);">
-        * $A$: 資産額(Assets), $I$: 収入(Income), $E$: 支出(Expense), $r$: 運用利回り(Return), $i$: インフレ率(Inflation)
-      </div>
-    </div>
-  </div>
 </div>
+
 
           <!-- シミュレーション回数 -->
           <div class="param-section" style="margin-bottom:0;margin-top:14px;">
@@ -1783,7 +1796,7 @@ input[type="range"]:active::-webkit-slider-thumb {
         <div style="background:var(--border);border-radius:3px;height:8px;overflow:hidden;">
           <div id="vd-drag-bar" style="height:100%;background:linear-gradient(90deg,#ff4757,#ffd166);border-radius:3px;transition:width .2s;width:13%;"></div>
         </div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:3px;">ドラッグが大きいほど、長期保有で実際の利益が期待より目減りします</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:3px;">ボラティリティが大きいほど、長期保有で実際の利益が期待より目減りします</div>
       </div>
 
       <!-- Chart.js グラフ -->
