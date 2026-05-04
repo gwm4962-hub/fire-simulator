@@ -1171,9 +1171,24 @@ input[type="range"]:active::-webkit-slider-thumb {
 
       <!-- ③ チャート -->
       <div class="panel">
-        <div class="panel-header" style="justify-content:space-between;">
+        <div class="panel-header" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
           <span>📈 資産推移シミュレーション</span>
-          <span id="chart-legend-note" style="font-size:9px;color:var(--text-dim);letter-spacing:1px;"></span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <!-- 実質価値トグル -->
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text-dim);font-family:var(--font-mono);">
+              <div id="real-toggle-wrap" style="position:relative;width:32px;height:16px;flex-shrink:0;" onclick="toggleRealValue()">
+                <div style="position:absolute;inset:0;background:var(--border);border-radius:8px;transition:background .2s;" id="real-toggle-bg"></div>
+                <div style="position:absolute;top:2px;left:2px;width:12px;height:12px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.4);" id="real-toggle-knob"></div>
+              </div>
+              実質価値
+            </label>
+            <span id="chart-legend-note" style="font-size:9px;color:var(--text-dim);letter-spacing:1px;"></span>
+          </div>
+        </div>
+        <!-- 購買力KPI（実質価値ON時に表示） -->
+        <div id="purchasing-power-kpi" style="display:none;padding:8px 16px;background:rgba(255,209,102,0.07);border-bottom:1px solid rgba(255,209,102,0.2);">
+          <div style="font-size:11px;color:#ffd166;font-family:var(--font-mono);letter-spacing:1px;margin-bottom:4px;">💰 購買力アラート</div>
+          <div id="purchasing-power-text" style="font-size:12px;color:var(--text-mid);line-height:1.7;"></div>
         </div>
         <div id="chart-container">
           <div class="placeholder">
@@ -1291,8 +1306,8 @@ input[type="range"]:active::-webkit-slider-thumb {
 
           <!-- ヒートマップ本体（Chart.jsで描画） -->
           <div id="heatmap-wrap" style="display:none;">
-            <div style="display:flex;align-items:stretch;gap:0;">
-              <!-- Chart.js canvas（軸タイトルはChart.js内で描画） -->
+            <div style="display:flex;align-items:stretch;">
+              <!-- Chart.js canvas（Y軸目盛りはChart.js内で描画） -->
               <div style="flex:1;position:relative;" id="heatmap-canvas-container">
                 <canvas id="sensitivityHeatmap"></canvas>
               </div>
@@ -1336,7 +1351,7 @@ input[type="range"]:active::-webkit-slider-thumb {
     </div>
 
     <!-- トルネードチャート -->
-    <div id="tornado-chart-wrap" style="display:none;position:relative;height:320px;margin-bottom:20px;">
+    <div id="tornado-chart-wrap" style="display:none;position:relative;height:380px;margin-bottom:20px;">
       <canvas id="tornadoChart"></canvas>
     </div>
 
@@ -1348,11 +1363,14 @@ input[type="range"]:active::-webkit-slider-thumb {
           <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#a8ff78,transparent);"></div>
           <div style="font-size:10px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">安全率（Safety Factor）</div>
           <div style="font-size:32px;font-weight:700;font-family:var(--font-mono);" id="safety-factor-val">—</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:6px;" id="safety-factor-desc">最悪ケース / 計画値の比率</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:6px;" id="safety-factor-desc">生涯支出 vs 生涯収入の比率</div>
+          <div id="safety-factor-def"></div>
+          <div id="safety-breakeven"></div>
+          <div id="safety-critical"></div>
           <div style="margin-top:10px;font-size:11px;color:var(--text-dim);">
             <span style="color:#a8ff78;">≥ 1.5</span> 堅牢 ／ 
             <span style="color:#ffd166;">1.2〜1.5</span> 許容 ／ 
-            <span style="color:#ff4757;">&lt; 1.2</span> 要注意
+            <span style="color:#ff4757;">&lt; 1.0</span> 危険
           </div>
         </div>
         <!-- トレードオフカード -->
@@ -2990,9 +3008,77 @@ function renderSimCommentary({
   const fmt万 = v => Math.abs(v) >= 1e8
     ? (v/1e8).toFixed(1)+'億円'
     : Math.round(v/1e4).toLocaleString()+'万円';
-
   const pct = v => (v*100).toFixed(1)+'%';
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
 
+  // ── 総合評価 ──
+  let grade, gradeColor, gradeIcon, gradeText;
+  if      (successRate >= 0.90) { grade='S'; gradeColor='#a8ff78'; gradeIcon='🏆'; gradeText='非常に堅牢'; }
+  else if (successRate >= 0.75) { grade='A'; gradeColor='#00d4ff'; gradeIcon='✅'; gradeText='良好'; }
+  else if (successRate >= 0.55) { grade='B'; gradeColor='#ffd166'; gradeIcon='⚠️'; gradeText='要改善'; }
+  else if (successRate >= 0.30) { grade='C'; gradeColor='#ff9a3c'; gradeIcon='🔴'; gradeText='リスク高'; }
+  else                           { grade='D'; gradeColor='#ff4757'; gradeIcon='💀'; gradeText='要根本見直し'; }
+
+  // ── アクションプラン生成（成功率に応じて分岐）──
+  const actions = [];
+
+  if (successRate >= 0.90) {
+    // 過剰貯蓄の可能性
+    const extraSpend = Math.round((successRate - 0.85) * 200); // 万円/月 目安
+    actions.push({
+      icon:'💸', color:'#a8ff78', title:'過剰貯蓄の可能性',
+      body:`現在の成功率は ${pct(successRate)} と非常に高水準です。月支出を <b>+${Math.max(3, extraSpend)}万円程度増やしても</b>安全圏を維持できる可能性があります。生活の質の向上や体験への投資を検討してください。`,
+    });
+    actions.push({
+      icon:'🎁', color:'#b388ff', title:'資産承継の検討タイミング',
+      body:`死亡時の中央値資産が${fmt万(mf*1e8)}と潤沢です。暦年贈与（年110万円非課税）または相続時精算課税制度の活用を税理士に相談してください。`,
+    });
+  } else if (successRate >= 0.80) {
+    actions.push({
+      icon:'📉', color:'#00d4ff', title:'暴落耐性の補強',
+      body:`成功率 ${pct(successRate)} は良好ですが、暴落直後の取り崩しリスクが残ります。<b>生活費${Math.round((1-successRate+0.1)*10)+1}〜2年分の現金バッファ</b>を別途確保すると、シーケンス・オブ・リターン・リスクを大幅に軽減できます。`,
+    });
+    actions.push({
+      icon:'⏱️', color:'#ffd166', title:'FIRE時期の微調整',
+      body:fireAgeMed
+        ? `現在の中央値FIRE年齢は ${fireAgeMed} 歳です。<b>${Math.min(fireAgeMed+3, 65)} 歳まで就労を延長</b>すると、資産蓄積と社会保険加入期間が伸び、成功率が大幅に改善します。`
+        : '就労期間を2〜3年延長することで成功率を大きく改善できます。',
+    });
+  } else if (successRate >= 0.50) {
+    actions.push({
+      icon:'🔒', color:'#ff9a3c', title:'支出の緊急見直し',
+      body:`破綻率が ${pct(bankruptRate)} と高めです。月支出を <b>3〜5万円削減（年${Math.round(3*12/10)*10}〜${Math.round(5*12/10)*10}万円）</b>すると成功率が大幅改善します。通信費・保険・サブスクの固定費見直しから始めてください。`,
+    });
+    actions.push({
+      icon:'📆', color:'#ff9a3c', title:'FIRE時期の延期を検討',
+      body:fireAgeMed
+        ? `目標FIRE年齢を <b>${Math.min(fireAgeMed+5, 65)} 歳に延期</b>することで、年金受給額の増加と資産蓄積の両立が期待できます。早期退職への固執がリスクの主因です。`
+        : 'FIREの目標時期を5年延期することで成功率が劇的に改善します。',
+    });
+    if (surplus65 < 0) {
+      actions.push({
+        icon:'🏦', color:'#b388ff', title:'年金の繰り下げ受給',
+        body:`65歳時点での老後資金が ${fmt万(Math.abs(surplus65))} 不足しています。年金を <b>70歳まで繰り下げる</b>と月額が <b>+42%増</b>（75歳なら+84%）になり、長寿リスクを大幅にヘッジできます。`,
+      });
+    }
+  } else {
+    // 失敗率高 → 根本的な診断
+    const inflCause = bankruptRate > 0.40;
+    actions.push({
+      icon:'🚨', color:'#ff4757', title:'プランの根本的見直しが必要',
+      body:`現在の設定では ${pct(bankruptRate)} のシナリオで資産が枯渇します。${inflCause ? '<b>インフレ負けが主因</b>の可能性があります。期待リターンを高めるか、住居費などの大きな固定費を見直してください。' : 'FIRE目標資産の大幅引き下げ、または収入・貯蓄率の抜本的改善が必要です。'}`,
+    });
+    if (fireThr > initAssets * 1.5) {
+      const realisticTarget = Math.round(fireThr * 0.7 / 1e4) * 1e4;
+      actions.push({
+        icon:'🎯', color:'#ffd166', title:'FIRE目標の現実化',
+        body:`現在の目標資産（${fmt万(fireThr)}）は現状の資産から乖離しすぎています。まず <b>${fmt万(realisticTarget)}（現在の70%）</b>を中間目標に設定し、段階的にFIREを実現するアプローチを検討してください。`,
+      });
+    }
+  }
+
+  // 改善アドバイス（tips、従来の補足）
   // ── 総合評価 ──
   let overallGrade, overallColor, overallIcon, overallText;
   if (successRate >= 0.90) {
@@ -3128,6 +3214,48 @@ function renderSimCommentary({
   `;
 }
 
+// ============================================================
+// ★ 実質価値（購買力）トグル
+// ============================================================
+let _realValueOn = false;
+
+function toggleRealValue() {
+  _realValueOn = !_realValueOn;
+  const bg   = document.getElementById('real-toggle-bg');
+  const knob = document.getElementById('real-toggle-knob');
+  const kpi  = document.getElementById('purchasing-power-kpi');
+
+  if (bg)   bg.style.background   = _realValueOn ? 'var(--accent)' : 'var(--border)';
+  if (knob) knob.style.transform  = _realValueOn ? 'translateX(16px)' : 'translateX(0)';
+  if (kpi)  kpi.style.display     = _realValueOn ? 'block' : 'none';
+
+  // Chart.jsのデータセット表示切替
+  if (chartInstance) {
+    const datasets = chartInstance.data.datasets;
+    const realIdx = datasets.findIndex(d => d.label && d.label.includes('実質価値'));
+    if (realIdx >= 0) {
+      const meta = chartInstance.getDatasetMeta(realIdx);
+      meta.hidden = !_realValueOn;
+      chartInstance.update();
+    }
+  }
+}
+
+function updatePurchasingPowerKPI(baseInfl, T, startAge) {
+  const el = document.getElementById('purchasing-power-text');
+  if (!el) return;
+
+  const inf = (isFinite(baseInfl) ? baseInfl : 0.01);
+  const yr30 = Math.round(1 / Math.pow(1 + inf, 30) * 100) / 100;
+  const yr20 = Math.round(1 / Math.pow(1 + inf, 20) * 100) / 100;
+
+  el.innerHTML = `
+    インフレ率 <b style="color:#ffd166;">${(inf*100).toFixed(1)}%</b> が続くと…<br>
+    ・20年後の <b style="color:var(--text);">1億円</b> の現在価値 → <b style="color:#ff9a3c;">${(yr20*100).toFixed(0)}%（${(yr20).toFixed(2)}億円相当）</b><br>
+    ・30年後の <b style="color:var(--text);">1億円</b> の現在価値 → <b style="color:#ff4757;">${(yr30*100).toFixed(0)}%（${(yr30).toFixed(2)}億円相当）</b><br>
+    <span style="font-size:11px;color:var(--text-dim);">グラフの黄色破線（実質価値）は名目資産をこのインフレ率で割り引いた「今のお金の価値」で表示しています。</span>
+  `;
+}
 
 // ============================================================
 // 難易度モード定義
@@ -3323,11 +3451,13 @@ async function runSimulation() {
   const CP  =Math.min(200,N);
   const cidx=Array.from({length:CP},()=>Math.floor(Math.random()*N));
   const pH  =new Float64Array(CP*T);
+  const pHReal=new Float64Array(CP*T); // 実質価値パス（インフレ調整後）
   const med =new Float64Array(T);
   const p25 =new Float64Array(T);
   const p75 =new Float64Array(T);
   const p10 =new Float64Array(T);
   const p90 =new Float64Array(T);
+  const medReal=new Float64Array(T); // 実質価値 中央値
 
   for(let t=0;t<T;t++){
     if(t%5===0){
@@ -3420,15 +3550,25 @@ if(dead[i]) continue; // skip financials if died this step
     }
 
     // Chart path recording
-    for(let ci=0;ci<CP;ci++) pH[ci*T+t]=(assets[cidx[ci]]+cashBuf[cidx[ci]])/1e8;
+    for(let ci=0;ci<CP;ci++) {
+      pH[ci*T+t]=(assets[cidx[ci]]+cashBuf[cidx[ci]])/1e8;
+      // 実質価値: 名目資産 / 累積インフレ率
+      pHReal[ci*T+t]=(assets[cidx[ci]]+cashBuf[cidx[ci]])/(cumInf[cidx[ci]]||1)/1e8;
+    }
 
     // Percentiles (alive only)
     const alive=[];
-    for(let i=0;i<N;i++) if(!dead[i]) alive.push(assets[i]+cashBuf[i]);
+    const aliveReal=[];
+    for(let i=0;i<N;i++) if(!dead[i]) {
+      alive.push(assets[i]+cashBuf[i]);
+      aliveReal.push((assets[i]+cashBuf[i])/(cumInf[i]||1));
+    }
     alive.sort((a,b)=>a-b);
+    aliveReal.sort((a,b)=>a-b);
     if(alive.length>0){
       const pc=p=>alive[Math.floor(p/100*alive.length)]/1e8;
       p10[t]=pc(10);p25[t]=pc(25);med[t]=pc(50);p75[t]=pc(75);p90[t]=pc(90);
+      medReal[t]=aliveReal[Math.floor(0.5*aliveReal.length)]/1e8;
     }
   }
   pFill.style.width='100%';
@@ -3562,9 +3702,20 @@ if(dead[i]) continue; // skip financials if died this step
   // ---- Chart ----
   const cont=document.getElementById('chart-container');
   cont.innerHTML='<div class="chart-wrapper"><canvas id="myChart"></canvas></div>';
+// 1. まず ages を宣言して中身を作る（ここで宣言！）
+  const ages = Array.from({length: T}, (_, i) => startAge + i);
+  
+  // 実質価値データをグローバルに保存（トグル用）
+  window._lastPHReal = pHReal;
+  window._lastMedReal = medReal;
+  window._lastT = T;
+  window._lastCP = CP;
+  window._lastAges = ages;
+  window._lastBaseInfl = baseInfl;
+  window._lastStartAge = startAge;
+
   if(chartInstance){chartInstance.destroy();chartInstance=null;}
 
-  const ages=Array.from({length:T},(_,i)=>startAge+i);
   const pathDS=[];
   for(let ci=0;ci<Math.min(80,CP);ci++){
     pathDS.push({data:Array.from({length:T},(_,t)=>pH[ci*T+t]),borderColor:'rgba(0,180,255,.09)',borderWidth:.8,pointRadius:0,fill:false,tension:.3});
@@ -3594,6 +3745,7 @@ if(dead[i]) continue; // skip financials if died this step
         {label:'中央値(P50)', data:Array.from(med), borderColor:'#00d4ff',borderWidth:3,pointRadius:0,fill:false,tension:.3},
         {label:'P25',         data:Array.from(p25),borderColor:'rgba(0,212,255,0)',backgroundColor:'rgba(0,212,255,.07)',borderWidth:0,pointRadius:0,fill:false,tension:.3},
         {label:'P10（リスク）',data:Array.from(p10),borderColor:'#ff6b35',borderWidth:2,borderDash:[6,3],pointRadius:0,fill:false,tension:.3},
+        {label:'📉 実質価値（インフレ調整後）',data:Array.from(medReal),borderColor:'#ffd166',borderWidth:2,borderDash:[3,3],pointRadius:0,fill:false,tension:.3,hidden:true},
       ]
     },
     options:{
@@ -3641,6 +3793,9 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
   badge.style.cssText='display:inline-flex;align-items:center;gap:6px;background:rgba(168,255,120,.1);border:1px solid rgba(168,255,120,.3);color:#a8ff78;font-size:10px;font-family:var(--font-mono);padding:5px 12px;border-radius:3px;letter-spacing:1.5px;';
   btn.disabled=false;
   pBar.style.display='none';
+
+  // 購買力KPIを更新
+  updatePurchasingPowerKPI(baseInfl, T, startAge);
 
   // 結果エリアへスムーズスクロール（スマホで特に有効）
   setTimeout(() => {
@@ -3883,7 +4038,7 @@ async function runSensitivityAnalysis() {
     }
 
     // Chart.js でヒートマップ描画
-    drawHeatmapChart(ratioSteps, grid);
+    drawHeatmapChart(ratioSteps, grid, curWork, curRet);
     heatWrap.style.display = 'block';
 
     // インサイト表示
@@ -3900,7 +4055,7 @@ async function runSensitivityAnalysis() {
   }
 }
 
-function drawHeatmapChart(ratioSteps, grid) {
+function drawHeatmapChart(ratioSteps, grid, curWork, curRet) {
   // 既存インスタンスを破棄して canvas を作り直す
   if (heatmapChartInstance) { heatmapChartInstance.destroy(); heatmapChartInstance = null; }
   const old = document.getElementById('sensitivityHeatmap');
@@ -3913,26 +4068,28 @@ function drawHeatmapChart(ratioSteps, grid) {
 
   const n = ratioSteps.length;
 
-  // Chart.js matrix plugin が使えないので、bubble chart で代替
-  // x=FIRE後%, y=現役%, r=固定, backgroundColor=成功率で色分け
+  const containerWidth = container.offsetWidth || 300;
+  const bubbleR = Math.max(12, Math.min(20, Math.floor(containerWidth / (n * 2.5))));
+
   const bubbleData = [];
   for (let i=0; i<n; i++) {
     for (let j=0; j<n; j++) {
       bubbleData.push({
-        x: ratioSteps[j],  // X軸: FIRE後
-        y: ratioSteps[i],  // Y軸: 現役
-        r: 18,
+        x: ratioSteps[j],
+        y: ratioSteps[i],
+        r: bubbleR,
         val: grid[i][j],
-        label: `${(grid[i][j]*100).toFixed(0)}%`,
       });
     }
   }
 
-  // 成功率 → 色変換 (0=赤, 0.5=黄, 1=緑)
   const rateToColor = (v, alpha=0.85) => {
     const h = Math.round(v * 120);
     return `hsla(${h},70%,45%,${alpha})`;
   };
+
+  // 現在のユーザー設定が格子点と一致しているか
+  const isExact = ratioSteps.includes(curWork) && ratioSteps.includes(curRet);
 
   heatmapChartInstance = new Chart(canvas.getContext('2d'), {
     type: 'bubble',
@@ -3947,8 +4104,8 @@ function drawHeatmapChart(ratioSteps, grid) {
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      aspectRatio: 1,
-      layout: { padding: { top:10, right:20, bottom:10, left:10 } },
+      aspectRatio: 1.05,
+      layout: { padding: { top:8, right:8, bottom:4, left:4 } },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -4008,72 +4165,150 @@ function drawHeatmapChart(ratioSteps, grid) {
             color: '#8a9fba',
             font: { size: 11, family: 'Space Mono, monospace' },
             callback: v => ratioSteps.includes(v) ? v + '%' : '',
+            maxTicksLimit: 8,
           },
           title: {
             display: true,
             text: '← 現役時 株式比率 →',
             color: '#8a9fba',
-            font: { size: 12, family: 'Space Mono, monospace' },
-            padding: { bottom: 8 },
+            font: { size: 11, family: 'Space Mono, monospace' },
+            padding: { bottom: 4 },
           },
         },
       },
     },
-    plugins: [{
-      // セル内に成功率テキストを描画
-      id: 'cellLabels',
-      afterDatasetsDraw(chart) {
-        const {ctx} = chart;
-        chart.getDatasetMeta(0).data.forEach((pt, idx) => {
-          const d = bubbleData[idx];
-          const text = `${(d.val*100).toFixed(0)}%`;
-          ctx.save();
-          ctx.font = `bold 11px 'Space Mono', monospace`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = d.val > 0.5 ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)';
-          ctx.fillText(text, pt.x, pt.y);
-          ctx.restore();
-        });
+    plugins: [
+      {
+        // セル内に成功率テキストを描画
+        id: 'cellLabels',
+        afterDatasetsDraw(chart) {
+          const {ctx} = chart;
+          const fontSize = Math.max(9, Math.min(12, bubbleR - 3));
+          chart.getDatasetMeta(0).data.forEach((pt, idx) => {
+            const d = bubbleData[idx];
+            const text = `${(d.val*100).toFixed(0)}%`;
+            ctx.save();
+            ctx.font = `bold ${fontSize}px 'Space Mono', monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = d.val > 0.5 ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)';
+            ctx.fillText(text, pt.x, pt.y);
+            ctx.restore();
+          });
+        },
       },
-    }],
+      {
+        // 現在のユーザー設定位置にマーカーを描画
+        id: 'userMarker',
+        afterDatasetsDraw(chart) {
+          const { ctx, scales } = chart;
+          if (curWork == null || curRet == null) return;
+          const px = scales.x.getPixelForValue(curRet);  // X = FIRE後
+          const py = scales.y.getPixelForValue(curWork);  // Y = 現役
+          ctx.save();
+
+          if (isExact) {
+            // 格子点と一致 → 白い輪郭リング
+            ctx.beginPath();
+            ctx.arc(px, py, 22, 0, Math.PI*2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([]);
+            ctx.stroke();
+          } else {
+            // 格子点外 → 破線の十字マーカー
+            const arm = 16;
+            ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4,3]);
+            // 横線
+            ctx.beginPath(); ctx.moveTo(px-arm, py); ctx.lineTo(px+arm, py); ctx.stroke();
+            // 縦線
+            ctx.beginPath(); ctx.moveTo(px, py-arm); ctx.lineTo(px, py+arm); ctx.stroke();
+            ctx.setLineDash([]);
+            // 中心の小円
+            ctx.beginPath();
+            ctx.arc(px, py, 4, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fill();
+            // 近似格子点への破線矢印
+            const getNearStep = val => ratioSteps.reduce((p,c,i) =>
+              Math.abs(c-val)<Math.abs(ratioSteps[p]-val)?i:p, 0);
+            const nearRet  = ratioSteps[getNearStep(curRet)];
+            const nearWork = ratioSteps[getNearStep(curWork)];
+            const npx = scales.x.getPixelForValue(nearRet);
+            const npy = scales.y.getPixelForValue(nearWork);
+            ctx.strokeStyle = 'rgba(255,209,102,0.6)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3,4]);
+            ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(npx, npy); ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
+          // 「現在の設定」ラベル
+          ctx.font = `bold 10px 'Space Mono', monospace`;
+          ctx.fillStyle = 'rgba(255,255,255,0.9)';
+          ctx.textAlign = 'center';
+          ctx.fillText('現在', px, py + 30);
+          ctx.restore();
+        },
+      },
+    ],
   });
 }
 
 function displayHeatmapInsight(ratioSteps, grid, curWork, curRet) {
   const n = ratioSteps.length;
+  const ticks = ratioSteps; // [0,20,40,60,80,100]
 
   // 最高・最低成功率のセルを探す
   let maxVal=-1, minVal=2, bestW=0, bestR=0, worstW=0, worstR=0;
   for (let i=0; i<n; i++) {
     for (let j=0; j<n; j++) {
-      if (grid[i][j] > maxVal) { maxVal=grid[i][j]; bestW=ratioSteps[i]; bestR=ratioSteps[j]; }
-      if (grid[i][j] < minVal) { minVal=grid[i][j]; worstW=ratioSteps[i]; worstR=ratioSteps[j]; }
+      if (grid[i][j] > maxVal) { maxVal=grid[i][j]; bestW=ticks[i]; bestR=ticks[j]; }
+      if (grid[i][j] < minVal) { minVal=grid[i][j]; worstW=ticks[i]; worstR=ticks[j]; }
     }
   }
 
-  // 現在の設定の成功率
-  const wi = ratioSteps.indexOf(curWork);
-  const ri = ratioSteps.indexOf(curRet);
-  const curVal = (wi>=0 && ri>=0) ? grid[wi][ri] : null;
+  // ── 近似値判定ロジック ──
+  const getNearIdx = val => ticks.reduce((prev,curr,idx) =>
+    Math.abs(curr-val) < Math.abs(ticks[prev]-val) ? idx : prev, 0);
+  const wIdx = getNearIdx(curWork);
+  const rIdx = getNearIdx(curRet);
+  const isExact = ticks.includes(curWork) && ticks.includes(curRet);
+  const nearWork = ticks[wIdx];
+  const nearRet  = ticks[rIdx];
+  const nearVal  = grid[wIdx][rIdx];
 
-  // 傾向分析：高株式比率(80%+)の平均成功率 vs 低株式比率(20%以下)
+  // 現在の設定の成功率（格子点に一致していれば直接、でなければ近似値）
+  const wi = ticks.indexOf(curWork);
+  const ri = ticks.indexOf(curRet);
+  const curVal = isExact ? grid[wi][ri] : nearVal;
+
+  // 傾向分析
   const highEquityAvg = (grid[4][3]+grid[4][4]+grid[5][4]+grid[5][5])/4;
   const lowEquityAvg  = (grid[0][0]+grid[0][1]+grid[1][0]+grid[1][1])/4;
 
   // 推奨アドバイス
   let advice = '';
-  if (curVal === null) {
-    advice = '現在の設定がグリッド範囲外のため、最適設定への移行をご検討ください。';
-  } else if (curVal >= maxVal * 0.97) {
+  if (curVal >= maxVal * 0.97) {
     advice = '✅ 現在の設定は統計的にほぼ最適です。このまま進めてください。';
   } else {
     const diff = ((maxVal - curVal)*100).toFixed(1);
-    advice = `現在の設定（現役${curWork}% / FIRE後${curRet}%）は成功率 ${(curVal*100).toFixed(1)}%。`
+    advice = `現在の設定は成功率 ${(curVal*100).toFixed(1)}%。`
            + `最適設定（現役${bestW}% / FIRE後${bestR}%）に変更すると約 <b>+${diff}pt</b> 改善できます。`;
   }
 
-  // 色ヘルパー
+  // 近似値別の動的アドバイス
+  let approxAdvice = '';
+  if (nearVal > 0.90) {
+    approxAdvice = `現在のリスク許容度は非常に安全圏にあります。暴落時（t分布の影響）を考慮しても、資産維持の可能性が極めて高い設定です。`;
+  } else if (nearVal > 0.70) {
+    approxAdvice = `標準的な成功率です。株式比率をあと20%下げても成功率が維持できるか、ヒートマップの左下方向を確認してください。`;
+  } else {
+    approxAdvice = `成功率が低下しています。ヒートマップで<b>緑色が濃いエリア</b>（一般的には現役時比率を高く維持する領域）へのシフトを検討してください。`;
+  }
+
   const pctColor = v => v >= 0.8 ? '#a8ff78' : v >= 0.6 ? '#ffd166' : '#ff4757';
 
   const box = document.getElementById('heatmap-insight-box');
@@ -4090,10 +4325,11 @@ function displayHeatmapInsight(ratioSteps, grid, curWork, curRet) {
           <div style="font-size:22px;font-weight:700;font-family:var(--font-mono);color:#a8ff78;">${(maxVal*100).toFixed(0)}%</div>
           <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">現役${bestW}% / 後${bestR}%</div>
         </div>
-        <div style="background:var(--surface3);border-radius:6px;padding:12px;text-align:center;">
-          <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;">現在の設定</div>
-          <div style="font-size:22px;font-weight:700;font-family:var(--font-mono);color:${curVal!=null?pctColor(curVal):'var(--text-dim)'};">${curVal!=null?(curVal*100).toFixed(0)+'%':'—'}</div>
+        <div style="background:var(--surface3);border-radius:6px;padding:12px;text-align:center;position:relative;">
+          <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;">現在の設定${isExact?'':' ≈近似'}</div>
+          <div style="font-size:22px;font-weight:700;font-family:var(--font-mono);color:${pctColor(curVal)};">${(curVal*100).toFixed(0)}%</div>
           <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">現役${curWork}% / 後${curRet}%</div>
+          ${!isExact ? `<div style="font-size:9px;color:var(--warning);margin-top:3px;">※近似点 (${nearWork}%/${nearRet}%)</div>` : ''}
         </div>
         <div style="background:var(--surface3);border-radius:6px;padding:12px;text-align:center;">
           <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;">最低成功率</div>
@@ -4101,6 +4337,15 @@ function displayHeatmapInsight(ratioSteps, grid, curWork, curRet) {
           <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">現役${worstW}% / 後${worstR}%</div>
         </div>
       </div>
+
+      <!-- 近似値の注記（格子外の場合のみ） -->
+      ${!isExact ? `
+      <div style="padding:10px 12px;background:rgba(255,209,102,0.07);border:1px solid rgba(255,209,102,0.3);border-radius:6px;font-size:12px;color:var(--warning);margin-bottom:14px;line-height:1.8;">
+        ⚠️ <b>近似値を参照しています</b><br>
+        現在の設定（現役: <b>${curWork}%</b> / FIRE後: <b>${curRet}%</b>）はヒートマップの格子点（20%刻み）の間に位置するため、
+        最も近い格子点（現役: <b>${nearWork}%</b> / FIRE後: <b>${nearRet}%</b>）のデータを参照しています。
+        ヒートマップ上では破線の十字（✕）が現在の設定位置を示しています。
+      </div>` : ''}
 
       <!-- テキストインサイト -->
       <div style="font-size:13px;line-height:1.9;color:var(--text);margin-bottom:14px;">
@@ -4112,13 +4357,20 @@ function displayHeatmapInsight(ratioSteps, grid, curWork, curRet) {
         <p style="margin-bottom:8px;">
           ${highEquityAvg > lowEquityAvg
             ? `📊 全体的に<b>高株式比率エリア（80%+）</b>の成功率（平均 ${(highEquityAvg*100).toFixed(0)}%）が低株式比率（平均 ${(lowEquityAvg*100).toFixed(0)}%）を上回っています。`
-            : `📊 全体的に<b>低株式比率エリア</b>の成功率（平均 ${(lowEquityAvg*100).toFixed(0)}%）が高株式比率（平均 ${(highEquityAvg*100).toFixed(0)}%）を上回っています。支出水準に対して資産成長より安定性が優先される設定です。`}
+            : `📊 全体的に<b>低株式比率エリア</b>の成功率（平均 ${(lowEquityAvg*100).toFixed(0)}%）が高株式比率（平均 ${(highEquityAvg*100).toFixed(0)}%）を上回っています。支出水準に対して安定性が優先される設定です。`}
         </p>
       </div>
 
-      <!-- アドバイスボックス -->
-      <div style="padding:12px 14px;background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.2);border-radius:6px;font-size:12px;line-height:1.8;color:var(--text);">
-        <b style="color:var(--accent);">現在の設定へのアドバイス：</b><br>
+      <!-- パーソナライズ・アドバイス -->
+      <div style="padding:12px 14px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:6px;font-size:12px;line-height:1.8;color:var(--text);margin-bottom:10px;">
+        <b style="color:var(--accent);">📊 パーソナライズ・アドバイス</b><br>
+        ${!isExact ? `近似点（現役${nearWork}% / FIRE後${nearRet}%）でのFIRE成功率は <b style="color:${pctColor(nearVal)};font-size:15px;">${(nearVal*100).toFixed(1)}%</b>。<br>` : ''}
+        ${approxAdvice}
+      </div>
+
+      <!-- 最適設定へのアドバイス -->
+      <div style="padding:12px 14px;background:rgba(168,255,120,0.05);border:1px solid rgba(168,255,120,0.2);border-radius:6px;font-size:12px;line-height:1.8;color:var(--text);">
+        <b style="color:#a8ff78;">現在の設定へのアドバイス：</b><br>
         ${advice}
       </div>
     </div>
@@ -5227,24 +5479,29 @@ function setDifficultyEnhanced(mode) {
 //
 // これにより 0%/100% どちらでも差分が出る
 // ============================================================
-function runSingleSimFast(cfg) {
+// ============================================================
+// 安全率計算用の軽量シム（資産残高ベース）
+// 戻り値: 95歳時点の資産 / 95歳までの総支出 の平均比率
+//   1.0超 = 生涯で使う金より資産が多い（安全）
+//   1.0以下 = 資産が生涯支出を賄えない（危険）
+// ============================================================
+function runSafetyMarginSim(cfg) {
   const N = 300;
   const TM = tmValues.map(row => {
     const s = row.reduce((a,b)=>a+b,0)||1;
     return row.map(v=>v/s);
   });
-
-  let totalAge = 0;
+  let totalMarginRatio = 0;
 
   for (let n=0; n<N; n++) {
-    let assets = cfg.initAssets;
+    let assets  = cfg.initAssets;
     let retired = false;
-    let cumInf = 1.0;
-    let regIdx = 1;
-    let surviveAge = 95;
+    let cumInf  = 1.0;
+    let regIdx  = 1;
+    let totalExp = 0;
 
     for (let age=cfg.startAge; age<=95; age++) {
-      const t = age - cfg.startAge;
+      const t  = age - cfg.startAge;
       const rg = REGIMES[regIdx];
       const w  = retired ? cfg.wRetire : cfg.wWork;
 
@@ -5261,9 +5518,8 @@ function runSingleSimFast(cfg) {
 
       cumInf *= (1 + cfg.baseInfl + rg.inf);
       const exp = getExpenseForAge(age) * cumInf * cfg.expScale;
+      totalExp += exp;
       assets = assets + income - exp;
-
-      if (assets <= 0) { surviveAge = age; break; }
 
       // レジーム遷移
       let r=Math.random(), s2=0;
@@ -5271,13 +5527,18 @@ function runSingleSimFast(cfg) {
         s2+=TM[regIdx][ri];
         if(r<s2){regIdx=ri;break;}
       }
+      if (assets <= 0) break;
     }
-    totalAge += surviveAge;
-  }
 
-  // 平均生存年齢（期待資産寿命）
-  return totalAge / N;
+    // 95歳時点の資産 / 95歳までの総支出
+    const margin = assets / (totalExp || 1);
+    totalMarginRatio += Math.max(-0.5, margin); // 極端な負値をクリップ
+  }
+  return totalMarginRatio / N;
 }
+
+// 後方互換：既存コードが runSingleSimFast を参照している箇所用
+function runSingleSimFast(cfg) { return runSafetyMarginSim(cfg); }
 
 // 現在のUI設定からベースラインcfgを作る
 function buildBaselineCfg() {
@@ -5299,11 +5560,27 @@ function buildBaselineCfg() {
   };
 }
 
+// ============================================================
+// ブレークイーブン点の自動算出
+// 「支出が今の何倍になると破綻するか」を二分探索で算出
+// ============================================================
+function calcBreakEven(baseCfg) {
+  // runSafetyMarginSim が 1.0 を下回る expScale を探す
+  let lo = 1.0, hi = 3.0;
+  for (let iter=0; iter<8; iter++) {
+    const mid = (lo + hi) / 2;
+    const val = runSafetyMarginSim({...baseCfg, expScale: mid});
+    if (val < 1.0) hi = mid;
+    else           lo = mid;
+  }
+  return (lo + hi) / 2;
+}
+
 // トルネード分析本体
 let tornadoChartInstance = null;
 
 async function runTornadoAnalysis() {
-  const btn = document.getElementById('btn-tornado');
+  const btn     = document.getElementById('btn-tornado');
   const progWrap = document.getElementById('tornado-progress-wrap');
   const progBar  = document.getElementById('tornado-progress-bar');
   btn.disabled = true;
@@ -5312,23 +5589,23 @@ async function runTornadoAnalysis() {
   progBar.style.width = '0%';
 
   try {
-    const base = buildBaselineCfg();
-    const baseVal = runSingleSimFast(base);
+    const base    = buildBaselineCfg();
+    const baseVal = runSafetyMarginSim(base); // 安全率比率（ベースライン）
 
-    // NaN/undefined のみエラー。0や負値は「資産枯渇」として正当な結果
     if (baseVal == null || isNaN(baseVal)) {
       throw new Error('パラメータの読み取りに失敗しました。ページをリロードして再度お試しください。');
     }
 
+    // 感度対象パラメータ
     const factors = [
       { label:'年間収入',
         plus:  c=>({...c, annualIncome: c.annualIncome*1.10, takeHome: calcTax(c.annualIncome*1.10).rate }),
         minus: c=>({...c, annualIncome: c.annualIncome*0.90, takeHome: calcTax(c.annualIncome*0.90).rate }) },
       { label:'年間支出',
-        plus:  c=>({...c, expScale: Math.max(0.1, c.expScale*0.90) }),  // 支出−10%→有利
+        plus:  c=>({...c, expScale: Math.max(0.1, c.expScale*0.90) }), // 支出−10%→有利
         minus: c=>({...c, expScale: c.expScale*1.10 }) },
       { label:'インフレ率',
-        plus:  c=>({...c, baseInfl: Math.max(0, c.baseInfl - 0.005) }),  // インフレ低下→有利
+        plus:  c=>({...c, baseInfl: Math.max(0, c.baseInfl - 0.005) }),
         minus: c=>({...c, baseInfl: c.baseInfl + 0.005 }) },
       { label:'株式比率（現役）',
         plus:  c=>({...c, wWork: Math.min(1, c.wWork + 0.10) }),
@@ -5342,41 +5619,49 @@ async function runTornadoAnalysis() {
     ];
 
     const results = [];
-    for (let i = 0; i < factors.length; i++) {
+    for (let i=0; i<factors.length; i++) {
       const f = factors[i];
-      progBar.style.width = `${Math.round(i / factors.length * 70)}%`;
-      await new Promise(r => setTimeout(r, 0)); // UIスレッドを解放
+      progBar.style.width = `${Math.round(i/factors.length*65)}%`;
+      await new Promise(r=>setTimeout(r,0));
 
-      const valPlus  = runSingleSimFast(f.plus(base));
-      const valMinus = runSingleSimFast(f.minus(base));
-      const high = valPlus  - baseVal; // 年数差分
-      const low  = valMinus - baseVal;
+      const valPlus  = runSafetyMarginSim(f.plus(base));
+      const valMinus = runSafetyMarginSim(f.minus(base));
+
+      // 相対変化率（ベースラインからの%変化）
+      const relPlus  = baseVal > 0 ? (valPlus  - baseVal) / baseVal * 100 : 0;
+      const relMinus = baseVal > 0 ? (valMinus - baseVal) / baseVal * 100 : 0;
+
       results.push({
-        label: f.label,
-        high,
-        low,
-        range: Math.abs(valPlus - valMinus),
+        label:    f.label,
+        high:     relPlus,
+        low:      relMinus,
+        range:    Math.abs(valPlus - valMinus),
+        absRange: Math.abs(relPlus - relMinus), // チャートソート用
       });
     }
 
-    // 影響度順にソート
-    results.sort((a, b) => b.range - a.range);
-    progBar.style.width = '80%';
-    await new Promise(r => setTimeout(r, 0));
+    results.sort((a,b) => b.absRange - a.absRange);
+    progBar.style.width = '75%';
+    await new Promise(r=>setTimeout(r,0));
 
-    // チャート描画（canvasを毎回再生成して確実に描画）
+    // ブレークイーブン計算
+    const breakEven = calcBreakEven(base);
+    progBar.style.width = '85%';
+    await new Promise(r=>setTimeout(r,0));
+
     drawTornadoChart(results, baseVal);
-    progBar.style.width = '90%';
-    await new Promise(r => setTimeout(r, 0));
+    progBar.style.width = '92%';
+    await new Promise(r=>setTimeout(r,0));
 
-    // 安全率 & トレードオフ
     const safetyResult = calcSafetyAndTradeoff(base, baseVal);
+    safetyResult.breakEven = breakEven;
+    safetyResult.topFactor = results[0]?.label || '—';
     displaySafetyResults(safetyResult, baseVal);
 
     progBar.style.width = '100%';
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise(r=>setTimeout(r,100));
 
-  } catch (err) {
+  } catch(err) {
     console.error('トルネード分析エラー:', err);
     alert('分析中にエラーが発生しました: ' + err.message);
   } finally {
@@ -5390,10 +5675,7 @@ function drawTornadoChart(results, baseVal) {
   const wrap = document.getElementById('tornado-chart-wrap');
   wrap.style.display = 'block';
 
-  if (tornadoChartInstance) {
-    tornadoChartInstance.destroy();
-    tornadoChartInstance = null;
-  }
+  if (tornadoChartInstance) { tornadoChartInstance.destroy(); tornadoChartInstance = null; }
   const oldCanvas = document.getElementById('tornadoChart');
   if (oldCanvas) oldCanvas.remove();
   const newCanvas = document.createElement('canvas');
@@ -5401,11 +5683,13 @@ function drawTornadoChart(results, baseVal) {
   wrap.appendChild(newCanvas);
 
   const ctx = newCanvas.getContext('2d');
-  const labels = results.map(r => r.label);
 
-  // high/low は「年齢の差分（年）」単位
-  const favorable   = results.map(r => Math.max(r.high, r.low));
-  const unfavorable = results.map(r => Math.min(r.high, r.low));
+  // 有利方向（プラス）・不利方向（マイナス）を明示的に分離
+  const favorable   = results.map(r => Math.max(r.high, r.low));  // 右（緑）
+  const unfavorable = results.map(r => Math.min(r.high, r.low));  // 左（赤）
+  const labels = results.map((r,i) => i===0 ? `⚡ ${r.label}` : r.label); // 最大影響に警告
+
+  const safeLabel = `安全率 ${baseVal >= 1.2 ? '✅' : baseVal >= 1.0 ? '⚠️' : '❌'} ${baseVal.toFixed(2)}`;
 
   tornadoChartInstance = new Chart(ctx, {
     type: 'bar',
@@ -5413,18 +5697,18 @@ function drawTornadoChart(results, baseVal) {
       labels,
       datasets: [
         {
-          label: '好転時の影響',
+          label: '▶ 改善時の安全率変化',
           data: favorable,
-          backgroundColor: favorable.map(v => v >= 0 ? 'rgba(168,255,120,0.75)' : 'rgba(255,71,87,0.75)'),
-          borderColor:     favorable.map(v => v >= 0 ? 'rgba(168,255,120,1)'    : 'rgba(255,71,87,1)'),
-          borderWidth: 1, borderRadius: 3,
+          backgroundColor: favorable.map(v => v >= 0 ? 'rgba(168,255,120,0.80)' : 'rgba(255,71,87,0.80)'),
+          borderColor:     favorable.map(v => v >= 0 ? '#a8ff78' : '#ff4757'),
+          borderWidth: 1.5, borderRadius: 4,
         },
         {
-          label: '悪化時の影響',
+          label: '◀ 悪化時の安全率変化',
           data: unfavorable,
-          backgroundColor: unfavorable.map(v => v < 0 ? 'rgba(255,71,87,0.75)' : 'rgba(168,255,120,0.75)'),
-          borderColor:     unfavorable.map(v => v < 0 ? 'rgba(255,71,87,1)'    : 'rgba(168,255,120,1)'),
-          borderWidth: 1, borderRadius: 3,
+          backgroundColor: unfavorable.map(v => v < 0 ? 'rgba(255,71,87,0.80)' : 'rgba(168,255,120,0.80)'),
+          borderColor:     unfavorable.map(v => v < 0 ? '#ff4757' : '#a8ff78'),
+          borderWidth: 1.5, borderRadius: 4,
         },
       ],
     },
@@ -5432,20 +5716,21 @@ function drawTornadoChart(results, baseVal) {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { left: 10, right: 60 } },
       plugins: {
         title: {
           display: true,
-          text: `各パラメータ変動時の影響（ベース期待資産寿命: ${baseVal.toFixed(1)}歳）`,
+          text: `感度分析：各レバーが安全率に与える相対影響度（ベース ${safeLabel}）`,
           color: '#dce8f5',
           font: { size: 12, family: 'Noto Sans JP' },
-          padding: { bottom: 12 },
+          padding: { bottom: 14 },
         },
-        legend: { labels: { color: '#8a9fba', font: { size: 11 } } },
+        legend: { labels: { color: '#8a9fba', font: { size: 11 }, padding: 12 } },
         tooltip: {
           callbacks: {
             label: ctx => {
               const v = ctx.parsed.x;
-              return `${ctx.dataset.label}: ${v >= 0 ? '+' : ''}${v.toFixed(1)}年`;
+              return `${ctx.dataset.label}: ${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
             },
           },
         },
@@ -5453,25 +5738,83 @@ function drawTornadoChart(results, baseVal) {
       scales: {
         x: {
           stacked: false,
-          grid:  { color: 'rgba(26,45,74,0.8)' },
+          grid: { color: 'rgba(26,45,74,0.8)' },
           ticks: {
             color: '#8a9fba', font: { size: 11 },
-            callback: v => `${v >= 0 ? '+' : ''}${v.toFixed(0)}年`,
+            callback: v => `${v>=0?'+':''}${v.toFixed(0)}%`,
           },
-          title: { display: true, text: '期待資産寿命の増減（年）', color: '#5a7090', font: { size: 11 } },
+          title: {
+            display: true,
+            text: '← 安全率の低下（不利）　　安全率の上昇（有利） →',
+            color: '#5a7090', font: { size: 11 },
+          },
         },
         y: {
           stacked: false,
-          grid:  { color: 'rgba(26,45,74,0.6)' },
-          ticks: { color: '#dce8f5', font: { size: 12, family: 'Noto Sans JP' } },
+          grid: { color: 'rgba(26,45,74,0.6)' },
+          ticks: {
+            color: '#dce8f5',
+            font: { size: 13, family: 'Noto Sans JP', weight: 'bold' },
+            padding: 6,
+          },
         },
       },
     },
+    plugins: [
+      {
+        id: 'centerLine',
+        afterDraw(chart) {
+          const { ctx, chartArea, scales } = chart;
+          const x0 = scales.x.getPixelForValue(0);
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(x0, chartArea.top);
+          ctx.lineTo(x0, chartArea.bottom);
+          ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([5,4]);
+          ctx.stroke();
+          ctx.restore();
+        },
+      },
+      {
+        // バーの端に値ラベルを直接描画
+        id: 'barValueLabels',
+        afterDatasetsDraw(chart) {
+          const { ctx, scales } = chart;
+          chart.data.datasets.forEach((dataset, di) => {
+            const meta = chart.getDatasetMeta(di);
+            meta.data.forEach((bar, idx) => {
+              const v = dataset.data[idx];
+              if (v === 0 || v == null) return;
+              const text = `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+              const color = v >= 0 ? '#a8ff78' : '#ff9a9a';
+              // バーの右端（プラス）または左端（マイナス）の外側
+              const xPx  = scales.x.getPixelForValue(v);
+              const x0px = scales.x.getPixelForValue(0);
+              const yPx  = bar.y;
+              ctx.save();
+              ctx.font = 'bold 11px "Space Mono", monospace';
+              ctx.fillStyle = color;
+              ctx.textBaseline = 'middle';
+              if (v >= 0) {
+                ctx.textAlign = 'left';
+                ctx.fillText(text, xPx + 5, yPx);
+              } else {
+                ctx.textAlign = 'right';
+                ctx.fillText(text, xPx - 5, yPx);
+              }
+              ctx.restore();
+            });
+          });
+        },
+      },
+    ],
   });
 }
 
 function calcSafetyAndTradeoff(base, planVal) {
-  // planVal = 資産寿命の中央値（歳）= ベースラインスコア
+  // planVal = runSafetyMarginSim() の戻り値（安全率比率）
   let worstVal = null;
   let worstSource = 'approx';
 
@@ -5483,47 +5826,47 @@ function calcSafetyAndTradeoff(base, planVal) {
       ? Math.max(1.0, 1.0 + (planAssets - bottom10median) / planAssets * 0.3)
       : 1.2;
     const worstCfg = { ...base, expScale: Math.min(2.0, base.expScale * stressRatio) };
-    worstVal = runSingleSimFast(worstCfg);
+    worstVal = runSafetyMarginSim(worstCfg);
     worstSource = 'sim';
   } else {
     const worstCfg = { ...base, expScale: base.expScale * 1.20, baseInfl: base.baseInfl + 0.01 };
-    worstVal = runSingleSimFast(worstCfg);
+    worstVal = runSafetyMarginSim(worstCfg);
     worstSource = 'approx';
   }
 
-  // 安全率 = 計画寿命 / (計画寿命 - 最悪寿命)
+  // 安全率 = planVal / (planVal - worstVal)（機械設計の定義と同形）
   let safetyFactor;
   if (worstVal >= planVal) {
     safetyFactor = '≥2.0';
-  } else if (worstVal <= base.startAge) {
+  } else if (worstVal <= 0) {
     safetyFactor = '0.00';
   } else {
-    const denominator = planVal - worstVal;
-    safetyFactor = denominator > 0 ? (planVal / denominator).toFixed(2) : '≥2.0';
+    const denom = planVal - worstVal;
+    safetyFactor = denom > 0 ? (planVal / denom).toFixed(2) : '≥2.0';
   }
 
-  // トレードオフ：支出3%増による寿命短縮
+  // トレードオフ：支出3%増による安全率低下
   const degradedCfg = { ...base, expScale: base.expScale + 0.03 };
-  const degradedVal = runSingleSimFast(degradedCfg);
-  const lifetimeLoss = planVal - degradedVal; // 何年短縮されるか
+  const degradedVal = runSafetyMarginSim(degradedCfg);
+  const marginLoss = planVal - degradedVal;
 
-  // 収入5%増で何年延びるかを計算し、逆算
+  // 収入5%増でどれだけ安全率が改善するか
   const incomeDelta = base.annualIncome * 0.05;
   const boostedCfg = {
     ...base,
     annualIncome: base.annualIncome + incomeDelta,
     takeHome: calcTax(base.annualIncome + incomeDelta).rate,
   };
-  const boostedVal = runSingleSimFast(boostedCfg);
-  const yearPerIncome = boostedVal - planVal;
-  const requiredExtraIncome = lifetimeLoss > 0 && yearPerIncome > 0
-    ? Math.round(incomeDelta / 10000 * lifetimeLoss / yearPerIncome)
+  const boostedVal = runSafetyMarginSim(boostedCfg);
+  const marginGainPerIncome = boostedVal - planVal;
+  const requiredExtraIncome = marginLoss > 0 && marginGainPerIncome > 0
+    ? Math.round(incomeDelta / 10000 * marginLoss / marginGainPerIncome)
     : 0;
 
-  return { safetyFactor, worstVal, planVal, requiredExtraIncome, worstSource, lifetimeLoss };
+  return { safetyFactor, worstVal, planVal, requiredExtraIncome, worstSource, marginLoss };
 }
 
-function displaySafetyResults({ safetyFactor, worstVal, planVal, requiredExtraIncome, worstSource, lifetimeLoss }) {
+function displaySafetyResults({ safetyFactor, worstVal, planVal, requiredExtraIncome, worstSource, marginLoss, breakEven, topFactor }) {
   document.getElementById('safety-section').style.display = 'block';
 
   const sfNum = (safetyFactor === '≥2.0') ? 99
@@ -5534,30 +5877,64 @@ function displaySafetyResults({ safetyFactor, worstVal, planVal, requiredExtraIn
   sfEl.textContent = safetyFactor;
   sfEl.style.color = sfNum >= 1.5 ? '#a8ff78' : sfNum >= 1.2 ? '#ffd166' : '#ff4757';
 
+  // 安全率の定義を明確にした説明文
   const sfDescEl = document.getElementById('safety-factor-desc');
-  if      (sfNum >= 1.5) sfDescEl.textContent = '✅ 堅牢なポートフォリオです';
-  else if (sfNum >= 1.2) sfDescEl.textContent = '⚠️ 許容範囲ですが改善余地あり';
-  else if (sfNum >  0  ) sfDescEl.textContent = '❌ リスクが高い状態です';
-  else                   sfDescEl.textContent = '❌ 最悪ケースで早期に資産が枯渇します';
+  if      (sfNum >= 1.5) sfDescEl.textContent = '✅ 堅牢：生涯支出に対して十分な資産があります';
+  else if (sfNum >= 1.2) sfDescEl.textContent = '⚠️ 許容範囲：改善の余地あり';
+  else if (sfNum >= 1.0) sfDescEl.textContent = '🔶 ギリギリ：支出削減を検討してください';
+  else                   sfDescEl.textContent = '❌ 危険：生涯支出が資産を上回る可能性があります';
 
+  // 安全率の定義テキスト
+  const defEl = document.getElementById('safety-factor-def');
+  if (defEl) {
+    defEl.innerHTML = `
+      <div style="font-size:11px;color:var(--text-dim);margin-top:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:4px;line-height:1.7;">
+        <b style="color:var(--text);">安全率の定義：</b>生涯総支出に対する生涯総収入（資産含む）の比率ベース。
+        <span style="color:#a8ff78;">1.2以上</span>＝安全圏 ／ <span style="color:#ffd166;">1.0〜1.2</span>＝要注意 ／ <span style="color:#ff4757;">1.0未満</span>＝危険
+      </div>`;
+  }
+
+  // ブレークイーブン
+  const beEl = document.getElementById('safety-breakeven');
+  if (beEl && breakEven != null) {
+    const pct = Math.round((breakEven - 1) * 100);
+    beEl.innerHTML = `
+      <div style="font-size:11px;color:var(--text-dim);margin-top:8px;padding:8px 10px;background:rgba(255,71,87,0.05);border:1px solid rgba(255,71,87,0.2);border-radius:4px;line-height:1.7;">
+        📌 <b style="color:var(--warning);">支出ブレークイーブン点：</b>
+        現在の支出が <b style="color:#ff4757;">+${pct}%</b> 増加すると安全率が1.0を下回ります
+        （現在の${breakEven.toFixed(2)}倍まで許容）
+      </div>`;
+  }
+
+  // クリティカル要因
+  const critEl = document.getElementById('safety-critical');
+  if (critEl && topFactor) {
+    critEl.innerHTML = `
+      <div style="font-size:11px;padding:8px 10px;background:rgba(255,209,102,0.07);border:1px solid rgba(255,209,102,0.25);border-radius:4px;margin-top:8px;line-height:1.7;">
+        ⚡ <b style="color:#ffd166;">最注目レバー：${topFactor}</b> — この項目が安全率に最も大きな影響を与えています。優先的に改善を検討してください。
+      </div>`;
+  }
+
+  // トレードオフ
   document.getElementById('tradeoff-val').textContent =
     requiredExtraIncome > 0 ? `+${requiredExtraIncome.toLocaleString()}万円/年` : '影響軽微';
   document.getElementById('tradeoff-desc').textContent =
-    lifetimeLoss > 0
-      ? `支出増による資産寿命短縮（約${lifetimeLoss.toFixed(0)}年）を収入増で補うには年間約${requiredExtraIncome.toLocaleString()}万円必要`
+    marginLoss > 0
+      ? `支出3%増による安全率低下を収入増で補うには年間約${requiredExtraIncome.toLocaleString()}万円必要`
       : '支出増加の影響は軽微です';
 
+  // 最悪シナリオ
   const sourceLabel = worstSource === 'sim'
     ? 'SIMULATE下位10%の分布から推定'
-    : '近似計算（先にSIMULATEを実行すると精度が上がります）';
+    : '近似計算（先にSIMULATEを実行すると精度向上）';
 
   document.getElementById('worst-scenario-detail').innerHTML = `
     <span style="color:var(--text-dim);font-size:11px;">${sourceLabel}</span><br><br>
-    計画シナリオ 期待資産寿命: <b style="color:#a8ff78;">${planVal.toFixed(1)}歳</b><br>
-    最悪ケース 期待資産寿命: <b style="color:#ff4757;">${worstVal.toFixed(1)}歳</b><br>
-    差分: <b style="color:#ffd166;">${(planVal - worstVal).toFixed(1)}年の差</b>
+    計画シナリオ 安全率: <b style="color:#a8ff78;">${planVal.toFixed(2)}</b><br>
+    最悪ケース 安全率: <b style="color:#ff4757;">${worstVal.toFixed(2)}</b><br>
+    差分: <b style="color:#ffd166;">${(planVal - worstVal).toFixed(2)}</b>
     ${worstSource === 'sim' && lastFinalAssets
-      ? `<br><span style="font-size:11px;color:var(--text-dim);">試行数 ${lastFinalAssets.length}件の下位10%分布から推定</span>`
+      ? `<br><span style="font-size:11px;color:var(--text-dim);">試行数 ${lastFinalAssets.length}件の下位10%から推定</span>`
       : ''}
   `;
 }
