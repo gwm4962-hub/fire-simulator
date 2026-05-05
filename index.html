@@ -6979,9 +6979,12 @@ document.querySelector('.app').style.pointerEvents = 'auto'; // 'auto'にして�
   }
 
   function skipWizard() {
-    getEl('wizard-overlay').classList.add('hidden');
+    const ov = getEl('wizard-overlay');
+    ov.classList.add('hidden');
+    ov.style.display = 'none';         // CSSの ~ セレクタを無効化するために必須
+    ov.style.pointerEvents = 'none';
     document.querySelector('.app').style.filter = '';
-    document.querySelector('.app').style.pointerEvents = '';
+    document.querySelector('.app').style.pointerEvents = 'auto'; // 明示的に操作を許可
   }
   window.skipWizard = skipWizard;
 
