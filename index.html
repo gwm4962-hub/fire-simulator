@@ -4105,8 +4105,23 @@ if(dead[i]) continue; // skip financials if died this step
       if(age>=65) income+=(monthlyPension*12)*0.85*Math.pow(1.005,age-65);
       if(age===inheritA[i*2])   income+=inheritAmt;
       if(age===inheritA[i*2+1]) income+=inheritAmt;
-      // 児童手当（現在年齢に基づく概算：15歳以下の子がいる間）
-      income += childBenefitAnnual;
+      // 児童手当（シミュ年ごとに子どもの年齢を動的計算・2024年改正対応）
+      if (children.length > 0) {
+        const simYear = new Date().getFullYear() + t;
+        let benefitAnnual = 0;
+        children.forEach((child, idx) => {
+          const cAge = simYear - child.birthYear;
+          if (cAge < 0 || cAge > 18) return;
+          let monthly = 0;
+          if (cAge < 3) {
+            monthly = 15000;           // 3歳未満: 15,000円
+          } else {
+            monthly = (idx >= 2) ? 30000 : 10000; // 第3子以降3万/第1・2子1万
+          }
+          benefitAnnual += monthly * 12;
+        });
+        income += benefitAnnual;
+      }
 
       // ---- 4. Expenses (ライフステージ別) ----
       const baseExp = getExpenseForAge(age);
@@ -5977,7 +5992,7 @@ const EDU_COST = {
   university: { public: 108, private: 152 },// 大学（18〜21歳）
 };
 // 児童手当（月額・万円）
-const CHILD_BENEFIT = { under3: 1.5, elem: 1.0, elem3rd: 1.5, over15: 0 };
+const CHILD_BENEFIT = { under3: 1.5, child12: 1.0, child3rd: 3.0, over15: 0 }; // 2024年改正: 所得制限撤廃
 
 let children = []; // [{birthYear, schoolType}]
 
@@ -6006,39 +6021,79 @@ function updateChild(id, field, value) {
 
 function renderChildrenList() {
   const container = document.getElementById('children-list');
+  if (!container) return;
   const currentYear = new Date().getFullYear();
-  container.innerHTML = children.map((c, i) => `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px;">
+
+  // 既存の子どもカードをすべて削除（ボタン・サマリーには触らない）
+  Array.from(container.querySelectorAll('.child-card')).forEach(el => el.remove());
+
+  children.forEach((c, i) => {
+    const card = document.createElement('div');
+    card.className = 'child-card';
+    card.dataset.childId = c.id;
+    card.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px;';
+
+    const isChild3rd = (i >= 2);
+    const benefitLabel = c.birthYear >= currentYear - 2
+      ? '15,000円/月（3歳未満）'
+      : isChild3rd ? '30,000円/月（第3子以降）' : '10,000円/月（第1・2子）';
+
+    card.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <span style="font-size:13px;font-weight:700;color:var(--text);">第${i+1}子</span>
-        <button onclick="removeChild(${c.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;">✕</button>
+        <button class="child-remove-btn" data-id="${c.id}"
+          style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;">✕</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <div>
           <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">生まれ年</div>
           <input type="number" value="${c.birthYear}" min="${currentYear-20}" max="${currentYear+5}"
-            onchange="updateChild(${c.id},'birthYear',this.value)"
+            data-id="${c.id}" data-field="birthYear"
             style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--accent);font-family:var(--font-mono);font-size:13px;font-weight:700;text-align:center;padding:6px 4px;outline:none;">
         </div>
         <div>
           <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">学校種別</div>
-          <select onchange="updateChild(${c.id},'schoolType',this.value)"
+          <select data-id="${c.id}" data-field="schoolType"
             style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;padding:6px 4px;outline:none;">
             <option value="public" ${c.schoolType==='public'?'selected':''}>公立</option>
             <option value="private" ${c.schoolType==='private'?'selected':''}>私立</option>
           </select>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:6px;" id="child-cost-${c.id}"></div>
-    </div>
-  `).join('');
-  // 各子どもの総費用を表示
-  children.forEach(c => {
+      <div style="font-size:11px;color:var(--accent3);margin-top:6px;">
+        🎁 児童手当: ${benefitLabel}
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:2px;" id="child-cost-${c.id}"></div>
+    `;
+    container.appendChild(card);
+
+    // 教育費表示
     const totalCost = calcChildTotalCost(c);
-    const el = document.getElementById(`child-cost-${c.id}`);
-    if (el) el.textContent = `教育費合計 約 ${(totalCost/10000).toFixed(0)}万円`;
+    const costEl = card.querySelector(`#child-cost-${c.id}`);
+    if (costEl) costEl.textContent = `教育費合計 約 ${(totalCost/10000).toFixed(0)}万円`;
   });
 }
+
+// イベント委任（一度だけ登録）
+(function initChildrenListEvents() {
+  const container = document.getElementById('children-list');
+  if (!container || container._delegated) return;
+  container._delegated = true;
+
+  container.addEventListener('click', e => {
+    const btn = e.target.closest('.child-remove-btn');
+    if (!btn) return;
+    const id = Number(btn.dataset.id);
+    removeChild(id);
+  });
+
+  container.addEventListener('change', e => {
+    const el = e.target;
+    if (!el.dataset.id || !el.dataset.field) return;
+    const id = Number(el.dataset.id);
+    updateChild(id, el.dataset.field, el.value);
+  });
+})();
 
 function calcChildTotalCost(child) {
   const t = child.schoolType;
@@ -6083,19 +6138,17 @@ function applyChildEducationStages() {
 
 function calcChildBenefitAnnual() {
   const currentYear = new Date().getFullYear();
-  const startAge = parseInt(document.getElementById('start-age')?.value || 30);
-  // 所得制限チェック（世帯合算900万円目安）
-  const grossA = parseInt(document.getElementById('income').value || 500) * 10000;
-  const grossB = currentHousehold === 'dual' ? parseInt(document.getElementById('income-b').value || 300) * 10000 : 0;
-  const totalGross = grossA + grossB;
-  if (totalGross > 9_000_000) return 0; // 所得制限超過
   let totalAnnual = 0;
+  // 2024年改正: 所得制限撤廃・第3子以降3万円・高校生年代まで延長
   children.forEach((child, idx) => {
     const childAge = currentYear - child.birthYear;
-    if (childAge < 0 || childAge >= 15) return;
+    if (childAge < 0 || childAge > 18) return; // 高校生年代（18歳到達後の3月末）まで
     let monthly = 0;
-    if (childAge < 3)       monthly = 1.5;
-    else if (childAge < 12) monthly = (idx >= 2) ? 1.5 : 1.0;
+    if (childAge < 3) {
+      monthly = 1.5;                  // 3歳未満: 15,000円（一律）
+    } else {
+      monthly = (idx >= 2) ? 3.0 : 1.0; // 第3子以降3万円 / 第1・2子1万円
+    }
     totalAnnual += monthly * 12;
   });
   return totalAnnual; // 万円/年
@@ -6108,11 +6161,11 @@ function updateChildBenefitSummary() {
   if (children.length === 0) { el.style.display = 'none'; return; }
   el.style.display = 'block';
   if (annual > 0) {
-    el.textContent = `✅ 児童手当: 約 ${annual}万円/年 (現在の子どもの年齢に基づく試算)`;
+    el.textContent = `✅ 児童手当: 約 ${annual}万円/年（2024年改正・所得制限なし）`;
     el.style.color = 'var(--accent3)';
   } else {
-    el.textContent = '⚠️ 所得制限（目安900万円）超過のため児童手当なし';
-    el.style.color = 'var(--warning)';
+    el.textContent = '児童手当: 対象なし（18歳超または未入力）';
+    el.style.color = 'var(--text-dim)';
   }
 }
 
