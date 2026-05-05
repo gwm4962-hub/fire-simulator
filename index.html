@@ -5977,7 +5977,8 @@ const EDU_COST = {
   university: { public: 108, private: 152 },// 大学（18〜21歳）
 };
 // 児童手当（月額・万円）
-const CHILD_BENEFIT = { under3: 1.5, elem: 1.0, elem3rd: 1.5, over15: 0 };
+// 0〜3歳未満: 1.5万 / 3歳〜高校卒業: 1.0万 / 第3子以降: 3.0万
+const CHILD_BENEFIT = { under3: 1.5, normal: 1.0, thirdPlus: 3.0 };
 
 let children = []; // [{birthYear, schoolType}]
 
@@ -6047,8 +6048,43 @@ function calcChildTotalCost(child) {
           EDU_COST.university[t] * 4) * 10000;
 }
 
+function calcChildBenefitAnnual() {
+  const currentYear = new Date().getFullYear();
+  let totalAnnual = 0;
+
+  // 所得制限は撤廃済みのため、直接ループ処理を開始
+  children.forEach((child, idx) => {
+    const childAge = currentYear - child.birthYear;
+
+    // 0歳から18歳（高校卒業年度末）までを対象とする
+    if (childAge < 0 || childAge > 18) return;
+
+    let monthly = 0;
+
+    // 第3子以降の判定（idxは0から始まるため、idx >= 2 が第3子）
+    if (idx >= 2) {
+      // 第3子以降は一律 3万円
+      monthly = CHILD_BENEFIT.thirdPlus;
+    } else {
+      // 第1子・第2子
+      if (childAge < 3) {
+        monthly = CHILD_BENEFIT.under3; // 1.5万円
+      } else {
+        monthly = CHILD_BENEFIT.normal; // 1.0万円
+      }
+    }
+    
+    totalAnnual += monthly * 12;
+  }); // ← forEach の閉じ
+  
+  return totalAnnual; // 万円/年
+}
+
+// 教育費のライフステージ自動適用（エラーが出ていた関数）
 function applyChildEducationStages() {
-  // 既存のステージから教育費ステージを削除してから再追加
+  if (typeof expStages === 'undefined') return; // 安全策
+  
+  // 既存の自動生成ステージを削除
   expStages = expStages.filter(s => !s._autoEdu);
   const currentYear = new Date().getFullYear();
   const startAge = parseInt(document.getElementById('start-age')?.value || 30);
@@ -6056,7 +6092,7 @@ function applyChildEducationStages() {
   children.forEach(child => {
     const birthYear = child.birthYear;
     const t = child.schoolType;
-    // 各教育段階の年齢→シミュ開始年齢からの相対年
+    
     const stages = [
       { label: `幼稚園(第${children.indexOf(child)+1}子)`, ageStart: birthYear+3-currentYear+startAge, ageEnd: birthYear+5-currentYear+startAge+1, cost: EDU_COST.preschool[t] },
       { label: `小学校(第${children.indexOf(child)+1}子)`, ageStart: birthYear+6-currentYear+startAge, ageEnd: birthYear+11-currentYear+startAge+1, cost: EDU_COST.elementary[t] },
@@ -6064,6 +6100,7 @@ function applyChildEducationStages() {
       { label: `高校(第${children.indexOf(child)+1}子)`,   ageStart: birthYear+15-currentYear+startAge, ageEnd: birthYear+17-currentYear+startAge+1, cost: EDU_COST.highSchool[t] },
       { label: `大学(第${children.indexOf(child)+1}子)`,   ageStart: birthYear+18-currentYear+startAge, ageEnd: birthYear+21-currentYear+startAge+1, cost: EDU_COST.university[t] },
     ];
+
     stages.forEach(s => {
       if (s.ageEnd > startAge) {
         expStages.push({
@@ -6077,43 +6114,21 @@ function applyChildEducationStages() {
       }
     });
   });
+
   if (typeof renderTimeline === 'function') renderTimeline();
   if (typeof renderStages === 'function') renderStages();
 }
 
-function calcChildBenefitAnnual() {
-  const currentYear = new Date().getFullYear();
-  const startAge = parseInt(document.getElementById('start-age')?.value || 30);
-  // 所得制限チェック（世帯合算900万円目安）
-  const grossA = parseInt(document.getElementById('income').value || 500) * 10000;
-  const grossB = currentHousehold === 'dual' ? parseInt(document.getElementById('income-b').value || 300) * 10000 : 0;
-  const totalGross = grossA + grossB;
-  if (totalGross > 9_000_000) return 0; // 所得制限超過
-  let totalAnnual = 0;
-  children.forEach((child, idx) => {
-    const childAge = currentYear - child.birthYear;
-    if (childAge < 0 || childAge >= 15) return;
-    let monthly = 0;
-    if (childAge < 3)       monthly = 1.5;
-    else if (childAge < 12) monthly = (idx >= 2) ? 1.5 : 1.0;
-    totalAnnual += monthly * 12;
-  });
-  return totalAnnual; // 万円/年
-}
-
+// 児童手当サマリーの更新
 function updateChildBenefitSummary() {
   const annual = calcChildBenefitAnnual();
   const el = document.getElementById('child-benefit-summary');
   if (!el) return;
   if (children.length === 0) { el.style.display = 'none'; return; }
+  
   el.style.display = 'block';
-  if (annual > 0) {
-    el.textContent = `✅ 児童手当: 約 ${annual}万円/年 (現在の子どもの年齢に基づく試算)`;
-    el.style.color = 'var(--accent3)';
-  } else {
-    el.textContent = '⚠️ 所得制限（目安900万円）超過のため児童手当なし';
-    el.style.color = 'var(--warning)';
-  }
+  el.textContent = `✅ 児童手当: 約 ${annual}万円/年 (2024年10月新制度準拠)`;
+  el.style.color = 'var(--accent3)';
 }
 
 // ============================================================
