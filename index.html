@@ -11,176 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="FLOW">
 <meta name="application-name" content="FLOW">
 
-<!-- Apple Touch Icon: PNG形式のData URIを使用 (iOSはSVGを認識しない) -->
-<script>
-(function() {
-  function generatePngIcon() {
-    try {
-      const S = 512;
-      const canvas = document.createElement('canvas');
-      canvas.width = S; canvas.height = S;
-      const ctx = canvas.getContext('2d');
 
-      function rr(x, y, w, h, r) {
-        ctx.beginPath();
-        ctx.moveTo(x+r, y);
-        ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
-        ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
-        ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
-        ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
-        ctx.closePath();
-      }
-
-      // 背景: 白
-      ctx.fillStyle = '#ffffff';
-      rr(0, 0, S, S, 110);
-      ctx.fill();
-
-      // 装飾線、バー、トレンドライン（あなたのロジックを継承）
-      const barW = 88; const barR = 16; const base = 390;
-      
-      const g1 = ctx.createLinearGradient(0, base-120, 0, base);
-      g1.addColorStop(0, '#00c6ff'); g1.addColorStop(1, '#0072ff');
-      ctx.fillStyle = g1; rr(88, base-120, barW, 120, barR); ctx.fill();
-
-      const g2 = ctx.createLinearGradient(0, base-210, 0, base);
-      g2.addColorStop(0, '#a78bfa'); g2.addColorStop(1, '#7c3aed');
-      ctx.fillStyle = g2; rr(212, base-210, barW, 210, barR); ctx.fill();
-
-      const g3 = ctx.createLinearGradient(0, base-310, 0, base);
-      g3.addColorStop(0, '#34d399'); g3.addColorStop(1, '#059669');
-      ctx.fillStyle = g3; rr(336, base-310, barW, 310, barR); ctx.fill();
-
-      return canvas.toDataURL('image/png');
-    } catch(e) { return null; }
-  }
-
-  const pngDataUri = generatePngIcon();
-  
-  // iOS用アイコン設定
-  if (pngDataUri) {
-    const appleIcon = document.createElement('link');
-    appleIcon.rel = 'apple-touch-icon';
-    appleIcon.href = pngDataUri;
-    document.head.appendChild(appleIcon);
-  }
-
-  // マニフェスト設定
-  const manifestObj = {
-    "id": "/", // アプリの識別子を固定
-    "name": "FLOW",
-    "short_name": "FLOW",
-    "start_url": window.location.origin + "/", // 絶対URL化してinvalidを回避
-    "display": "standalone",
-    "orientation": "portrait",
-    "background_color": "#0a0f1e",
-    "theme_color": "#1e3a5f",
-    "icons": [
-      {
-        "src": pngDataUri,
-        "sizes": "512x512",
-        "type": "image/png",
-        "purpose": "any"
-      }
-    ]
-  };
-
-  const manifestJson = JSON.stringify(manifestObj);
-  const manifestDataUri = 'data:application/manifest+json;base64,' + btoa(unescape(encodeURIComponent(manifestJson)));
-
-  const mLink = document.createElement('link');
-  mLink.rel = 'manifest';
-  mLink.href = manifestDataUri;
-  document.head.appendChild(mLink);
-
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      const swCode = `
-        self.addEventListener('install', (e) => self.skipWaiting());
-        self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));
-      `;
-      const blob = new Blob([swCode], {type: 'text/javascript'});
-      const swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl)
-        .then(() => console.log('PWA: Service Worker Registered'))
-        .catch(err => console.error('PWA: SW Registration Failed', err));
-}); // ← ここが不足していました
-  }
-
-  (function() {
-    // 1. スタイルの注入
-    const style = document.createElement('style');
-    style.textContent = `
-        #pwa-install-banner {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 400px; background: #1e3a5f; color: white;
-            padding: 16px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            display: none; z-index: 10000; justify-content: space-between; align-items: center;
-            font-family: sans-serif; border: 1px solid rgba(255,255,255,0.1);
-        }
-        #pwa-install-banner button {
-            background: #a8ff78; color: #0a0f1e; border: none; padding: 8px 16px;
-            border-radius: 6px; font-weight: bold; cursor: pointer; margin-left: 10px;
-        }
-        #pwa-install-banner .close-btn {
-            background: transparent; color: white; opacity: 0.6; padding: 4px; font-size: 20px;
-        }
-    `;
-    document.head.appendChild(style);
-
-    // 2. HTML要素の作成
-    const banner = document.createElement('div');
-    banner.id = 'pwa-install-banner';
-    banner.innerHTML = `
-        <div style="flex:1; font-size:14px;">
-            <strong>FLOWをアプリとして追加</strong><br>
-            <span style="opacity:0.8; font-size:12px;">オフラインでも快適に利用できます</span>
-        </div>
-        <button id="pwa-install-btn">追加</button>
-        <button class="close-btn" id="pwa-close-btn">×</button>
-    `;
-    document.body.appendChild(banner);
-
-    let deferredPrompt;
-    const btn = document.getElementById('pwa-install-btn');
-    const closeBtn = document.getElementById('pwa-close-btn');
-
-    // Android / Chrome 等のインストール検知
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault(); // 標準のバナーを阻止
-        deferredPrompt = e;
-        banner.style.display = 'flex'; // 独自バナーを表示
-    });
-
-    btn.addEventListener('click', async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt(); // インストールダイアログを表示
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            banner.style.display = 'none';
-        }
-        deferredPrompt = null;
-    });
-
-    closeBtn.addEventListener('click', () => {
-        banner.style.display = 'none';
-    });
-
-    // 3. iOS用の判定 (Safariはbeforeinstallprompt非対応)
-    const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-
-    if (isIos && !isStandalone) {
-        // iOSの場合、手動での追加方法を案内
-        btn.textContent = "方法を見る";
-        btn.onclick = () => {
-            alert("iOSで追加するには：\n1. 下の共有ボタン(□に↑)をタップ\n2. 'ホーム画面に追加'を選択");
-        };
-        banner.style.display = 'flex';
-    }
-})();
-})();
-</script>
 
 <!-- Favicon (軽量版) -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e3a5f'/%3E%3Crect x='8' y='18' width='4' height='6' rx='1' fill='%2300d4ff'/%3E%3Crect x='14' y='12' width='4' height='12' rx='1' fill='%2300d4ff'/%3E%3Crect x='20' y='6' width='4' height='18' rx='1' fill='%23a8ff78'/%3E%3C/svg%3E">
@@ -8326,223 +8157,143 @@ function toggleGuidePanel() {
 /* ===================================================================
    PWA コア — インストールバナー + オフライン検知
    =================================================================== */
+
 (function () {
   'use strict';
 
-  // 単一HTMLファイルではService Workerは登録できません（Chrome/Androidのセキュリティ制限）。
-  // 代わりに beforeinstallprompt が来た場合はネイティブプロンプトを、
-  // 来ない場合はChromeメニュー経由の手順を案内します。
+  // --- 1. 設定と状態管理 ---
+  const DISMISSED_KEY = 'pwa_banner_dismissed'; // 閉じた記録を保存する名前
+  let deferredPrompt = null; // Android用のインストールプロンプトを一時保存する変数
 
-  const DISMISSED_KEY = 'pwa_banner_dismissed';
-  const INSTALLED_KEY = 'pwa_installed';
-  let deferredPrompt = null;
-  let bannerShown    = false;
-
+  // デバイスの判定
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  const isAndroid = /Android/.test(navigator.userAgent);
-  const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
-                          || navigator.standalone === true;
+  const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 
-  if (isInStandaloneMode) {
-    localStorage.setItem(INSTALLED_KEY, '1');
-    window._pwaInstalled = true;
+  // --- 2. アイコンの動的生成（Canvas） ---
+  // 外部画像ファイルなしで、プログラムからPNGアイコンを生成します
+  const pngDataUri = (function() {
+    try {
+      const S = 512; // アイコンのサイズ
+      const canvas = document.createElement('canvas');
+      canvas.width = S; canvas.height = S;
+      const ctx = canvas.getContext('2d');
+
+      // 角丸四角形を描く関数
+      const rr = (x, y, w, h, r) => {
+        ctx.beginPath(); ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y);
+        ctx.quadraticCurveTo(x+w, y, x+w, y+r); ctx.lineTo(x+w, y+h-r);
+        ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h); ctx.lineTo(x+r, y+h);
+        ctx.quadraticCurveTo(x, y+h, x, y+h-r); ctx.lineTo(x, y+r);
+        ctx.quadraticCurveTo(x, y, x+r, y); ctx.closePath();
+      };
+
+      // 背景（白）の描画
+      ctx.fillStyle = '#ffffff'; rr(0, 0, S, S, 110); ctx.fill();
+
+      // グラフ（バー）の描画設定
+      const base = 390; const barW = 88; const barR = 16;
+      const drawBar = (x, h, colors) => {
+        const g = ctx.createLinearGradient(0, base-h, 0, base);
+        g.addColorStop(0, colors[0]); g.addColorStop(1, colors[1]);
+        ctx.fillStyle = g; rr(x, base-h, barW, h, barR); ctx.fill();
+      };
+
+      // 資産推移をイメージした3本のバー
+      drawBar(88, 120, ['#00c6ff', '#0072ff']);   // 青系
+      drawBar(212, 210, ['#a78bfa', '#7c3aed']); // 紫系
+      drawBar(336, 310, ['#34d399', '#059669']); // 緑系
+
+      return canvas.toDataURL('image/png'); // 画像データを文字列として出力
+    } catch(e) { return null; }
+  })();
+
+  // --- 3. メタタグとマニフェストの適用 ---
+  // 生成したアイコンをHTMLのヘッドセクションに挿入します
+  if (pngDataUri) {
+    // iOS用のアイコン設定
+    const appleIcon = document.createElement('link');
+    appleIcon.rel = 'apple-touch-icon'; appleIcon.href = pngDataUri;
+    document.head.appendChild(appleIcon);
+
+    // PWAの構成ファイル（マニフェスト）を動的に生成
+    const manifest = {
+      "name": "FLOW", 
+      "short_name": "FLOW", 
+      "display": "standalone", 
+      "start_url": "./index.html",
+      "background_color": "#0a0f1e", 
+      "theme_color": "#1e3a5f",
+      "icons": [{ "src": pngDataUri, "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+    };
+    const mLink = document.createElement('link');
+    mLink.rel = 'manifest';
+    mLink.href = 'data:application/manifest+json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(manifest))));
+    document.head.appendChild(mLink);
   }
 
+  // --- 4. Service Worker（オフライン対応の土台） ---
+  // ブラウザに「これはPWAです」と認識させるための最小限の登録
+  if ('serviceWorker' in navigator) {
+    const swCode = `self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));`;
+    const swUrl = URL.createObjectURL(new Blob([swCode], {type: 'text/javascript'}));
+    navigator.serviceWorker.register(swUrl).catch(() => {});
+  }
+
+  // --- 5. UI（バナー）の表示制御 ---
+  const banner = document.getElementById('pwa-install-banner');
+  
+  // Android/Chrome：インストールボタンが出せる状態になったらバナーを表示
   window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    deferredPrompt = e;
-    console.log('[PWA] beforeinstallprompt fired');
+    e.preventDefault(); // ブラウザ標準のバナーを阻止
+    deferredPrompt = e; // プロンプトを保存
+    // 一度も閉じておらず、かつアプリとして未起動なら表示
     if (!localStorage.getItem(DISMISSED_KEY) && !isInStandaloneMode) {
-      setTimeout(showBanner, 1500);
+      setTimeout(() => banner?.classList.add('visible'), 1500);
     }
   });
 
-  window.addEventListener('appinstalled', () => {
-    hideBanner();
-    localStorage.setItem(INSTALLED_KEY, '1');
-    window._pwaInstalled = true;
-    showInstalledToast();
-  });
-
+  // iOS：Safariは自動検知できないため、3秒後に手動でバナーを表示
   if (isIOS && !isInStandaloneMode && !localStorage.getItem(DISMISSED_KEY)) {
-    setTimeout(showBanner, 3000);
+    setTimeout(() => banner?.classList.add('visible'), 3000);
   }
 
-  function showBanner() {
-    if (bannerShown || localStorage.getItem(DISMISSED_KEY)) return;
-    bannerShown = true;
-    const banner = document.getElementById('pwa-install-banner');
-    if (banner) banner.classList.add('visible');
-  }
-
-  function hideBanner() {
-    const banner = document.getElementById('pwa-install-banner');
-    if (banner) banner.classList.remove('visible');
-  }
-
-  window.addEventListener('DOMContentLoaded', () => {
-    const installBtn = document.getElementById('pwa-install-btn');
-    if (!installBtn) return;
-    if (isIOS) installBtn.textContent = '手順を見る';
-    else if (isAndroid) installBtn.textContent = 'ホームに追加';
-  });
-
+  // --- 6. 公開関数（HTMLのボタンから呼び出す用） ---
+  
+  // 「インストール」または「追加」ボタンを押した時
   window.pwaTriggerInstall = function () {
     if (isIOS) {
-      hideBanner();
-      pwaOpenIosModal();
-      return;
-    }
-    if (deferredPrompt) {
+      // iOSの場合は手順を書いたモーダルを開く
+      banner?.classList.remove('visible');
+      document.getElementById('pwa-ios-modal')?.classList.add('open');
+    } else if (deferredPrompt) {
+      // Androidの場合はブラウザのインストール画面を出す
       deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(choice => {
-        if (choice.outcome === 'accepted') showInstalledToast();
+      deferredPrompt.userChoice.then(() => {
         deferredPrompt = null;
-        hideBanner();
+        banner?.classList.remove('visible');
       });
     } else {
-      hideBanner();
-      pwaOpenAndroidFallback();
+      alert("ブラウザのメニューから「ホーム画面に追加」を選択してください。");
     }
   };
 
+  // バナーを閉じる（「×」ボタン）
   window.pwaDismissBanner = function () {
-    hideBanner();
-    localStorage.setItem(DISMISSED_KEY, '1');
+    banner?.classList.remove('visible');
+    localStorage.setItem(DISMISSED_KEY, '1'); // 閉じたことをブラウザに覚えさせる
   };
 
-  window.pwaOpenIosModal = function () {
-    const m = document.getElementById('pwa-ios-modal');
-    if (m) m.classList.add('open');
-  };
-
+  // iOS手順モーダルを閉じる
   window.pwaCloseIosModal = function () {
-    const m = document.getElementById('pwa-ios-modal');
-    if (m) m.classList.remove('open');
+    document.getElementById('pwa-ios-modal')?.classList.remove('open');
     localStorage.setItem(DISMISSED_KEY, '1');
   };
 
-  window.pwaOpenAndroidFallback = function() {
-    const m = document.getElementById('pwa-ios-modal');
-    if (!m) return;
-    const h = m.querySelector('h3');
-    if (h) h.innerHTML = '📲 ホーム画面に追加する方法';
-    const steps = m.querySelectorAll('.pwa-ios-step');
-    const texts = [
-      'Chrome右上の <em>メニュー（⋮）</em> をタップ',
-      '<em>「ホーム画面に追加」</em> をタップ',
-      '<em>「追加」</em> をタップして完了！'
-    ];
-    steps.forEach((s, i) => {
-      const t = s.querySelector('.step-text');
-      if (t && texts[i] !== undefined) t.innerHTML = texts[i];
-    });
-    m.classList.add('open');
-  };
-
-  function showInstalledToast() {
-    const t = document.getElementById('pwa-installed-toast');
-    if (!t) return;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3500);
-  }
-
-  const offlineBar = document.getElementById('pwa-offline-bar');
-  function updateOnlineStatus() {
-    if (!offlineBar) return;
-    offlineBar.classList.toggle('visible', !navigator.onLine);
-  }
-  window.addEventListener('online',  updateOnlineStatus);
-  window.addEventListener('offline', updateOnlineStatus);
-  updateOnlineStatus();
-
-  if (isInStandaloneMode) {
-    document.documentElement.style.setProperty('--safe-bottom', 'env(safe-area-inset-bottom, 0px)');
-  }
+  // オフライン状態の監視
+  window.addEventListener('online',  () => document.getElementById('pwa-offline-bar')?.classList.remove('visible'));
+  window.addEventListener('offline', () => document.getElementById('pwa-offline-bar')?.classList.add('visible'));
 
 })();
-</script>
-
-<!-- ===== PWA UI ===== -->
-<!-- オフラインバーにもアイコンを添えると状況が伝わりやすくなります -->
-<div id="pwa-offline-bar">
-  <i class="icon-fire" style="font-size: 1em; opacity: 0.8;"></i> オフラインモード｜全機能はキャッシュで動作します
-</div>
-
-<div id="pwa-install-banner" role="complementary" aria-label="アプリインストール">
-  <!-- 📈 を <i class="icon-fire"></i> に変更 -->
-  <div class="pwa-icon">
-    <i class="icon-fire" style="font-size: 1.5rem;"></i>
-  </div>
-  <div class="pwa-text">
-    <strong>ホーム画面に追加</strong>
-    <span>オフラインでもサクサク動作 · 広告なし</span>
-  </div>
-  <button id="pwa-install-btn" onclick="pwaTriggerInstall()">インストール</button>
-  <button id="pwa-banner-close" onclick="pwaDismissBanner()" aria-label="閉じる">×</button>
-</div>
-<div id="pwa-ios-modal" role="dialog" aria-modal="true" aria-label="iOSインストール手順">
-  <div class="pwa-ios-box">
-    <h3>📲 ホーム画面に追加する方法</h3>
-    <div class="pwa-ios-step">
-      <div class="step-num">1</div>
-      <div class="step-text">画面下部の <em>共有ボタン</em>（□↑）をタップ</div>
-    </div>
-    <div class="pwa-ios-step">
-      <div class="step-num">2</div>
-      <div class="step-text"><em>「ホーム画面に追加」</em> をタップ</div>
-    </div>
-    <div class="pwa-ios-step">
-      <div class="step-num">3</div>
-      <div class="step-text">右上の <em>「追加」</em> をタップして完了！</div>
-    </div>
-    <button class="pwa-ios-close" onclick="pwaCloseIosModal()">閉じる</button>
-  </div>
-</div>
-
-<div id="pwa-installed-toast">✅ ホーム画面に追加しました！</div>
-
-<script>
-/* Step5インストールパネル制御 */
-(function(){
-  function updateStep5UI() {
-    const btn    = document.getElementById('pwa-step5-btn');
-    const already = document.getElementById('pwa-step5-already');
-    const isInstalled = localStorage.getItem('pwa_installed') === '1'
-      || window.matchMedia('(display-mode: standalone)').matches
-      || navigator.standalone === true;
-    if (!btn || !already) return;
-    if (isInstalled) {
-      btn.style.display    = 'none';
-      already.style.display = 'block';
-    } else {
-      btn.style.display    = 'block';
-      already.style.display = 'none';
-    }
-  }
-
-  window.pwaStep5Install = function() {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    if (isIOS) {
-      pwaOpenIosModal && pwaOpenIosModal();
-    } else {
-      pwaTriggerInstall && pwaTriggerInstall();
-    }
-  };
-
-  // appinstalled イベントでStep5UIも更新
-  window.addEventListener('appinstalled', updateStep5UI);
-  window.matchMedia('(display-mode: standalone)').addEventListener('change', updateStep5UI);
-
-  // DOM読み込み後にUI更新
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', updateStep5UI);
-  } else {
-    updateStep5UI();
-  }
-})();
-
-  
 </script>
 </body>
 </html>
