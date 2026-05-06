@@ -13,48 +13,48 @@
 
 <!-- Apple Touch Icon (新デザインを反映) -->
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3Cfilter id='glow'%3E%3CfeGaussianBlur stdDeviation='5' result='coloredBlur'/%3E%3CfeMerge%3E%3CfeMergeNode in='coloredBlur'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='512' height='512' rx='110' fill='%231e3a5f' stroke='white' stroke-width='4'/%3E%3Ccircle cx='256' cy='256' r='160' fill='none' stroke='white' stroke-width='2' stroke-opacity='0.1'/%3E%3Crect x='140' y='300' width='60' height='80' rx='10' fill='%2300d4ff' filter='url(%23glow)'/%3E%3Crect x='226' y='220' width='60' height='160' rx='10' fill='%2300d4ff' filter='url(%23glow)'/%3E%3Crect x='312' y='130' width='60' height='250' rx='10' fill='%23a8ff78' filter='url(%23glow)'/%3E%3Ccircle cx='342' cy='130' r='12' fill='white'/%3E%3C/svg%3E">
-
-  
 <!-- Favicon (軽量版) -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e3a5f'/%3E%3Crect x='8' y='18' width='4' height='6' rx='1' fill='%2300d4ff'/%3E%3Crect x='14' y='12' width='4' height='12' rx='1' fill='%2300d4ff'/%3E%3Crect x='20' y='6' width='4' height='18' rx='1' fill='%23a8ff78'/%3E%3C/svg%3E">
 <!-- インラインマニフェスト (JSON設定と同期) -->
+<!-- 修正箇所: JavaScriptをscriptタグで囲む -->
 <script>
-(function(){
- const manifest = {
-  "id": "/", 
-  "name": "Flow",
-  "short_name": "Flow",
-  "description": "マルコフ連鎖とt分布を用いた高度なFIREシミュレーター",
-  "start_url": "/", 
-  "display": "standalone",
-  "background_color": "#0a0f1e",
-  "theme_color": "#1e3a5f",
-  "icons": [
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3Cfilter id='glow'%3E%3CfeGaussianBlur stdDeviation='5' result='coloredBlur'/%3E%3CfeMerge%3E%3CfeMergeNode in='coloredBlur'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='512' height='512' rx='110' fill='%231e3a5f' stroke='white' stroke-width='12'/%3E%3Ccircle cx='256' cy='256' r='160' fill='none' stroke='white' stroke-width='2' stroke-opacity='0.1'/%3E%3Crect x='140' y='300' width='60' height='80' rx='10' fill='%2300d4ff' filter='url(%23glow)'/%3E%3Crect x='226' y='220' width='60' height='160' rx='10' fill='%2300d4ff' filter='url(%23glow)'/%3E%3Crect x='312' y='130' width='60' height='250' rx='10' fill='%23a8ff78' filter='url(%23glow)'/%3E%3Ccircle cx='342' cy='130' r='12' fill='white'/%3E%3C/svg%3E",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
-      "sizes": "1x1",
-      "type": "image/png",
-      "form_factor": "wide"
-    }
-  ]
-};
+(function() {
+  // 1. マニフェストの内容を定義
+  const manifestData = {
+    "id": "/",
+    "name": "Advanced FIRE Simulator v15",
+    "short_name": "FIRE-Sim",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#0a0f1e",
+    "theme_color": "#1e3a5f",
+    "icons": [
+      {
+        "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3Cfilter id='glow'%3E%3CfeGaussianBlur stdDeviation='5' result='coloredBlur'/%3E%3CfeMerge%3E%3CfeMergeNode in='coloredBlur'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='512' height='512' rx='110' fill='%231e3a5f' stroke='white' stroke-width='12'/%3E%3Ccircle cx='256' cy='256' r='160' fill='none' stroke='white' stroke-width='2' stroke-opacity='0.1'/%3E%3Crect x='140' y='300' width='60' height='80' rx='10' fill='%2300d4ff' filter='url(%23glow)'/%3E%3Crect x='226' y='220' width='60' height='160' rx='10' fill='%2300d4ff' filter='url(%23glow)'/%3E%3Crect x='312' y='130' width='60' height='250' rx='10' fill='%23a8ff78' filter='url(%23glow)'/%3E%3Ccircle cx='342' cy='130' r='12' fill='white'/%3E%3C/svg%3E",
+        "sizes": "512x512",
+        "type": "image/svg+xml",
+        "purpose": "any"
+      }
+    ]
   };
-  const blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
-  const url  = URL.createObjectURL(blob);
-  const link = document.createElement('link');
-  link.rel  = 'manifest';
-  link.href = url;
-  document.head.appendChild(link);
+
+  // 2. Blob URLを生成してlinkタグを強制的に差し替える
+  const stringManifest = JSON.stringify(manifestData);
+  const blob = new Blob([stringManifest], {type: 'application/json'});
+  const manifestUrl = URL.createObjectURL(blob);
+
+  let link = document.querySelector('link[rel="manifest"]');
+  if (!link) {
+      link = document.createElement('link');
+      link.rel = 'manifest';
+      document.head.appendChild(link);
+  }
+  link.href = manifestUrl;
 })();
 </script>
+
+  
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flow</title>
 
@@ -1429,6 +1429,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
 </head>
 <body data-mode="beginner">
 
+    
 <!-- ===== BEGINNER WIZARD (初心者モード) ===== -->
 <div id="wizard-overlay">
   <div class="wizard-wrap">
