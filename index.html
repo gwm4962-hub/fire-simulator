@@ -21,10 +21,11 @@
 (function() {
   // 1. マニフェストの内容を定義
   const manifestData = {
-    "id": "/",
+    "id": "/", // アプリを識別するID（通常はルート）
     "name": "Advanced FIRE Simulator v15",
     "short_name": "FIRE-Sim",
-    "start_url": "/",
+    // 修正ポイント: start_url を絶対URL（ドメイン名を含む）にする
+    "start_url": window.location.origin + "/", 
     "display": "standalone",
     "orientation": "portrait",
     "background_color": "#0a0f1e",
@@ -39,18 +40,19 @@
     ]
   };
 
-  // 2. Blob URLを生成してlinkタグを強制的に差し替える
+  // 2. Blob URLを生成
   const stringManifest = JSON.stringify(manifestData);
   const blob = new Blob([stringManifest], {type: 'application/json'});
   const manifestUrl = URL.createObjectURL(blob);
 
-  let link = document.querySelector('link[rel="manifest"]');
-  if (!link) {
-      link = document.createElement('link');
-      link.rel = 'manifest';
-      document.head.appendChild(link);
-  }
+  // 3. linkタグの更新（既存があれば削除して新規作成が最も安全）
+  let oldLink = document.querySelector('link[rel="manifest"]');
+  if (oldLink) oldLink.remove();
+
+  const link = document.createElement('link');
+  link.rel = 'manifest';
   link.href = manifestUrl;
+  document.head.appendChild(link);
 })();
 </script>
 
