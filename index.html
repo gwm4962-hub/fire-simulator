@@ -92,6 +92,20 @@
   mLink.rel = 'manifest';
   mLink.href = manifestDataUri;
   document.head.appendChild(mLink);
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      const swCode = `
+        self.addEventListener('install', (e) => self.skipWaiting());
+        self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));
+      `;
+      const blob = new Blob([swCode], {type: 'text/javascript'});
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl)
+        .then(() => console.log('PWA: Service Worker Registered'))
+        .catch(err => console.error('PWA: SW Registration Failed', err));
+}); // ← ここが不足していました
+  }
 })();
 </script>
 
