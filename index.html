@@ -1525,14 +1525,35 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   </div>
 </div>
 
+
+.icon-fire {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  background-color: currentColor; /* 親要素の文字色を継承 */
+  vertical-align: middle;
+  margin-right: 4px; /* テキストとの間に少し隙間を作る */
+  
+  /* SVGマスク設定 */
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect x='140' y='300' width='60' height='80' rx='10'/%3E%3Crect x='226' y='220' width='60' height='160' rx='10'/%3E%3Crect x='312' y='130' width='60' height='250' rx='10'/%3E%3Ccircle cx='342' cy='130' r='12'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect x='140' y='300' width='60' height='80' rx='10'/%3E%3Crect x='226' y='220' width='60' height='160' rx='10'/%3E%3Crect x='312' y='130' width='60' height='250' rx='10'/%3E%3Ccircle cx='342' cy='130' r='12'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+  
 <!-- フローティングSIMULATEボタン -->
 <button id="floating-simulate" onclick="runSimulation()" class="hidden">
-  ▶ シミュレーション実行
+  <!-- 絵文字の代わりにアイコンクラスを使用 -->
+  <i class="icon-fire"></i> シミュレーション実行
 </button>
 
 <div class="app">
   <div class="header">
-    <div class="header-logo">📈</div>
+    <!-- 📈を <i class="icon-fire"></i> に変更 -->
+    <div class="header-logo"><i class="icon-fire"></i></div>
     <div class="header-text">
       <div class="header-sub">あしたの資産予報</div>
       <div class="header-title">FLOW</div>
@@ -8338,10 +8359,16 @@ self.addEventListener('fetch', e => {
 </script>
 
 <!-- ===== PWA UI ===== -->
-<div id="pwa-offline-bar">📡 オフラインモード｜全機能はキャッシュで動作します</div>
+<!-- オフラインバーにもアイコンを添えると状況が伝わりやすくなります -->
+<div id="pwa-offline-bar">
+  <i class="icon-fire" style="font-size: 1em; opacity: 0.8;"></i> オフラインモード｜全機能はキャッシュで動作します
+</div>
 
 <div id="pwa-install-banner" role="complementary" aria-label="アプリインストール">
-  <div class="pwa-icon">📈</div>
+  <!-- 📈 を <i class="icon-fire"></i> に変更 -->
+  <div class="pwa-icon">
+    <i class="icon-fire" style="font-size: 1.5rem;"></i>
+  </div>
   <div class="pwa-text">
     <strong>ホーム画面に追加</strong>
     <span>オフラインでもサクサク動作 · 広告なし</span>
@@ -8349,7 +8376,6 @@ self.addEventListener('fetch', e => {
   <button id="pwa-install-btn" onclick="pwaTriggerInstall()">インストール</button>
   <button id="pwa-banner-close" onclick="pwaDismissBanner()" aria-label="閉じる">×</button>
 </div>
-
 <div id="pwa-ios-modal" role="dialog" aria-modal="true" aria-label="iOSインストール手順">
   <div class="pwa-ios-box">
     <h3>📲 ホーム画面に追加する方法</h3>
