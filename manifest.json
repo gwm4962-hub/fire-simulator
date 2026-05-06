@@ -41,6 +41,7 @@
       "sizes": "540x720",
       "type": "image/png",
       "form_factor": "narrow"
+            "label": "Mobile Simulation View"
     },
     {
       "src": "./screenshot-desktop.png",
@@ -60,6 +61,7 @@
         "src": "./icon-192.png",
         "sizes": "192x192",
         "type": "image/png"
+          "label": "Desktop Dashboard View"
       }]
     }
   ]
