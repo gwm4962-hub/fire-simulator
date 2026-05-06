@@ -115,7 +115,27 @@
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 <!-- PWA設定はサーバー上でのみ有効 -->
-
+// Service Workerの登録
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // インラインでService Workerを定義（外部ファイル不要）
+    const swCode = `
+      self.addEventListener('install', (e) => {
+        self.skipWaiting();
+      });
+      self.addEventListener('fetch', (e) => {
+        // キャッシュ戦略が必要な場合はここに記述（空でもインストールは可能）
+        e.respondWith(fetch(e.request));
+      });
+    `;
+    const blob = new Blob([swCode], {type: 'text/javascript'});
+    const swUrl = URL.createObjectURL(blob);
+    
+    navigator.serviceWorker.register(swUrl)
+      .then(() => console.log('Service Worker Registered'))
+      .catch(err => console.error('SW Registration Failed', err));
+  });
+}
     <!-- 外部リソース -->
 
 
