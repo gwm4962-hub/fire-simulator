@@ -11,50 +11,92 @@
 <meta name="apple-mobile-web-app-title" content="FLOW">
 <meta name="application-name" content="FLOW">
 
-<!-- Apple Touch Icon (新デザインを反映) -->
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3Cfilter id='glow'%3E%3CfeGaussianBlur stdDeviation='5' result='coloredBlur'/%3E%3CfeMerge%3E%3CfeMergeNode in='coloredBlur'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='512' height='512' rx='110' fill='%231e3a5f' stroke='white' stroke-width='4'/%3E%3Ccircle cx='256' cy='256' r='160' fill='none' stroke='white' stroke-width='2' stroke-opacity='0.1'/%3E%3Crect x='140' y='300' width='60' height='80' rx='10' fill='%2300d4ff' filter='url(%23glow)'/%3E%3Crect x='226' y='220' width='60' height='160' rx='10' fill='%2300d4ff' filter='url(%23glow)'/%3E%3Crect x='312' y='130' width='60' height='250' rx='10' fill='%23a8ff78' filter='url(%23glow)'/%3E%3Ccircle cx='342' cy='130' r='12' fill='white'/%3E%3C/svg%3E">
-<!-- Favicon (軽量版) -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e3a5f'/%3E%3Crect x='8' y='18' width='4' height='6' rx='1' fill='%2300d4ff'/%3E%3Crect x='14' y='12' width='4' height='12' rx='1' fill='%2300d4ff'/%3E%3Crect x='20' y='6' width='4' height='18' rx='1' fill='%23a8ff78'/%3E%3C/svg%3E">
-<!-- インラインマニフェスト (JSON設定と同期) -->
-<!-- 修正箇所: JavaScriptをscriptタグで囲む -->
+<!-- Apple Touch Icon: PNG形式のData URIを使用 (iOSはSVGを認識しない) -->
 <script>
 (function() {
-  // 1. マニフェストの内容を定義
-  const manifestData = {
-    "id": "/", // アプリを識別するID（通常はルート）
-    "name": "Advanced FIRE Simulator v15",
-    "short_name": "FIRE-Sim",
-    // 修正ポイント: start_url を絶対URL（ドメイン名を含む）にする
-    "start_url": window.location.origin + "/", 
+  // CanvasでPNGアイコンを生成してapple-touch-iconに設定
+  function generatePngIcon() {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 180; canvas.height = 180;
+      const ctx = canvas.getContext('2d');
+      // roundRectのpolyfill (旧Safari対応)
+      if (!ctx.roundRect) {
+        ctx.roundRect = function(x, y, w, h, r) {
+          ctx.beginPath();
+          ctx.moveTo(x+r, y);
+          ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+          ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+          ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+          ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+          ctx.closePath();
+        };
+      }
+      // 背景
+      const bgR = 36;
+      ctx.beginPath();
+      ctx.moveTo(bgR, 0); ctx.lineTo(180-bgR, 0);
+      ctx.quadraticCurveTo(180, 0, 180, bgR);
+      ctx.lineTo(180, 180-bgR); ctx.quadraticCurveTo(180, 180, 180-bgR, 180);
+      ctx.lineTo(bgR, 180); ctx.quadraticCurveTo(0, 180, 0, 180-bgR);
+      ctx.lineTo(0, bgR); ctx.quadraticCurveTo(0, 0, bgR, 0);
+      ctx.closePath();
+      ctx.fillStyle = '#1e3a5f';
+      ctx.fill();
+      // バーグラフ
+      ctx.fillStyle = '#00d4ff';
+      ctx.roundRect(48, 105, 22, 45, 4); ctx.fill();
+      ctx.roundRect(79, 78, 22, 72, 4); ctx.fill();
+      ctx.fillStyle = '#a8ff78';
+      ctx.roundRect(110, 48, 22, 102, 4); ctx.fill();
+      // ドット
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(121, 48, 7, 0, Math.PI*2); ctx.fill();
+      return canvas.toDataURL('image/png');
+    } catch(e) { return null; }
+  }
+
+  const pngDataUri = generatePngIcon();
+  if (pngDataUri) {
+    const link = document.createElement('link');
+    link.rel = 'apple-touch-icon';
+    link.sizes = '180x180';
+    link.href = pngDataUri;
+    document.head.appendChild(link);
+  }
+
+  // マニフェストをdata: URIで設定 (Blob URLはiOS Safariで動作しない)
+  const manifestObj = {
+    "name": "FLOW",
+    "short_name": "FLOW",
+    "start_url": "./",
     "display": "standalone",
     "orientation": "portrait",
     "background_color": "#0a0f1e",
     "theme_color": "#1e3a5f",
     "icons": [
       {
-        "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3Cfilter id='glow'%3E%3CfeGaussianBlur stdDeviation='5' result='coloredBlur'/%3E%3CfeMerge%3E%3CfeMergeNode in='coloredBlur'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='512' height='512' rx='110' fill='%231e3a5f' stroke='white' stroke-width='12'/%3E%3Ccircle cx='256' cy='256' r='160' fill='none' stroke='white' stroke-width='2' stroke-opacity='0.1'/%3E%3Crect x='140' y='300' width='60' height='80' rx='10' fill='%2300d4ff' filter='url(%23glow)'/%3E%3Crect x='226' y='220' width='60' height='160' rx='10' fill='%2300d4ff' filter='url(%23glow)'/%3E%3Crect x='312' y='130' width='60' height='250' rx='10' fill='%23a8ff78' filter='url(%23glow)'/%3E%3Ccircle cx='342' cy='130' r='12' fill='white'/%3E%3C/svg%3E",
-        "sizes": "512x512",
-        "type": "image/svg+xml",
-        "purpose": "any"
+        "src": pngDataUri || "data:image/png;base64,iVBORw0KGgo=",
+        "sizes": "180x180",
+        "type": "image/png",
+        "purpose": "any maskable"
       }
     ]
   };
+  const manifestJson = JSON.stringify(manifestObj);
+  const manifestDataUri = 'data:application/manifest+json,' + encodeURIComponent(manifestJson);
 
-  // 2. Blob URLを生成
-  const stringManifest = JSON.stringify(manifestData);
-  const blob = new Blob([stringManifest], {type: 'application/json'});
-  const manifestUrl = URL.createObjectURL(blob);
-
-  // 3. linkタグの更新（既存があれば削除して新規作成が最も安全）
   let oldLink = document.querySelector('link[rel="manifest"]');
   if (oldLink) oldLink.remove();
-
-  const link = document.createElement('link');
-  link.rel = 'manifest';
-  link.href = manifestUrl;
-  document.head.appendChild(link);
+  const mLink = document.createElement('link');
+  mLink.rel = 'manifest';
+  mLink.href = manifestDataUri;
+  document.head.appendChild(mLink);
 })();
 </script>
+
+<!-- Favicon (軽量版) -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e3a5f'/%3E%3Crect x='8' y='18' width='4' height='6' rx='1' fill='%2300d4ff'/%3E%3Crect x='14' y='12' width='4' height='12' rx='1' fill='%2300d4ff'/%3E%3Crect x='20' y='6' width='4' height='18' rx='1' fill='%23a8ff78'/%3E%3C/svg%3E">
 
   
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8239,12 +8281,10 @@ self.addEventListener('fetch', e => {
 `;
 
   if ('serviceWorker' in navigator) {
-    const blob = new Blob([swCode], { type: 'text/javascript' });
-    const swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl, { scope: './' })
-      .then(reg => {
+    // Blob URL はセキュリティポリシーで弾かれる環境があるため data: URI → Blob の順に試みる
+    const tryRegister = (url, opts) =>
+      navigator.serviceWorker.register(url, opts).then(reg => {
         console.log('[PWA] SW registered', reg.scope);
-        // アップデートがあれば通知
         reg.addEventListener('updatefound', () => {
           const w = reg.installing;
           w.addEventListener('statechange', () => {
@@ -8253,8 +8293,17 @@ self.addEventListener('fetch', e => {
             }
           });
         });
-      })
-      .catch(e => console.warn('[PWA] SW failed:', e));
+      });
+
+    const swDataUri = 'data:text/javascript;base64,' + btoa(unescape(encodeURIComponent(swCode)));
+    tryRegister(swDataUri, { scope: './' }).catch(() => {
+      try {
+        const blob = new Blob([swCode], { type: 'text/javascript' });
+        return tryRegister(URL.createObjectURL(blob), { scope: './' });
+      } catch(e2) {
+        console.warn('[PWA] SW registration not supported in this context');
+      }
+    }).catch(e => console.warn('[PWA] SW failed:', e));
   }
 
   // ── インストールプロンプト制御 ─────────────────────────────────
@@ -8306,13 +8355,23 @@ self.addEventListener('fetch', e => {
     if (banner) banner.classList.remove('visible');
   }
 
+  // iOSバナーのボタンテキストを「手順を見る」に変更
+  if (isIOS) {
+    const installBtn = document.getElementById('pwa-install-btn');
+    if (installBtn) installBtn.textContent = '手順を見る';
+  }
+
   window.pwaTriggerInstall = function () {
     if (isIOS) {
       hideBanner();
       pwaOpenIosModal();
       return;
     }
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      // Androidでプロンプトがまだ来ていない場合はiOSと同様の案内を表示
+      pwaOpenIosModal && pwaOpenAndroidFallback();
+      return;
+    }
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(choice => {
       if (choice.outcome === 'accepted') {
@@ -8322,6 +8381,19 @@ self.addEventListener('fetch', e => {
       deferredPrompt = null;
       hideBanner();
     });
+  };
+
+  window.pwaOpenAndroidFallback = function() {
+    // Chrome系でbeforeinstallpromptが来ていない場合の案内
+    const m = document.getElementById('pwa-ios-modal');
+    if (!m) return;
+    const h = m.querySelector('h3');
+    if (h) h.textContent = '📲 ホーム画面に追加する方法';
+    const steps = m.querySelectorAll('.pwa-ios-step .step-text');
+    if (steps[0]) steps[0].innerHTML = 'ブラウザ右上の <em>メニュー（⋮）</em> をタップ';
+    if (steps[1]) steps[1].innerHTML = '<em>「アプリをインストール」</em> または <em>「ホーム画面に追加」</em> をタップ';
+    if (steps[2]) steps[2].innerHTML = '<em>「インストール」</em> をタップして完了！';
+    m.classList.add('open');
   };
 
   window.pwaDismissBanner = function () {
