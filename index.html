@@ -8285,84 +8285,25 @@ function toggleGuidePanel() {
 
 <script>
 /* ===================================================================
-   PWA コア — Service Worker + インストールバナー + オフライン検知
+   PWA コア — インストールバナー + オフライン検知
    =================================================================== */
 (function () {
   'use strict';
 
-  // ── Service Worker をインライン Blob で登録 ──────────────────────
-  const SW_VERSION = 'FLOW-v1';
-  const CACHE_NAME = SW_VERSION;
+  // 単一HTMLファイルではService Workerは登録できません（Chrome/Androidのセキュリティ制限）。
+  // 代わりに beforeinstallprompt が来た場合はネイティブプロンプトを、
+  // 来ない場合はChromeメニュー経由の手順を案内します。
 
-  const swCode = `
-const CACHE = '${SW_VERSION}';
-const OFFLINE_URLS = [self.location.href || '/'];
-
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(OFFLINE_URLS)).then(() => self.skipWaiting())
-  );
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return res;
-      })
-      .catch(() => caches.match(e.request).then(r => r || caches.match('/') || new Response('Offline', {status: 503})))
-  );
-});
-`;
-
-  if ('serviceWorker' in navigator) {
-    // Blob URL はセキュリティポリシーで弾かれる環境があるため data: URI → Blob の順に試みる
-    const tryRegister = (url, opts) =>
-      navigator.serviceWorker.register(url, opts).then(reg => {
-        console.log('[PWA] SW registered', reg.scope);
-        reg.addEventListener('updatefound', () => {
-          const w = reg.installing;
-          w.addEventListener('statechange', () => {
-            if (w.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('[PWA] New version available');
-            }
-          });
-        });
-      });
-
-    const swDataUri = 'data:text/javascript;base64,' + btoa(unescape(encodeURIComponent(swCode)));
-    tryRegister(swDataUri, { scope: './' }).catch(() => {
-      try {
-        const blob = new Blob([swCode], { type: 'text/javascript' });
-        return tryRegister(URL.createObjectURL(blob), { scope: './' });
-      } catch(e2) {
-        console.warn('[PWA] SW registration not supported in this context');
-      }
-    }).catch(e => console.warn('[PWA] SW failed:', e));
-  }
-
-  // ── インストールプロンプト制御 ─────────────────────────────────
   const DISMISSED_KEY = 'pwa_banner_dismissed';
   const INSTALLED_KEY = 'pwa_installed';
   let deferredPrompt = null;
   let bannerShown    = false;
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isAndroid = /Android/.test(navigator.userAgent);
   const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
                           || navigator.standalone === true;
 
-  // すでにインストール済みならUI不要
   if (isInStandaloneMode) {
     localStorage.setItem(INSTALLED_KEY, '1');
     window._pwaInstalled = true;
@@ -8371,8 +8312,9 @@ self.addEventListener('fetch', e => {
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e;
+    console.log('[PWA] beforeinstallprompt fired');
     if (!localStorage.getItem(DISMISSED_KEY) && !isInStandaloneMode) {
-      setTimeout(showBanner, 4000); // 4秒後に表示
+      setTimeout(showBanner, 1500);
     }
   });
 
@@ -8381,12 +8323,10 @@ self.addEventListener('fetch', e => {
     localStorage.setItem(INSTALLED_KEY, '1');
     window._pwaInstalled = true;
     showInstalledToast();
-    console.log('[PWA] App installed!');
   });
 
-  // iOS: 一定時間後にバナー表示
   if (isIOS && !isInStandaloneMode && !localStorage.getItem(DISMISSED_KEY)) {
-    setTimeout(showBanner, 5000);
+    setTimeout(showBanner, 3000);
   }
 
   function showBanner() {
@@ -8401,11 +8341,12 @@ self.addEventListener('fetch', e => {
     if (banner) banner.classList.remove('visible');
   }
 
-  // iOSバナーのボタンテキストを「手順を見る」に変更
-  if (isIOS) {
+  window.addEventListener('DOMContentLoaded', () => {
     const installBtn = document.getElementById('pwa-install-btn');
-    if (installBtn) installBtn.textContent = '手順を見る';
-  }
+    if (!installBtn) return;
+    if (isIOS) installBtn.textContent = '手順を見る';
+    else if (isAndroid) installBtn.textContent = 'ホームに追加';
+  });
 
   window.pwaTriggerInstall = function () {
     if (isIOS) {
@@ -8413,33 +8354,17 @@ self.addEventListener('fetch', e => {
       pwaOpenIosModal();
       return;
     }
-    if (!deferredPrompt) {
-      // Androidでプロンプトがまだ来ていない場合はiOSと同様の案内を表示
-      pwaOpenIosModal && pwaOpenAndroidFallback();
-      return;
-    }
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(choice => {
-      if (choice.outcome === 'accepted') {
-        console.log('[PWA] User accepted install');
-        showInstalledToast();
-      }
-      deferredPrompt = null;
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(choice => {
+        if (choice.outcome === 'accepted') showInstalledToast();
+        deferredPrompt = null;
+        hideBanner();
+      });
+    } else {
       hideBanner();
-    });
-  };
-
-  window.pwaOpenAndroidFallback = function() {
-    // Chrome系でbeforeinstallpromptが来ていない場合の案内
-    const m = document.getElementById('pwa-ios-modal');
-    if (!m) return;
-    const h = m.querySelector('h3');
-    if (h) h.textContent = '📲 ホーム画面に追加する方法';
-    const steps = m.querySelectorAll('.pwa-ios-step .step-text');
-    if (steps[0]) steps[0].innerHTML = 'ブラウザ右上の <em>メニュー（⋮）</em> をタップ';
-    if (steps[1]) steps[1].innerHTML = '<em>「アプリをインストール」</em> または <em>「ホーム画面に追加」</em> をタップ';
-    if (steps[2]) steps[2].innerHTML = '<em>「インストール」</em> をタップして完了！';
-    m.classList.add('open');
+      pwaOpenAndroidFallback();
+    }
   };
 
   window.pwaDismissBanner = function () {
@@ -8458,6 +8383,24 @@ self.addEventListener('fetch', e => {
     localStorage.setItem(DISMISSED_KEY, '1');
   };
 
+  window.pwaOpenAndroidFallback = function() {
+    const m = document.getElementById('pwa-ios-modal');
+    if (!m) return;
+    const h = m.querySelector('h3');
+    if (h) h.innerHTML = '📲 ホーム画面に追加する方法';
+    const steps = m.querySelectorAll('.pwa-ios-step');
+    const texts = [
+      'Chrome右上の <em>メニュー（⋮）</em> をタップ',
+      '<em>「ホーム画面に追加」</em> をタップ',
+      '<em>「追加」</em> をタップして完了！'
+    ];
+    steps.forEach((s, i) => {
+      const t = s.querySelector('.step-text');
+      if (t && texts[i] !== undefined) t.innerHTML = texts[i];
+    });
+    m.classList.add('open');
+  };
+
   function showInstalledToast() {
     const t = document.getElementById('pwa-installed-toast');
     if (!t) return;
@@ -8465,23 +8408,15 @@ self.addEventListener('fetch', e => {
     setTimeout(() => t.classList.remove('show'), 3500);
   }
 
-  // ── オフライン検知 ─────────────────────────────────────────────
   const offlineBar = document.getElementById('pwa-offline-bar');
-
   function updateOnlineStatus() {
     if (!offlineBar) return;
-    if (!navigator.onLine) {
-      offlineBar.classList.add('visible');
-    } else {
-      offlineBar.classList.remove('visible');
-    }
+    offlineBar.classList.toggle('visible', !navigator.onLine);
   }
-
   window.addEventListener('online',  updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
   updateOnlineStatus();
 
-  // スタンドアロン起動時にセーフエリア対応
   if (isInStandaloneMode) {
     document.documentElement.style.setProperty('--safe-bottom', 'env(safe-area-inset-bottom, 0px)');
   }
