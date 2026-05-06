@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <!-- ===== PWA: メタタグ & インラインマニフェスト ===== -->
-<meta name="description" content="FIREシミュレーター｜資産運用・早期退職シミュレーション。モンテカルロ法で成功率を算出。">
+<meta name="description" content="FLOW｜資産運用・早期退職シミュレーション。モンテカルロ法で成功率を算出。">
 <meta name="theme-color" content="#1e3a5f"> <!-- アイコン背景色と一致させる -->
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="FIRE-Sim">
+<meta name="apple-mobile-web-app-title" content="FLOW">
 <meta name="application-name" content="Advanced FIRE Simulator">
 
 <!-- Apple Touch Icon (新デザインを反映) -->
@@ -21,7 +21,7 @@
 (function(){
   const manifest = {
     name: 'Advanced FIRE Simulator v15',
-    short_name: 'FIRE-Sim',
+    short_name: 'FLOW',
     description: 'マルコフ連鎖とt分布を用いた高度なFIREシミュレーター',
     start_url: './index.html',
     display: 'standalone',
@@ -2977,9 +2977,9 @@ function saveParameters() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
     flashBadge('SAVED ✓', 'var(--accent3)');
-    console.log('[FIRE-SIM] 設定を保存しました');
+    console.log('[FLOW] 設定を保存しました');
   } catch(e) {
-    console.warn('[FIRE-SIM] 保存失敗:', e);
+    console.warn('[FLOW] 保存失敗:', e);
   }
 }
 
@@ -2990,7 +2990,7 @@ function loadParameters() {
 
   let s;
   try { s = JSON.parse(raw); }
-  catch(e) { console.warn('[FIRE-SIM] 読み込み失敗:', e); return false; }
+  catch(e) { console.warn('[FLOW] 読み込み失敗:', e); return false; }
 
   _isLoading = true; // ← 復元中はscheduleSaveを止める
 
@@ -3028,7 +3028,7 @@ function loadParameters() {
           });
           if (typeof updateSum === 'function') updateSum(ri);
         });
-      } catch(e) { console.warn('[FIRE-SIM] TM復元失敗:', e); }
+      } catch(e) { console.warn('[FLOW] TM復元失敗:', e); }
     }
 
     // REGIMES
@@ -3037,7 +3037,7 @@ function loadParameters() {
         const loaded = JSON.parse(s.regimes);
         loaded.forEach((r, i) => Object.assign(REGIMES[i], r));
         if (typeof updateRegimeCards === 'function') updateRegimeCards();
-      } catch(e) { console.warn('[FIRE-SIM] REGIMES復元失敗:', e); }
+      } catch(e) { console.warn('[FLOW] REGIMES復元失敗:', e); }
     }
 
     // ライフステージ
@@ -3049,10 +3049,10 @@ function loadParameters() {
           stageIdCounter = Math.max(...loaded.map(st => st.id || 0), 0);
           if (typeof renderStages === 'function') renderStages();
         }
-      } catch(e) { console.warn('[FIRE-SIM] ライフステージ復元失敗:', e); }
+      } catch(e) { console.warn('[FLOW] ライフステージ復元失敗:', e); }
     }
 
-    console.log('[FIRE-SIM] 設定を復元しました');
+    console.log('[FLOW] 設定を復元しました');
   } finally {
     _isLoading = false; // ← 必ずフラグを戻す
   }
@@ -8167,7 +8167,7 @@ function toggleGuidePanel() {
   'use strict';
 
   // ── Service Worker をインライン Blob で登録 ──────────────────────
-  const SW_VERSION = 'fire-sim-v1';
+  const SW_VERSION = 'FLOW-v1';
   const CACHE_NAME = SW_VERSION;
 
   const swCode = `
