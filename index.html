@@ -106,6 +106,79 @@
         .catch(err => console.error('PWA: SW Registration Failed', err));
 }); // ← ここが不足していました
   }
+
+  (function() {
+    // 1. スタイルの注入
+    const style = document.createElement('style');
+    style.textContent = `
+        #pwa-install-banner {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 400px; background: #1e3a5f; color: white;
+            padding: 16px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            display: none; z-index: 10000; justify-content: space-between; align-items: center;
+            font-family: sans-serif; border: 1px solid rgba(255,255,255,0.1);
+        }
+        #pwa-install-banner button {
+            background: #a8ff78; color: #0a0f1e; border: none; padding: 8px 16px;
+            border-radius: 6px; font-weight: bold; cursor: pointer; margin-left: 10px;
+        }
+        #pwa-install-banner .close-btn {
+            background: transparent; color: white; opacity: 0.6; padding: 4px; font-size: 20px;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // 2. HTML要素の作成
+    const banner = document.createElement('div');
+    banner.id = 'pwa-install-banner';
+    banner.innerHTML = `
+        <div style="flex:1; font-size:14px;">
+            <strong>FLOWをアプリとして追加</strong><br>
+            <span style="opacity:0.8; font-size:12px;">オフラインでも快適に利用できます</span>
+        </div>
+        <button id="pwa-install-btn">追加</button>
+        <button class="close-btn" id="pwa-close-btn">×</button>
+    `;
+    document.body.appendChild(banner);
+
+    let deferredPrompt;
+    const btn = document.getElementById('pwa-install-btn');
+    const closeBtn = document.getElementById('pwa-close-btn');
+
+    // Android / Chrome 等のインストール検知
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault(); // 標準のバナーを阻止
+        deferredPrompt = e;
+        banner.style.display = 'flex'; // 独自バナーを表示
+    });
+
+    btn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt(); // インストールダイアログを表示
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            banner.style.display = 'none';
+        }
+        deferredPrompt = null;
+    });
+
+    closeBtn.addEventListener('click', () => {
+        banner.style.display = 'none';
+    });
+
+    // 3. iOS用の判定 (Safariはbeforeinstallprompt非対応)
+    const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
+    if (isIos && !isStandalone) {
+        // iOSの場合、手動での追加方法を案内
+        btn.textContent = "方法を見る";
+        btn.onclick = () => {
+            alert("iOSで追加するには：\n1. 下の共有ボタン(□に↑)をタップ\n2. 'ホーム画面に追加'を選択");
+        };
+        banner.style.display = 'flex';
+    }
+})();
 })();
 </script>
 
