@@ -16,7 +16,6 @@
 
 <!-- Favicon (軽量版) -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e3a5f'/%3E%3Crect x='8' y='18' width='4' height='6' rx='1' fill='%2300d4ff'/%3E%3Crect x='14' y='12' width='4' height='12' rx='1' fill='%2300d4ff'/%3E%3Crect x='20' y='6' width='4' height='18' rx='1' fill='%23a8ff78'/%3E%3C/svg%3E">
-
 <!-- インラインマニフェスト (JSON設定と同期) -->
 <script>
 (function(){
@@ -47,17 +46,8 @@
   document.head.appendChild(link);
 })();
 </script>
-  const blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
-  const url  = URL.createObjectURL(blob);
-  const link = document.createElement('link');
-  link.rel  = 'manifest';
-  link.href = url;
-  document.head.appendChild(link);
-})();
-</script>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FIRE シミュレーター v4</title>
+<title>資産運用 シミュレーター</title>
 
 <script>
   window.MathJax = {
@@ -80,16 +70,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8431,5 +8411,3 @@ self.addEventListener('fetch', e => {
 </script>
 </body>
 </html>
-
-  
