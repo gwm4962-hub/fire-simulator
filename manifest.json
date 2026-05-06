@@ -1,35 +1,26 @@
 {
-  "short_name": "FLOW",
   "name": "FLOW",
+  "short_name": "FLOW",
   "description": "マルコフ連鎖とt分布を用いた高度なFIREシミュレーター",
-  "icons": [
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%231e3a5f'/%3E%3Ccircle cx='256' cy='256' r='160' fill='none' stroke='white' stroke-width='2' stroke-opacity='0.1'/%3E%3Ccircle cx='256' cy='256' r='120' fill='none' stroke='white' stroke-width='1' stroke-opacity='0.1'/%3E%3Crect x='140' y='300' width='60' height='80' rx='10' fill='%2300d4ff' opacity='0.4'/%3E%3Crect x='226' y='220' width='60' height='160' rx='10' fill='%2300d4ff' opacity='0.7'/%3E%3Crect x='312' y='130' width='60' height='250' rx='10' fill='%23a8ff78'/%3E%3Cpath d='M170,300 Q256,180 342,130' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-dasharray='8 12' opacity='0.5'/%3E%3Ccircle cx='342' cy='130' r='12' fill='white'/%3E%3C/svg%3E",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "screenshot-desktop.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "モンテカルロ法による資産推移シミュレーション"
-    },
-    {
-      "src": "screenshot-mobile.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "label": "モバイルでのパラメータ設定画面"
-    }
-  ],
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0a0f1e",
   "theme_color": "#1e3a5f",
-  "scope": "./",
   "lang": "ja",
-  "orientation": "portrait"
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
