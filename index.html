@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<link rel="manifest" href="./manifest.json">
 <!-- ===== PWA: メタタグ & インラインマニフェスト ===== -->
 <meta name="description" content="FLOW｜資産運用・早期退職シミュレーション。モンテカルロ法で成功率を算出。">
 <meta name="theme-color" content="#1e3a5f"> <!-- アイコン背景色と一致させる -->
@@ -8207,36 +8208,21 @@ function toggleGuidePanel() {
     } catch(e) { return null; }
   })();
 
-  // --- 3. メタタグとマニフェストの適用 ---
-  // 生成したアイコンをHTMLのヘッドセクションに挿入します
+  // --- 3. メタタグ: iOS用アイコンをCanvasで生成して設定 ---
   if (pngDataUri) {
-    // iOS用のアイコン設定
     const appleIcon = document.createElement('link');
-    appleIcon.rel = 'apple-touch-icon'; appleIcon.href = pngDataUri;
+    appleIcon.rel = 'apple-touch-icon';
+    appleIcon.sizes = '512x512';
+    appleIcon.href = pngDataUri;
     document.head.appendChild(appleIcon);
-
-    // PWAの構成ファイル（マニフェスト）を動的に生成
-    const manifest = {
-      "name": "FLOW", 
-      "short_name": "FLOW", 
-      "display": "standalone", 
-      "start_url": "./index.html",
-      "background_color": "#0a0f1e", 
-      "theme_color": "#1e3a5f",
-      "icons": [{ "src": pngDataUri, "sizes": "512x512", "type": "image/png", "purpose": "any" }]
-    };
-    const mLink = document.createElement('link');
-    mLink.rel = 'manifest';
-    mLink.href = 'data:application/manifest+json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(manifest))));
-    document.head.appendChild(mLink);
   }
+  // manifest.json は <head> に静的に記述済み（外部ファイル）
 
-  // --- 4. Service Worker（オフライン対応の土台） ---
-  // ブラウザに「これはPWAです」と認識させるための最小限の登録
+  // --- 4. Service Worker: 外部ファイル sw.js を登録 ---
   if ('serviceWorker' in navigator) {
-    const swCode = `self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));`;
-    const swUrl = URL.createObjectURL(new Blob([swCode], {type: 'text/javascript'}));
-    navigator.serviceWorker.register(swUrl).catch(() => {});
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(reg => console.log('[PWA] SW registered:', reg.scope))
+      .catch(err => console.warn('[PWA] SW registration failed:', err));
   }
 
   // --- 5. UI（バナー）の表示制御 ---
