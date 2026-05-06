@@ -17,41 +17,87 @@
   // CanvasでPNGアイコンを生成してapple-touch-iconに設定
   function generatePngIcon() {
     try {
+      const S = 512;
       const canvas = document.createElement('canvas');
-      canvas.width = 180; canvas.height = 180;
+      canvas.width = S; canvas.height = S;
       const ctx = canvas.getContext('2d');
-      // roundRectのpolyfill (旧Safari対応)
-      if (!ctx.roundRect) {
-        ctx.roundRect = function(x, y, w, h, r) {
-          ctx.beginPath();
-          ctx.moveTo(x+r, y);
-          ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
-          ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
-          ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
-          ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
-          ctx.closePath();
-        };
+
+      // roundRect polyfill (旧Safari対応)
+      function rr(x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x+r, y);
+        ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+        ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+        ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+        ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+        ctx.closePath();
       }
-      // 背景
-      const bgR = 36;
-      ctx.beginPath();
-      ctx.moveTo(bgR, 0); ctx.lineTo(180-bgR, 0);
-      ctx.quadraticCurveTo(180, 0, 180, bgR);
-      ctx.lineTo(180, 180-bgR); ctx.quadraticCurveTo(180, 180, 180-bgR, 180);
-      ctx.lineTo(bgR, 180); ctx.quadraticCurveTo(0, 180, 0, 180-bgR);
-      ctx.lineTo(0, bgR); ctx.quadraticCurveTo(0, 0, bgR, 0);
-      ctx.closePath();
-      ctx.fillStyle = '#1e3a5f';
-      ctx.fill();
-      // バーグラフ
-      ctx.fillStyle = '#00d4ff';
-      ctx.roundRect(48, 105, 22, 45, 4); ctx.fill();
-      ctx.roundRect(79, 78, 22, 72, 4); ctx.fill();
-      ctx.fillStyle = '#a8ff78';
-      ctx.roundRect(110, 48, 22, 102, 4); ctx.fill();
-      // ドット
+
+      // ── 背景: 白 ──────────────────────────────────────
+      const bgR = 110;
+      rr(0, 0, S, S, bgR);
       ctx.fillStyle = '#ffffff';
-      ctx.beginPath(); ctx.arc(121, 48, 7, 0, Math.PI*2); ctx.fill();
+      ctx.fill();
+
+      // ── 薄いグリッド線（装飾） ─────────────────────────
+      ctx.strokeStyle = 'rgba(0,0,0,0.045)';
+      ctx.lineWidth = 1.5;
+      for (let i = 1; i < 5; i++) {
+        const y = S * i / 5;
+        ctx.beginPath(); ctx.moveTo(60, y); ctx.lineTo(S-60, y); ctx.stroke();
+      }
+
+      // ── バーの設定 ────────────────────────────────────
+      const barW = 88;
+      const barR = 16;
+      const base = 390; // 共通ベースライン Y
+
+      // bar1: 左 (低め) ─ ネイビー→シアングラデ
+      const g1 = ctx.createLinearGradient(0, base-120, 0, base);
+      g1.addColorStop(0, '#00c6ff');
+      g1.addColorStop(1, '#0072ff');
+      ctx.fillStyle = g1;
+      rr(88, base-120, barW, 120, barR); ctx.fill();
+
+      // bar2: 中 ─ パープル→ピンクグラデ
+      const g2 = ctx.createLinearGradient(0, base-210, 0, base);
+      g2.addColorStop(0, '#a78bfa');
+      g2.addColorStop(1, '#7c3aed');
+      ctx.fillStyle = g2;
+      rr(212, base-210, barW, 210, barR); ctx.fill();
+
+      // bar3: 右 (高め) ─ グリーン→ティールグラデ
+      const g3 = ctx.createLinearGradient(0, base-310, 0, base);
+      g3.addColorStop(0, '#34d399');
+      g3.addColorStop(1, '#059669');
+      ctx.fillStyle = g3;
+      rr(336, base-310, barW, 310, barR); ctx.fill();
+
+      // ── トレンドライン ────────────────────────────────
+      ctx.beginPath();
+      ctx.moveTo(132, base-95);
+      ctx.bezierCurveTo(200, base-160, 260, base-220, 380, base-290);
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // ── bar3の頂点ドット ──────────────────────────────
+      ctx.beginPath();
+      ctx.arc(380, base-290, 16, 0, Math.PI*2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.strokeStyle = '#059669';
+      ctx.lineWidth = 5;
+      ctx.stroke();
+
+      // ── ベースライン ──────────────────────────────────
+      ctx.beginPath();
+      ctx.moveTo(60, base+8); ctx.lineTo(S-60, base+8);
+      ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
       return canvas.toDataURL('image/png');
     } catch(e) { return null; }
   }
@@ -60,7 +106,7 @@
   if (pngDataUri) {
     const link = document.createElement('link');
     link.rel = 'apple-touch-icon';
-    link.sizes = '180x180';
+    link.sizes = '512x512';
     link.href = pngDataUri;
     document.head.appendChild(link);
   }
@@ -77,7 +123,7 @@
     "icons": [
       {
         "src": pngDataUri || "data:image/png;base64,iVBORw0KGgo=",
-        "sizes": "180x180",
+        "sizes": "512x512",
         "type": "image/png",
         "purpose": "any maskable"
       }
