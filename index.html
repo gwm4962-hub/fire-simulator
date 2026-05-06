@@ -28,6 +28,12 @@
       displayMath: [['$$', '$$'], ['\\[', '\\]']]
     }
   };
+  // beforeinstallpromptを最速でキャプチャ（ページ末尾のリスナーより先に発火する場合の対策）
+  window.__pwaInstallEvent = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    window.__pwaInstallEvent = e;
+  });
 </script>
 
 
@@ -8164,7 +8170,8 @@ function toggleGuidePanel() {
 
   // --- 1. 設定と状態管理 ---
   const DISMISSED_KEY = 'pwa_banner_dismissed'; // 閉じた記録を保存する名前
-  let deferredPrompt = null; // Android用のインストールプロンプトを一時保存する変数
+  // 早期キャプチャ済みのイベントがあればそちらを使う
+  let deferredPrompt = window.__pwaInstallEvent || null;
 
   // デバイスの判定
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -8230,13 +8237,17 @@ function toggleGuidePanel() {
   
   // Android/Chrome：インストールボタンが出せる状態になったらバナーを表示
   window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault(); // ブラウザ標準のバナーを阻止
-    deferredPrompt = e; // プロンプトを保存
-    // 一度も閉じておらず、かつアプリとして未起動なら表示
+    e.preventDefault();
+    deferredPrompt = e;
+    window.__pwaInstallEvent = e;
     if (!localStorage.getItem(DISMISSED_KEY) && !isInStandaloneMode) {
       setTimeout(() => banner?.classList.add('visible'), 1500);
     }
   });
+  // 早期キャプチャ済みでバナーがまだ表示されていない場合の補完
+  if (deferredPrompt && !localStorage.getItem(DISMISSED_KEY) && !isInStandaloneMode) {
+    setTimeout(() => banner?.classList.add('visible'), 1500);
+  }
 
   // iOS：Safariは自動検知できないため、3秒後に手動でバナーを表示
   if (isIOS && !isInStandaloneMode && !localStorage.getItem(DISMISSED_KEY)) {
@@ -8285,6 +8296,7 @@ function toggleGuidePanel() {
           updatePwaStatus(true);
         }
         deferredPrompt = null;
+        window.__pwaInstallEvent = null;
         banner?.classList.remove('visible');
       });
     } else {
