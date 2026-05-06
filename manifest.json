@@ -51,20 +51,5 @@
       "label": "Desktop Dashboard View"
     }
   ],
-  "categories": ["finance"],
-  "shortcuts": [
-    {
-      "name": "シミュレーション開始",
-      "short_name": "シミュレーション",
-      "description": "FIREシミュレーションを開始",
-      "url": "./index.html",
-      "icons": [
-        {
-          "src": "./icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    }
-  ]
+  "categories": ["finance"]
 }

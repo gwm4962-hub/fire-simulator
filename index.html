@@ -8245,28 +8245,58 @@ function toggleGuidePanel() {
 
   // --- 6. 公開関数（HTMLのボタンから呼び出す用） ---
   
-  // 「インストール」または「追加」ボタンを押した時
+// --- 6. 公開関数（HTMLのボタンから呼び出す用） ---
+
+  // ボタン表示の更新用関数
+  function updatePwaStatus(installed) {
+    const btn = document.getElementById('pwa-step5-btn');
+    const alreadyMsg = document.getElementById('pwa-step5-already');
+    if (installed) {
+      if (btn) btn.style.display = 'none';
+      if (alreadyMsg) alreadyMsg.style.display = 'block';
+    }
+  }
+
+  // 1. Android/PC用：インストールボタンが押されたとき
+  window.pwaStep5Install = function() {
+    window.pwaTriggerInstall();
+  };
+
   window.pwaTriggerInstall = function () {
+    if (isInStandaloneMode) {
+      alert("すでにアプリとして起動しています。");
+      return;
+    }
+
     if (isIOS) {
-      // iOSの場合は手順を書いたモーダルを開く
+      // iOS: Safariの共有メニューを促す
       banner?.classList.remove('visible');
-      document.getElementById('pwa-ios-modal')?.classList.add('open');
+      const iosModal = document.getElementById('pwa-ios-modal');
+      if (iosModal) {
+        iosModal.classList.add('open');
+      } else {
+        alert("iOS（Safari）では、画面下の『共有ボタン（上矢印のアイコン）』をタップし、『ホーム画面に追加』を選択してください。");
+      }
     } else if (deferredPrompt) {
-      // Androidの場合はブラウザのインストール画面を出す
+      // Android/Chrome: ブラウザのプロンプトを表示
       deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(() => {
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          updatePwaStatus(true);
+        }
         deferredPrompt = null;
         banner?.classList.remove('visible');
       });
     } else {
-      alert("ブラウザのメニューから「ホーム画面に追加」を選択してください。");
+      // プロンプトがまだ準備できていない場合
+      alert("ブラウザのメニュー（右上の縦3点マークなど）から「アプリをインストール」または「ホーム画面に追加」を選択してください。");
     }
   };
 
-  // バナーを閉じる（「×」ボタン）
+  // バナーを閉じる
   window.pwaDismissBanner = function () {
     banner?.classList.remove('visible');
-    localStorage.setItem(DISMISSED_KEY, '1'); // 閉じたことをブラウザに覚えさせる
+    localStorage.setItem(DISMISSED_KEY, '1');
   };
 
   // iOS手順モーダルを閉じる
@@ -8275,11 +8305,16 @@ function toggleGuidePanel() {
     localStorage.setItem(DISMISSED_KEY, '1');
   };
 
-  // オフライン状態の監視
+  // 初期化：インストール済みならボタンを隠す
+  if (isInStandaloneMode) {
+    updatePwaStatus(true);
+  }
+
+  // オフライン監視
   window.addEventListener('online',  () => document.getElementById('pwa-offline-bar')?.classList.remove('visible'));
   window.addEventListener('offline', () => document.getElementById('pwa-offline-bar')?.classList.add('visible'));
 
-})();
+})(); // ここでIIFEを閉じる
 </script>
 </body>
 </html>
