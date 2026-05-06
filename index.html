@@ -85,6 +85,7 @@
 
 
 
+
 <style>
 :root {
   --bg:#050810;
@@ -785,6 +786,118 @@ input[type="range"]:active::-webkit-slider-thumb {
   #floating-simulate { bottom:16px; right:12px; padding:11px 16px; font-size:12px; }
 }
 
+/* ===== MODE SWITCHER ===== */
+#mode-switcher {
+  display: flex; gap: 6px; align-items: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 4px; margin-bottom: 16px;
+}
+.mode-btn {
+  flex: 1; padding: 7px 10px; border: none; border-radius: 5px;
+  background: transparent; color: var(--text-dim); cursor: pointer;
+  font-family: var(--font-body); font-size: 12px; font-weight: 600;
+  transition: all .2s; display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.mode-btn .mode-icon { font-size: 16px; }
+.mode-btn .mode-label { font-size: 10px; letter-spacing: 0.5px; }
+.mode-btn.active { background: rgba(0,212,255,.15); color: var(--accent); border: 1px solid rgba(0,212,255,.3); }
+.mode-btn.active.mode-normal { background: rgba(168,255,120,.12); color: var(--accent3); border-color: rgba(168,255,120,.3); }
+.mode-btn.active.mode-pro { background: rgba(255,110,180,.12); color: var(--pink); border-color: rgba(255,110,180,.3); }
+
+/* Pro-only elements hidden in other modes */
+body[data-mode="beginner"] .pro-only,
+body[data-mode="beginner"] .normal-only { display: none !important; }
+body[data-mode="normal"] .pro-only { display: none !important; }
+body[data-mode="pro"] .beginner-only { display: none !important; }
+
+/* ===== URL SHARE BAR ===== */
+#url-share-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 7px;
+  margin-bottom: 12px; transition: border-color .2s;
+}
+#url-share-bar:focus-within { border-color: rgba(0,212,255,.4); }
+#share-url-display {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text-dim); font-family: var(--font-mono); font-size: 11px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  cursor: pointer;
+}
+.share-copy-btn, .share-icon-btn {
+  background: none; border: none; cursor: pointer; padding: 4px 8px;
+  border-radius: 4px; color: var(--text-dim); font-size: 12px;
+  transition: all .2s; white-space: nowrap;
+}
+.share-copy-btn:hover, .share-icon-btn:hover { background: rgba(0,212,255,.1); color: var(--accent); }
+#share-copied-badge {
+  display: none; font-size: 10px; color: var(--accent3);
+  font-family: var(--font-mono); animation: fadeIn .2s ease;
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+/* ===== CHART CAMERA BUTTON ===== */
+.chart-camera-btn {
+  position: absolute; top: 10px; right: 10px; z-index: 50;
+  width: 32px; height: 32px; border-radius: 6px;
+  background: rgba(10,16,30,.85); backdrop-filter: blur(8px);
+  border: 1px solid var(--border); color: var(--text-dim);
+  font-size: 14px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: all .2s; box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+.chart-camera-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.1); }
+
+/* ===== MINIMAP ===== */
+#minimap-container {
+  position: relative; height: 64px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; overflow: hidden; margin: 0 16px 8px;
+  display: none; cursor: ew-resize;
+  user-select: none; -webkit-user-select: none;
+}
+#minimap-container.visible { display: block; }
+#minimapCanvas { width: 100%; height: 100%; display: block; }
+#minimap-viewport {
+  position: absolute; top: 0; bottom: 0;
+  background: rgba(0,212,255,.15); border: 2px solid rgba(0,212,255,.7);
+  border-radius: 3px; cursor: grab;
+  /* no pointer-events none — we want drag */
+}
+#minimap-viewport:active { cursor: grabbing; }
+.minimap-label {
+  position: absolute; top: 3px; left: 6px;
+  font-size: 9px; color: var(--text-dim); font-family: var(--font-mono);
+  letter-spacing: .5px; pointer-events: none;
+}
+.minimap-hint {
+  position: absolute; bottom: 3px; right: 6px;
+  font-size: 9px; color: rgba(0,212,255,.4); font-family: var(--font-mono);
+  pointer-events: none;
+}
+
+/* ===== CHART PANEL ===== */
+#chart-container { position: relative; }
+.chart-wrapper { position: relative; height: 380px; padding: 16px; }
+.results-area .panel { position: relative; }
+
+/* ===== SENSITIVITY SHADOW (±1σ/2σ) ===== */
+.sigma-shadow-visible .sigma-band { opacity: 1 !important; }
+
+/* ===== SLIDER DELTA TOOLTIP ===== */
+#slider-delta-tooltip {
+  position: fixed; z-index: 500;
+  background: rgba(10,16,30,.92); backdrop-filter: blur(8px);
+  border: 1px solid rgba(0,212,255,.3); border-radius: 6px;
+  padding: 4px 10px; font-family: var(--font-mono); font-size: 11px;
+  color: var(--accent); pointer-events: none; white-space: nowrap;
+  opacity: 0; transition: opacity .15s; transform: translateY(-36px);
+}
+#slider-delta-tooltip.show { opacity: 1; }
+
+/* ===== CHART TITLE V17 ===== */
+#chart-legend-note { font-size: 10px; color: var(--text-dim); font-family: var(--font-mono); padding: 0 16px 4px; }
+
 /* ===== GLASSMORPHISM ENHANCEMENTS ===== */
 .kpi-card {
   backdrop-filter: blur(10px);
@@ -1086,6 +1199,25 @@ input[type="range"]:active::-webkit-slider-thumb {
   font-size: 11px;
 }
 
+/* Wizard choice buttons */
+.wiz-choice-btn {
+  width: 100%; padding: 14px 18px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text); cursor: pointer;
+  display: flex; align-items: center; gap: 14px; text-align: left;
+  font-family: var(--font-body); transition: all .2s;
+}
+.wiz-choice-btn:hover { border-color: var(--accent); background: rgba(0,212,255,.07); }
+.wiz-choice-btn.selected {
+  border-color: var(--accent); background: rgba(0,212,255,.12);
+  box-shadow: 0 0 0 2px rgba(0,212,255,.2);
+}
+.wiz-num-btn {
+  padding: 14px 8px; justify-content: center; font-size: 16px; font-weight: 700;
+  font-family: var(--font-mono); flex-direction: column; gap: 0;
+}
+.wiz-num-btn.selected { border-color: var(--accent3); background: rgba(168,255,120,.1); color: var(--accent3); }
+
 /* Loading screen */
 #wiz-loading {
   display: none;
@@ -1277,72 +1409,115 @@ input[type="range"]:active::-webkit-slider-thumb {
 }
 </style>
 </head>
-<body>
+<body data-mode="beginner">
 
-<!-- ===== QUICK SETUP WIZARD ===== -->
+<!-- ===== BEGINNER WIZARD (初心者モード) ===== -->
 <div id="wizard-overlay">
   <div class="wizard-wrap">
 
-    <!-- Progress dots -->
-    <div class="wiz-dots">
+    <!-- Progress dots (5 steps) -->
+    <div class="wiz-dots" id="wiz-dots-wrap">
       <div class="wiz-dot active" id="wdot-0"></div>
       <div class="wiz-dot" id="wdot-1"></div>
       <div class="wiz-dot" id="wdot-2"></div>
       <div class="wiz-dot" id="wdot-3"></div>
+      <div class="wiz-dot" id="wdot-4"></div>
     </div>
 
-    <!-- Step cards -->
     <div id="wiz-cards">
 
-      <!-- Step 0: Age -->
+      <!-- Step 0: 世帯タイプ -->
       <div class="wiz-card" id="wstep-0">
-        <div class="wiz-step-label">Step 1 / 4 — 基本診断</div>
-        <div class="wiz-question">あなたの年齢は？</div>
-        <div class="wiz-sub">現在の年齢を教えてください。<br>ここから最適な計画を組み立てます。</div>
-        <div class="wiz-input-wrap">
-          <input class="wiz-input" id="w-age" type="number" min="20" max="70" placeholder="35" inputmode="numeric">
-          <span class="wiz-unit">歳</span>
+        <div class="wiz-step-label">Step 1 / 5 — 基本診断</div>
+        <div class="wiz-question">働き方を<br>教えてください</div>
+        <div class="wiz-sub">主な労働収入の形態を選んでください</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px;">
+          <button class="wiz-choice-btn" id="wiz-type-single" onclick="selectHouseholdType('single')">
+            <span style="font-size:22px;">🧑</span>
+            <div>
+              <div style="font-weight:700;font-size:15px;">ひとり（単身）</div>
+              <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">自分の収入のみ</div>
+            </div>
+          </button>
+          <button class="wiz-choice-btn" id="wiz-type-single-spouse" onclick="selectHouseholdType('single-spouse')">
+            <span style="font-size:22px;">👫</span>
+            <div>
+              <div style="font-weight:700;font-size:15px;">夫婦（片方が主な働き手）</div>
+              <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">専業主婦・主夫、またはパート配偶者あり</div>
+            </div>
+          </button>
+          <button class="wiz-choice-btn" id="wiz-type-dual" onclick="selectHouseholdType('dual')">
+            <span style="font-size:22px;">👫💼</span>
+            <div>
+              <div style="font-weight:700;font-size:15px;">夫婦共働き</div>
+              <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">二人とも正社員・自営業など</div>
+            </div>
+          </button>
         </div>
-        <div class="wiz-hint">日本の平均的な開始年齢は <strong style="color:var(--accent)">35歳</strong> 前後です</div>
-        <div class="wiz-enter-hint">入力後 <kbd>Enter</kbd> で次へ</div>
       </div>
 
-      <!-- Step 1: Income -->
+      <!-- Step 1: 本人の年齢・年収 -->
       <div class="wiz-card" id="wstep-1" style="display:none;">
-        <div class="wiz-step-label">Step 2 / 4 — 基本診断</div>
-        <div class="wiz-question">現在の年収は<br>いくらですか？</div>
-        <div class="wiz-sub">額面（税込み）の年収を入力してください。<br>手取りは自動で計算します。</div>
-        <div class="wiz-input-wrap">
-          <input class="wiz-input" id="w-income" type="number" min="100" max="10000" step="10" placeholder="500" inputmode="numeric">
-          <span class="wiz-unit">万円</span>
+        <div class="wiz-step-label">Step 2 / 5 — あなたの情報</div>
+        <div class="wiz-question" id="wiz-q1-title">あなたの<br>年齢と年収は？</div>
+        <div class="wiz-sub">現在の年齢と額面年収（税込み）を入力してください</div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;">
+          <div class="wiz-input-wrap" style="flex:1;">
+            <input class="wiz-input" id="w-age" type="number" min="20" max="65" placeholder="35" inputmode="numeric">
+            <span class="wiz-unit">歳</span>
+          </div>
         </div>
-        <div class="wiz-hint">日本の給与所得者の中央値は約 <strong style="color:var(--accent)">450万円</strong></div>
+        <div class="wiz-input-wrap" style="margin-bottom:20px;">
+          <input class="wiz-input" id="w-income" type="number" min="100" max="5000" step="10" placeholder="450" inputmode="numeric">
+          <span class="wiz-unit">万円/年</span>
+        </div>
+        <div class="wiz-hint">給与所得者の中央値は約 <strong style="color:var(--accent)">450万円</strong>（2023年・国税庁）</div>
         <div class="wiz-enter-hint">入力後 <kbd>Enter</kbd> で次へ</div>
       </div>
 
-      <!-- Step 2: Savings -->
+      <!-- Step 2: 配偶者情報（共働きのみ表示） -->
       <div class="wiz-card" id="wstep-2" style="display:none;">
-        <div class="wiz-step-label">Step 3 / 4 — 基本診断</div>
-        <div class="wiz-question">今の貯金額は<br>いくらですか？</div>
-        <div class="wiz-sub">投資・預金・確定拠出年金なども含めた<br>現在の総資産額を入力してください。</div>
-        <div class="wiz-input-wrap">
-          <input class="wiz-input" id="w-savings" type="number" min="0" max="50000" step="10" placeholder="300" inputmode="numeric">
-          <span class="wiz-unit">万円</span>
+        <div class="wiz-step-label">Step 3 / 5 — 配偶者の情報</div>
+        <div class="wiz-question">配偶者の<br>年齢と年収は？</div>
+        <div class="wiz-sub">配偶者の現在の年齢と額面年収を入力してください</div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;">
+          <div class="wiz-input-wrap" style="flex:1;">
+            <input class="wiz-input" id="w-age-b" type="number" min="20" max="65" placeholder="33" inputmode="numeric">
+            <span class="wiz-unit">歳</span>
+          </div>
         </div>
-        <div class="wiz-hint">30代の平均貯蓄額は約 <strong style="color:var(--accent)">300万円</strong>（単身）</div>
+        <div class="wiz-input-wrap" style="margin-bottom:20px;">
+          <input class="wiz-input" id="w-income-b" type="number" min="0" max="5000" step="10" placeholder="350" inputmode="numeric">
+          <span class="wiz-unit">万円/年</span>
+        </div>
+        <div class="wiz-hint">女性の給与中央値は約 <strong style="color:var(--accent)">280万円</strong>（2023年・国税庁）</div>
         <div class="wiz-enter-hint">入力後 <kbd>Enter</kbd> で次へ</div>
       </div>
 
-      <!-- Step 3: Retire age -->
+      <!-- Step 3: 子供の人数 -->
       <div class="wiz-card" id="wstep-3" style="display:none;">
-        <div class="wiz-step-label">Step 4 / 4 — 基本診断</div>
-        <div class="wiz-question">何歳頃にFIRE・<br>リタイアしたいですか？</div>
-        <div class="wiz-sub">「まだ決めていない」という方は、<br>とりあえずの目標年齢を入れてみましょう。</div>
-        <div class="wiz-input-wrap">
-          <input class="wiz-input" id="w-retire" type="number" min="35" max="75" placeholder="55" inputmode="numeric">
-          <span class="wiz-unit">歳</span>
+        <div class="wiz-step-label" id="wiz-step3-label">Step 4 / 5 — 家族構成</div>
+        <div class="wiz-question">お子さんは<br>何人いますか？</div>
+        <div class="wiz-sub">教育費を自動で計算に組み込みます（0人でもOK）</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;">
+          <button class="wiz-choice-btn wiz-num-btn" onclick="selectChildren(0)">0人</button>
+          <button class="wiz-choice-btn wiz-num-btn" onclick="selectChildren(1)">1人</button>
+          <button class="wiz-choice-btn wiz-num-btn" onclick="selectChildren(2)">2人</button>
+          <button class="wiz-choice-btn wiz-num-btn" onclick="selectChildren(3)">3人+</button>
         </div>
-        <div class="wiz-hint">FIREの人気目標は <strong style="color:var(--accent)">50〜55歳</strong>。老後は65歳とする方も多いです</div>
+        <div class="wiz-hint" id="wiz-children-hint">公立ルートの場合、1人あたり <strong style="color:var(--accent)">約900万円</strong>（幼〜大）</div>
+      </div>
+
+      <!-- Step 4: 現在の資産 -->
+      <div class="wiz-card" id="wstep-4" style="display:none;">
+        <div class="wiz-step-label" id="wiz-step4-label">Step 5 / 5 — 現在の資産</div>
+        <div class="wiz-question">今の貯金・<br>投資額は？</div>
+        <div class="wiz-sub">預金・投資信託・株・確定拠出年金など<br>すべて合わせた総資産額</div>
+        <div class="wiz-input-wrap" style="margin-bottom:20px;">
+          <input class="wiz-input" id="w-savings" type="number" min="0" max="50000" step="10" placeholder="200" inputmode="numeric">
+          <span class="wiz-unit">万円</span>
+        </div>
+        <div class="wiz-hint">30代の貯蓄中央値は約 <strong style="color:var(--accent)">150万円</strong>（金融広報中央委員会）</div>
         <div class="wiz-enter-hint">入力後 <kbd>Enter</kbd> で診断開始 🚀</div>
       </div>
 
@@ -1404,6 +1579,33 @@ input[type="range"]:active::-webkit-slider-thumb {
       <div class="step-text">結果を見る →</div>
     </a>
   </div>
+
+  <!-- ===== MODE SWITCHER ===== -->
+  <div id="mode-switcher">
+    <button class="mode-btn active" id="modeBtn-beginner" onclick="setMode('beginner')">
+      <span class="mode-icon">🌱</span><span class="mode-label">初心者</span>
+    </button>
+    <button class="mode-btn mode-normal" id="modeBtn-normal" onclick="setMode('normal')">
+      <span class="mode-icon">📊</span><span class="mode-label">通常</span>
+    </button>
+    <button class="mode-btn mode-pro" id="modeBtn-pro" onclick="setMode('pro')">
+      <span class="mode-icon">🔬</span><span class="mode-label">プロ</span>
+    </button>
+    <div style="flex:2;font-size:10px;color:var(--text-dim);padding:4px 8px;line-height:1.5;" id="mode-desc">
+      シンプル表示：主要グラフと成功率のみ
+    </div>
+  </div>
+
+  <!-- ===== URL SHARE BAR ===== -->
+  <div id="url-share-bar" title="URLをコピーして設定を共有">
+    <span style="font-size:13px;flex-shrink:0;">🔗</span>
+    <input id="share-url-display" readonly value="設定を共有する..." onclick="this.select()">
+    <span id="share-copied-badge">✓ コピー済み</span>
+    <button class="share-copy-btn" onclick="copyShareUrl()" title="URLをコピー">コピー</button>
+  </div>
+
+  <!-- slider delta tooltip -->
+  <div id="slider-delta-tooltip">差分: +0万円</div>
 
   <div class="layout">
     <!-- ===== LEFT PANEL ===== -->
@@ -1674,7 +1876,7 @@ input[type="range"]:active::-webkit-slider-thumb {
           </div>
 
           <!-- ポートフォリオ & t分布 -->
-          <div class="adv-section" id="adv-portfolio-section">
+          <div class="adv-section pro-only" id="adv-portfolio-section">
             <button class="adv-toggle" onclick="toggleAdv('adv-portfolio-section')" type="button">
               <span class="adv-toggle-left">
                 <span class="adv-toggle-icon">▶</span>
@@ -1715,7 +1917,7 @@ input[type="range"]:active::-webkit-slider-thumb {
           </div>
 
           <!-- 性別・寿命設定セクション（高度な設定） -->
-<div class="adv-section" id="adv-longevity-section" style="margin-bottom:14px;">
+<div class="adv-section normal-only" id="adv-longevity-section" style="margin-bottom:14px;">
   <button class="adv-toggle" onclick="toggleAdv('adv-longevity-section')" type="button">
     <span class="adv-toggle-left">
       <span class="adv-toggle-icon">▶</span>
@@ -1856,8 +2058,58 @@ input[type="range"]:active::-webkit-slider-thumb {
         </div>
       </div>
 
+      <!-- ② 初心者サマリー (beginner mode only) -->
+      <div id="beginner-summary" style="display:none;" class="beginner-only">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+          <div id="bsumm-ok" style="
+            background:linear-gradient(135deg,rgba(168,255,120,.12),rgba(10,26,18,.9));
+            border:1px solid rgba(168,255,120,.35); border-radius:10px;
+            padding:16px 14px; text-align:center; display:none;
+          ">
+            <div style="font-size:28px;margin-bottom:6px;">✅</div>
+            <div style="font-size:13px;font-weight:700;color:#a8ff78;margin-bottom:4px;">老後資金　OK</div>
+            <div style="font-size:11px;color:var(--text-mid);line-height:1.7;" id="bsumm-ok-text">—</div>
+          </div>
+          <div id="bsumm-ng" style="
+            background:linear-gradient(135deg,rgba(255,71,87,.1),rgba(32,10,13,.9));
+            border:1px solid rgba(255,71,87,.35); border-radius:10px;
+            padding:16px 14px; text-align:center; display:none;
+          ">
+            <div style="font-size:28px;margin-bottom:6px;">⚠️</div>
+            <div style="font-size:13px;font-weight:700;color:#ff4757;margin-bottom:4px;">資金不足の可能性</div>
+            <div style="font-size:11px;color:var(--text-mid);line-height:1.7;" id="bsumm-ng-text">—</div>
+          </div>
+          <div class="kpi-card info">
+            <div class="kpi-label">60歳時の推定資産</div>
+            <div class="kpi-value" id="bsumm-asset60">—</div>
+            <div class="kpi-sub">中央値シナリオ</div>
+          </div>
+          <div class="kpi-card" style="border-color:rgba(179,136,255,.25);">
+            <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#b388ff,transparent);"></div>
+            <div class="kpi-label">老後に必要な資産</div>
+            <div class="kpi-value" id="bsumm-need" style="color:#b388ff;">—</div>
+            <div class="kpi-sub">60歳〜寿命まで（年金補填後）</div>
+          </div>
+          <div class="kpi-card success">
+            <div class="kpi-label">資産が尽きない確率</div>
+            <div class="kpi-value" id="bsumm-survival">—</div>
+            <div class="kpi-sub">寿命まで資産が持つ割合</div>
+          </div>
+          <div class="kpi-card warning">
+            <div class="kpi-label">月々のゆとり額（老後）</div>
+            <div class="kpi-value" id="bsumm-monthly">—</div>
+            <div class="kpi-sub">年金込み・インフレ後の目安</div>
+          </div>
+        </div>
+        <div id="bsumm-advice" style="
+          padding:12px 14px; border-radius:8px;
+          background:rgba(0,212,255,.05); border:1px solid rgba(0,212,255,.2);
+          font-size:12px; color:var(--text-mid); line-height:1.8;
+        "></div>
+      </div>
+
       <!-- ② KPI 2段構成 -->
-      <div id="kpi-section" style="display:none;">
+      <div id="kpi-section" style="display:none;" class="normal-only pro-only">
         <!-- 上段: FIRE -->
         <div style="font-size:9px;color:var(--text-dim);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
           <span style="display:inline-block;width:12px;height:1px;background:var(--accent);"></span>FIRE シナリオ
@@ -2056,7 +2308,7 @@ input[type="range"]:active::-webkit-slider-thumb {
       </div>
 
       <!-- ⑦ ヒートマップ -->
-      <div class="panel sensitivity-section" style="margin-top:0;">
+      <div class="panel sensitivity-section pro-only" style="margin-top:0;">
         <div class="panel-header">🌡️ 感度分析：株式比率ヒートマップ</div>
         <div class="panel-body">
           <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;line-height:1.7;">
@@ -2108,7 +2360,7 @@ input[type="range"]:active::-webkit-slider-thumb {
       </div>
 
 <!-- ★ トルネードチャート & 安全率パネル -->
-<div class="panel sensitivity-section" style="margin-top:0;" id="tornado-panel">
+<div class="panel sensitivity-section pro-only" style="margin-top:0;" id="tornado-panel">
   <div class="panel-header">🌪️ 感度分析：トルネードチャート & 安全率</div>
   <div class="panel-body">
     <p style="font-size:11px;color:var(--text-dim);margin-bottom:14px;">
@@ -2172,7 +2424,7 @@ input[type="range"]:active::-webkit-slider-thumb {
 </div>
 
 <!-- ★ 暴落リスク（Fat-tail）と t分布の採用 -->
-<div class="panel sensitivity-section" style="margin-top:0;margin-bottom:0;">
+<div class="panel sensitivity-section pro-only" style="margin-top:0;margin-bottom:0;">
   <div class="panel-header">📉 暴落リスクの数理：Fat-tailとt分布</div>
   <div class="panel-body" style="line-height:1.8;color:var(--text-mid);font-size:14px;">
 
@@ -2270,7 +2522,7 @@ input[type="range"]:active::-webkit-slider-thumb {
 </div>
 
 <!-- ★ レジーム遷移確率（トルネードの後に移動） -->
-<div class="panel sensitivity-section" style="margin-top:0;">
+<div class="panel sensitivity-section pro-only" style="margin-top:0;">
   <div class="panel-header" style="justify-content:space-between;">
     <span style="display:flex;align-items:center;gap:8px;">
       <span style="width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);display:inline-block;flex-shrink:0;"></span>
@@ -2290,7 +2542,7 @@ input[type="range"]:active::-webkit-slider-thumb {
 </div>
 
 <!-- ★ マルコフ遷移 数理解説パネル -->
-<div class="panel sensitivity-section" style="margin-top:0;margin-bottom:0;">
+<div class="panel sensitivity-section pro-only" style="margin-top:0;margin-bottom:0;">
   <div class="panel-header">🧮 数理モデル解説：マルコフ遷移行列と定常分布</div>
   <div class="panel-body">
 
@@ -3138,8 +3390,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // 1. 保存済み設定を復元（_isLoadingフラグで誤保存を防ぐ）
     const restored = loadParameters();
 
-    // 2. 保存データがない場合のみ、初期プリセットのボタン表示を適用
-    if (!restored) {
+    // 1b. URLパラメータから設定を読み込む（URL共有機能）
+    const urlLoaded = loadFromUrl();
+
+    // 2. 保存データもURLもない場合のみ、初期プリセットを適用
+    if (!restored && !urlLoaded) {
       const familyBtn = document.querySelector('button[onclick*="family"]');
       if (familyBtn) {
         _isLoading = true;
@@ -4269,6 +4524,11 @@ if(dead[i]) continue; // skip financials if died this step
         const buf=Math.min(assets[i],15_000_000);
         cashBuf[i]+=buf; assets[i]-=buf;
       }
+      // ---- 2b. 初心者モード：60歳で強制退職 ----
+      if(!retired[i] && age >= 60 && fireThr >= 999990000) {
+        // fireThr が99999万円（≒初心者モードのダミー値）なら60歳で退職
+        retired[i]=1; fireAge[i]=60;
+      }
 
       // ---- 3. Income ----
       let income=0;
@@ -4436,7 +4696,12 @@ if(dead[i]) continue; // skip financials if died this step
 
   document.getElementById('kpi-monthly-retire').textContent = monthlyRetire.toLocaleString() + '万/月';
 
-  document.getElementById('kpi-section').style.display = 'block';
+  // kpi-sectionはnormal/proモード時のみ表示
+  const kpiSec = document.getElementById('kpi-section');
+  if (kpiSec) {
+    const mode = document.body.getAttribute('data-mode') || 'beginner';
+    kpiSec.style.display = (mode === 'normal' || mode === 'pro') ? 'block' : 'none';
+  }
 
   // ---- FIRE Age table ----
   const pctiles = [10, 25, 50, 75, 90];
@@ -4504,7 +4769,22 @@ if(dead[i]) continue; // skip financials if died this step
 
   // ---- Chart ----
   const cont=document.getElementById('chart-container');
-  cont.innerHTML='<div class="chart-wrapper"><canvas id="myChart"></canvas></div>';
+  cont.innerHTML=`
+    <div style="position:relative;">
+      <div class="chart-wrapper"><canvas id="myChart"></canvas></div>
+      <button class="chart-camera-btn" onclick="saveChartPNG()" title="グラフを画像として保存">📷</button>
+    </div>
+    <div id="minimap-container" class="visible">
+      <canvas id="minimapCanvas"></canvas>
+      <div id="minimap-viewport"></div>
+      <div class="minimap-label">全体俯瞰</div>
+      <div class="minimap-hint">← スライドでその年齢を確認 →</div>
+    </div>
+  `;
+
+  // Clean up any old portal
+  const oldPortal = document.getElementById('chart-zoom-portal');
+  if (oldPortal) oldPortal.remove();
 // 1. まず ages を宣言して中身を作る（ここで宣言！）
   const ages = Array.from({length: T}, (_, i) => startAge + i);
   
@@ -4650,6 +4930,18 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
     }
   });
 
+  // Store simulation data globally for post-render features
+  window._lastSimData = { med: Array.from(med), p90: Array.from(p90), p10: Array.from(p10), p75: Array.from(p75), p25: Array.from(p25), ages, startAge, lastMedianFireAge, yMaxFinal };
+
+  // Minimap
+  setTimeout(() => {
+    buildMinimap(Array.from(med), ages, startAge);
+    updateMinimapViewport(chartInstance);
+  }, 200);
+
+  // Update URL share
+  setTimeout(updateShareUrl, 50);
+
   badge.textContent='DONE';
   badge.style.cssText='display:inline-flex;align-items:center;gap:6px;background:rgba(168,255,120,.1);border:1px solid rgba(168,255,120,.3);color:#a8ff78;font-size:10px;font-family:var(--font-mono);padding:5px 12px;border-radius:3px;letter-spacing:1.5px;';
   btn.disabled=false;
@@ -4658,9 +4950,18 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
   // 購買力KPIを更新
   updatePurchasingPowerKPI(baseInfl, T, startAge);
 
+  // 初心者モードサマリーを更新
+  updateBeginnerSummary({
+    med, assets65, expAt65, pensionAnnual, successRate: nS/N,
+    startAge, T, baseInfl, monthlyRetire
+  });
+
   // 結果エリアへスムーズスクロール（スマホで特に有効）
   setTimeout(() => {
-    const target = document.getElementById('kpi-section') || document.getElementById('goal-panel');
+    const isBeginner = document.body.getAttribute('data-mode') === 'beginner';
+    const target = isBeginner
+      ? (document.getElementById('beginner-summary') || document.getElementById('chart-container'))
+      : (document.getElementById('kpi-section') || document.getElementById('goal-panel'));
     if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
     // KPIカードにアニメーション付与
     document.querySelectorAll('.kpi-card').forEach((c,i) => {
@@ -4669,6 +4970,472 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
     });
   }, 100);
 }
+// ============================================================
+// ★ V19 BEGINNER SUMMARY
+// ============================================================
+
+function updateBeginnerSummary({ med, assets65, expAt65, pensionAnnual, successRate, startAge, T, baseInfl, monthlyRetire }) {
+  const el = document.getElementById('beginner-summary');
+  if (!el) return;
+
+  // --- 単位を万円に統一 ---
+  // med[i]: 億円  → 万円: *10000
+  // expAt65: 円/年 → 万円/年: /10000
+  // pensionAnnual: 円/年 → 万円/年: /10000
+  // assets65: 円 → 万円: /10000
+
+  // 60歳時の中央値資産（万円）
+  const age60idx = 60 - startAge;
+  const asset60Man = (age60idx >= 0 && age60idx < med.length)
+    ? Math.round(med[age60idx] * 10000)   // 億→万
+    : Math.round((assets65 || 0) / 10000); // 円→万
+
+  // 65歳時資産（万円）
+  const asset65Man = Math.round((assets65 || 0) / 10000);
+
+  // 年支出（万円/年）・年金（万円/年）
+  const annualExpMan   = Math.round((expAt65 || 0) / 10000);
+  const pensionAnnMan  = Math.round((pensionAnnual || 0) / 10000);
+
+  // 60歳〜寿命（86歳）まで必要な純支出（年金控除後）を合計（万円）
+  const lifeExpectancy = 86;
+  const yearsAfter60 = lifeExpectancy - 60;
+  // 純年支出 = 年支出 - 年金（65歳から受給）
+  // 60〜64歳: 年金なし  65〜86歳: 年金あり
+  const needBefore65 = annualExpMan * 5;                              // 60-64歳（5年）
+  const needAfter65  = Math.max(0, annualExpMan - pensionAnnMan) * (yearsAfter60 - 5); // 65〜86歳
+  const needTotalMan = Math.round(needBefore65 + needAfter65);
+
+  const fmt = v => {
+    const av = Math.abs(v);
+    if (av >= 10000) return (v / 10000).toFixed(1) + '億円';
+    return Math.round(v).toLocaleString() + '万円';
+  };
+
+  // OK/NG判定
+  const isOK = successRate >= 0.7;
+  const okEl = document.getElementById('bsumm-ok');
+  const ngEl = document.getElementById('bsumm-ng');
+  if (okEl) okEl.style.display = isOK ? 'block' : 'none';
+  if (ngEl) ngEl.style.display = isOK ? 'none' : 'block';
+
+  const okTxt = document.getElementById('bsumm-ok-text');
+  const ngTxt = document.getElementById('bsumm-ng-text');
+  if (okTxt) okTxt.innerHTML = `60歳定年後も<br><b style="color:#a8ff78;font-size:14px;">${(successRate*100).toFixed(0)}%</b>の確率で<br>資産が持続します`;
+  if (ngTxt) ngTxt.innerHTML = `${((1-successRate)*100).toFixed(0)}%の確率で<br>老後に資金が<br>不足するリスクがあります`;
+
+  const a60El = document.getElementById('bsumm-asset60');
+  if (a60El) a60El.textContent = fmt(asset60Man);
+
+  const needEl = document.getElementById('bsumm-need');
+  if (needEl) needEl.textContent = fmt(needTotalMan);
+
+  const survEl = document.getElementById('bsumm-survival');
+  if (survEl) survEl.textContent = (successRate * 100).toFixed(0) + '%';
+
+  const monthlyEl = document.getElementById('bsumm-monthly');
+  if (monthlyEl) monthlyEl.textContent = (monthlyRetire || 0) + '万円/月';
+
+  // アドバイス
+  const advEl = document.getElementById('bsumm-advice');
+  if (advEl) {
+    const gap = asset60Man - needTotalMan;
+    let advice = '';
+    if (isOK && gap > 500) {
+      advice = `💡 <b style="color:#a8ff78;">老後資金は十分です。</b>60歳時点で老後に必要な額を${fmt(gap)}上回る見込みです。このまま現役時代の貯蓄習慣を続ければ安心です。`;
+    } else if (isOK) {
+      advice = `💡 <b style="color:#ffd166;">ほぼ問題ありませんが</b>、余裕は少ない状況です。毎月の貯蓄をもう少し増やすか、資産運用の比率を見直すと安全度が高まります。`;
+    } else {
+      const shortfall = needTotalMan - asset60Man;
+      advice = `⚠️ <b style="color:#ff9a9a;">老後資金が約${fmt(shortfall)}不足する可能性があります。</b>今から月々の貯蓄を増やすか、投資信託などの運用を始めることを検討してください。「通常モード」で詳しく分析できます。`;
+    }
+    advEl.innerHTML = advice;
+  }
+
+  el.style.display = 'block';
+  el.querySelectorAll('.kpi-card').forEach((c, i) => {
+    c.classList.remove('revealed');
+    setTimeout(() => c.classList.add('revealed'), i * 80);
+  });
+}
+
+// ============================================================
+// ★ V17 NEW FEATURES
+// ============================================================
+
+// ---- 1. MODE SWITCHER ----
+let currentMode = 'beginner';
+const MODE_DESCS = {
+  beginner: 'シンプル表示：主要グラフと成功率のみ',
+  normal:   '通常表示：グラフ＋主要指標＋ライフステージ支出',
+  pro:      'プロ表示：全機能解放（感度分析・遷移行列・詳細設定）'
+};
+
+function setMode(mode) {
+  currentMode = mode;
+  document.body.setAttribute('data-mode', mode);
+  ['beginner','normal','pro'].forEach(m => {
+    document.getElementById('modeBtn-' + m).classList.toggle('active', m === mode);
+  });
+  document.getElementById('mode-desc').textContent = MODE_DESCS[mode];
+  localStorage.setItem('fire_sim_mode', mode);
+
+  // KPIセクション表示切り替え（シミュレーション済みの場合）
+  const kpiSec = document.getElementById('kpi-section');
+  const bSumm = document.getElementById('beginner-summary');
+  if (kpiSec && kpiSec.querySelector('#kpi-success')?.textContent !== '—') {
+    kpiSec.style.display = (mode === 'normal' || mode === 'pro') ? 'block' : 'none';
+  }
+  // beginner summaryはbeginnerモード時のみ（かつシミュ済みなら）
+  if (bSumm && bSumm.style.display !== 'none' && mode !== 'beginner') {
+    bSumm.style.display = 'none';
+  }
+}
+
+// Initialize mode from storage
+(function initMode(){
+  const saved = localStorage.getItem('fire_sim_mode') || 'beginner';
+  document.addEventListener('DOMContentLoaded', () => setMode(saved));
+})();
+
+// ---- 2. URL SHARE (Base64 + Versioning + Debounce) ----
+const SHARE_VERSION = 'v1';
+const SHARE_PARAM_IDS = [
+  'start-age','initial-assets','fire-threshold','income','raise',
+  'pension','inheritance','base-infl','w-working','w-retired','nsims','tdof','med-adv'
+];
+
+function getShareState() {
+  const obj = { _v: SHARE_VERSION };
+  SHARE_PARAM_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) obj[id] = el.value;
+  });
+  obj.gender = (typeof selectedGender !== 'undefined') ? selectedGender : 'male';
+  obj.difficulty = (typeof currentDifficulty !== 'undefined') ? currentDifficulty : 'normal';
+  return obj;
+}
+
+function encodeShareState(obj) {
+  try {
+    const json = JSON.stringify(obj);
+    const b64 = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode(parseInt(p1, 16))));
+    return SHARE_VERSION + '_' + b64;
+  } catch(e) { return ''; }
+}
+
+function decodeShareState(encoded) {
+  try {
+    if (!encoded.startsWith(SHARE_VERSION + '_')) return null;
+    const b64 = encoded.slice(SHARE_VERSION.length + 1);
+    const json = decodeURIComponent(Array.from(atob(b64)).map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    return JSON.parse(json);
+  } catch(e) { return null; }
+}
+
+function updateShareUrl() {
+  const state = getShareState();
+  const encoded = encodeShareState(state);
+  if (!encoded) return;
+  const url = location.href.split('?')[0] + '?s=' + encoded;
+  const el = document.getElementById('share-url-display');
+  if (el) el.value = url;
+}
+
+function copyShareUrl() {
+  const el = document.getElementById('share-url-display');
+  if (!el) return;
+  navigator.clipboard.writeText(el.value).then(() => {
+    const badge = document.getElementById('share-copied-badge');
+    if (badge) {
+      badge.style.display = 'inline';
+      clearTimeout(badge._t);
+      badge._t = setTimeout(() => { badge.style.display = 'none'; }, 2000);
+    }
+  }).catch(() => {
+    el.select(); document.execCommand('copy');
+  });
+}
+
+// Load from URL on init
+function loadFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const s = params.get('s');
+  if (!s) return false;
+  const state = decodeShareState(s);
+  if (!state) return false;
+  SHARE_PARAM_IDS.forEach(id => {
+    if (state[id] === undefined) return;
+    const el = document.getElementById(id);
+    if (el) { el.value = state[id]; el.dispatchEvent(new Event('input')); }
+  });
+  if (state.gender && typeof setGender === 'function') setGender(state.gender);
+  if (state.difficulty && typeof setDifficulty === 'function') setDifficulty(state.difficulty);
+  return true;
+}
+
+// Debounced URL update on slider input
+let _shareDebounce = null;
+document.addEventListener('input', e => {
+  if (!e.target.matches('input[type="range"]')) return;
+  clearTimeout(_shareDebounce);
+  _shareDebounce = setTimeout(updateShareUrl, 200);
+});
+
+// ---- 3. CHART HELPERS (no zoom) ----
+let _sigmaBandsOn = false;
+
+// ---- 4. MINIMAP with drag-to-pan ----
+let minimapCtx = null;
+let _minimapDragging = false;
+let _minimapDragStartX = 0;
+let _minimapDragStartViewMin = 0;
+
+function buildMinimap(med, ages, startAge) {
+  const canvas = document.getElementById('minimapCanvas');
+  if (!canvas) return;
+  // Ensure proper pixel dimensions
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width > 0 ? rect.width : 600;
+  canvas.height = rect.height > 0 ? rect.height : 64;
+  minimapCtx = canvas.getContext('2d');
+  drawMinimap(med, ages);
+  setupMinimapDrag();
+}
+
+function drawMinimap(med, ages) {
+  if (!minimapCtx) return;
+  const c = minimapCtx;
+  const W = c.canvas.width, H = c.canvas.height;
+  c.clearRect(0, 0, W, H);
+
+  // Background grid lines
+  c.strokeStyle = 'rgba(30,48,74,0.6)';
+  c.lineWidth = 0.5;
+  [0.25, 0.5, 0.75].forEach(f => {
+    c.beginPath(); c.moveTo(0, H * (1 - f)); c.lineTo(W, H * (1 - f)); c.stroke();
+  });
+
+  const maxV = Math.max(...med.filter(v => isFinite(v) && v > 0));
+  if (!maxV) return;
+
+  // Fill area under curve
+  c.beginPath();
+  med.forEach((v, i) => {
+    if (!isFinite(v) || v < 0) v = 0;
+    const x = i / (med.length - 1) * W;
+    const y = H - (v / maxV) * (H - 6) - 3;
+    i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+  });
+  c.lineTo(W, H); c.lineTo(0, H); c.closePath();
+  c.fillStyle = 'rgba(0,212,255,0.06)';
+  c.fill();
+
+  // Line
+  c.beginPath();
+  med.forEach((v, i) => {
+    if (!isFinite(v) || v < 0) v = 0;
+    const x = i / (med.length - 1) * W;
+    const y = H - (v / maxV) * (H - 6) - 3;
+    i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+  });
+  c.strokeStyle = 'rgba(0,212,255,0.7)';
+  c.lineWidth = 1.5;
+  c.stroke();
+}
+
+function updateMinimapViewport(chart) {
+  if (!window._lastSimData) return;
+  const { med, ages } = window._lastSimData;
+  drawMinimap(med, ages);
+  // With no zoom plugin, the full chart is always visible → viewport = 100%
+  const vp = document.getElementById('minimap-viewport');
+  if (vp) {
+    vp.style.left = '0%';
+    vp.style.width = '100%';
+  }
+}
+
+// Keep old name as alias for compatibility
+function updateMinimap(chart) { updateMinimapViewport(chart); }
+
+function setupMinimapDrag() {
+  const container = document.getElementById('minimap-container');
+  if (!container) return;
+
+  // Re-attach listeners by cloning
+  const fresh = container.cloneNode(true);
+  container.replaceWith(fresh);
+  const mc = document.getElementById('minimap-container');
+  if (!mc) return;
+
+  // Cursor indicator line
+  let cursorLine = mc.querySelector('.minimap-cursor');
+  if (!cursorLine) {
+    cursorLine = document.createElement('div');
+    cursorLine.className = 'minimap-cursor';
+    cursorLine.style.cssText = 'position:absolute;top:0;bottom:0;width:2px;background:rgba(255,209,102,.8);pointer-events:none;display:none;';
+    mc.appendChild(cursorLine);
+  }
+
+  function getXFraction(e) {
+    const rect = mc.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  }
+
+  function highlightAge(frac) {
+    if (!chartInstance || !window._lastSimData) return;
+    const { ages } = window._lastSimData;
+    const ageIdx = Math.round(frac * (ages.length - 1));
+    const targetAge = ages[ageIdx];
+
+    // Move cursor line
+    cursorLine.style.left = (frac * 100) + '%';
+    cursorLine.style.display = 'block';
+
+    // Trigger chart tooltip at that data index
+    const xScale = chartInstance.scales.x;
+    if (!xScale) return;
+    try {
+      const xPx = xScale.getPixelForValue(targetAge);
+      const chartArea = chartInstance.chartArea;
+      const yMid = (chartArea.top + chartArea.bottom) / 2;
+      chartInstance.tooltip.setActiveElements(
+        chartInstance.data.datasets.map((_, di) => ({ datasetIndex: di, index: ageIdx })),
+        { x: xPx, y: yMid }
+      );
+      chartInstance.update('none');
+    } catch(e) {}
+  }
+
+  function clearHighlight() {
+    cursorLine.style.display = 'none';
+    if (chartInstance) {
+      try {
+        chartInstance.tooltip.setActiveElements([], {x:0,y:0});
+        chartInstance.update('none');
+      } catch(e) {}
+    }
+    _minimapDragging = false;
+  }
+
+  mc.addEventListener('mousedown', e => { _minimapDragging = true; highlightAge(getXFraction(e)); e.preventDefault(); });
+  mc.addEventListener('mousemove', e => { if (_minimapDragging) { highlightAge(getXFraction(e)); e.preventDefault(); } });
+  mc.addEventListener('mouseup',   clearHighlight);
+  mc.addEventListener('mouseleave',() => { if (_minimapDragging) clearHighlight(); });
+  mc.addEventListener('touchstart', e => { _minimapDragging = true; highlightAge(getXFraction(e)); e.preventDefault(); }, { passive: false });
+  mc.addEventListener('touchmove',  e => { if (_minimapDragging) { highlightAge(getXFraction(e)); e.preventDefault(); } }, { passive: false });
+  mc.addEventListener('touchend',   clearHighlight);
+}
+
+// ---- 5. PNG SAVE WITH PARAMS ----
+function saveChartPNG() {
+  if (!chartInstance) { alert('先にシミュレーションを実行してください'); return; }
+  const canvas = document.getElementById('myChart');
+  if (!canvas) return;
+
+  // Create offscreen canvas with params text
+  const margin = 120;
+  const oc = document.createElement('canvas');
+  oc.width = canvas.width;
+  oc.height = canvas.height + margin;
+  const ctx = oc.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#050810';
+  ctx.fillRect(0, 0, oc.width, oc.height);
+
+  // Chart image
+  ctx.drawImage(canvas, 0, 0);
+
+  // Parameter text
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '11px monospace';
+  const params = [
+    `年齢: ${document.getElementById('start-age')?.value}歳`,
+    `資産: ${document.getElementById('initial-assets')?.value}万円`,
+    `FIRE目標: ${document.getElementById('fire-threshold')?.value}万円`,
+    `年収: ${document.getElementById('income')?.value}万円`,
+    `難易度: ${typeof currentDifficulty !== 'undefined' ? currentDifficulty : '-'}`,
+    `試行数: ${document.getElementById('nsims')?.value}`,
+    `生成: ${new Date().toLocaleString('ja-JP')}`,
+    `FIREシミュレーター v17`
+  ];
+  params.forEach((p, i) => {
+    ctx.fillText(p, 12 + (i % 4) * (oc.width / 4), canvas.height + 16 + Math.floor(i / 4) * 20);
+  });
+
+  const link = document.createElement('a');
+  link.download = `fire_sim_${Date.now()}.png`;
+  link.href = oc.toDataURL('image/png');
+  link.click();
+}
+
+// ---- 6. SIGMA BANDS TOGGLE ----
+let _sigmaBandDatasets = [];
+function toggleSigmaBands() {
+  const btn = document.getElementById('chart-sigma-btn');
+  _sigmaBandsOn = !_sigmaBandsOn;
+  if (btn) btn.classList.toggle('active', _sigmaBandsOn);
+
+  if (!chartInstance || !window._lastSimData) return;
+  const { p90, p10, p75, p25, ages } = window._lastSimData;
+
+  if (_sigmaBandsOn) {
+    // Add ±1σ approximation bands
+    const p10DS = { label: '▼ P10シャドウ', data: Array.from(p10), borderColor: 'transparent', backgroundColor: 'rgba(255,71,87,0.08)', borderWidth: 0, pointRadius: 0, fill: '+1', tension: 0.3, _sigma: true };
+    const p90DS = { label: '▲ P90シャドウ', data: Array.from(p90), borderColor: 'transparent', backgroundColor: 'rgba(168,255,120,0.06)', borderWidth: 0, pointRadius: 0, fill: false, tension: 0.3, _sigma: true };
+    chartInstance.data.datasets.push(p10DS, p90DS);
+    chartInstance.update('none');
+  } else {
+    chartInstance.data.datasets = chartInstance.data.datasets.filter(d => !d._sigma);
+    chartInstance.update('none');
+  }
+}
+
+// ---- 7. SPECULATIVE RENDERING (fast preview during slider drag) ----
+let _sliderDragActive = false;
+let _sliderDebounce = null;
+let _baselineMedian = null;
+
+document.addEventListener('mousedown', e => {
+  if (e.target.type === 'range') _sliderDragActive = true;
+});
+document.addEventListener('mouseup', () => { _sliderDragActive = false; });
+document.addEventListener('touchstart', e => {
+  if (e.target.type === 'range') _sliderDragActive = true;
+}, { passive: true });
+document.addEventListener('touchend', () => { _sliderDragActive = false; });
+
+// Quick preview: update chart line color/label only while dragging
+document.addEventListener('input', e => {
+  if (!e.target.matches('input[type="range"]') || !chartInstance || !window._lastSimData) return;
+  // Store baseline on first drag
+  if (!_baselineMedian) _baselineMedian = [...window._lastSimData.med];
+
+  // Show delta tooltip
+  showSliderDelta(e.target);
+});
+
+function showSliderDelta(slider) {
+  const tt = document.getElementById('slider-delta-tooltip');
+  if (!tt || !_baselineMedian || !window._lastSimData) return;
+  const curMed = window._lastSimData.med;
+  if (!curMed || !curMed.length) return;
+  const midIdx = Math.floor(curMed.length / 2);
+  const delta = ((curMed[midIdx] || 0) - (_baselineMedian[midIdx] || 0)) * 10000;
+  const sign = delta >= 0 ? '+' : '';
+  tt.textContent = `中間期差分: ${sign}${Math.round(delta).toLocaleString()}万円`;
+  tt.classList.add('show');
+  const rect = slider.getBoundingClientRect();
+  tt.style.left = (rect.left + rect.width / 2 - 60) + 'px';
+  tt.style.top = (rect.top - 44 + window.scrollY) + 'px';
+  clearTimeout(tt._t);
+  tt._t = setTimeout(() => tt.classList.remove('show'), 2000);
+}
+
+// ============================================================
 // スライダーと数値入力ボックスを完全に連動させる
 (function() {
   const MIN = 0, MAX = 10000, STEP = 10;
@@ -7035,93 +7802,113 @@ function toggleGuidePanel() {
 }
 
 /* =====================================================
-   QUICK SETUP WIZARD  (v15)
+   BEGINNER WIZARD (v19) — 初心者モード専用
    ===================================================== */
 (function() {
 
-  // ── 日本人平均値テーブル ──────────────────────────────
-  const JP_DEFAULTS = {
-    savingsRate: 0.15,            // 貯蓄率 15%
-    inflation: 1.0,               // インフレ 1%
-    pension: 15,                  // 年金 15万/月
-    inheritance: 500,             // 相続 500万
-    raiseRate: 1.5,               // 昇給 1.5%
-    baseExpenseRatio: 0.55,       // 支出 / 手取り
-    postFireExpenseRatio: 0.85,   // FIRE後支出 = 現役比
-    retireExpenseRatio: 0.75,     // 老後支出
-    fireThresholdMultiplier: 25,  // 4% rule: 年支出 × 25
+  // ── 政府統計データによるデフォルト値 ──────────────────
+  const GOV_DEFAULTS = {
+    // 国税庁2023年・厚労省・金融広報中央委員会データ
+    inflation:        1.0,   // インフレ率 %
+    raiseRate:        1.5,   // 昇給率 %/年
+    savingsRateRatio: 0.15,  // 手取りの15%を貯蓄
+    expenseRatio:     0.62,  // 手取りの62%を生活費
+    postRetireRatio:  0.75,  // 定年後の支出は現役比75%
+    pension: {
+      // 厚労省モデル年金（夫婦）= 22.1万/月、単身は約15万
+      single: 15,
+      couple: 22,
+    },
+    retireAge:        60,    // 定年年齢（固定）
+    inheritance:      500,   // 相続想定額
+    investRatio:      0.6,   // 現役中の株式比率
+    investRatioPost:  0.4,   // 退職後の株式比率
+    fireThreshold:    99999, // 初心者モードではFIREしない（大きな値にして到達しないようにする）
+    children: {
+      eduCostPublic: 900,  // 公立ルート1人あたり幼〜大学 万円
+    },
   };
 
-  // 年収→推奨支出(万円/月)の簡易推定
-  function estimateMonthlyExpense(incomeMan, takeHomeRate) {
-    const netAnnual = incomeMan * takeHomeRate;
-    return Math.round(netAnnual * JP_DEFAULTS.baseExpenseRatio / 12);
-  }
-
-  // 推奨FIRE目標資産
-  function estimateFireThreshold(monthlyExpenseMan) {
-    return Math.round(monthlyExpenseMan * 12 * JP_DEFAULTS.fireThresholdMultiplier / 500) * 500;
-  }
-
   // ── ウィザード状態 ───────────────────────────────────
+  let wizHouseholdType = 'single'; // 'single' | 'single-spouse' | 'dual'
+  let wizChildren = 0;
   let currentStep = 0;
-  const steps = [
-    { id: 'wstep-0', inputId: 'w-age',     min:20, max:70,    placeholder:'35' },
-    { id: 'wstep-1', inputId: 'w-income',  min:100, max:10000, placeholder:'500' },
-    { id: 'wstep-2', inputId: 'w-savings', min:0,  max:50000,  placeholder:'300' },
-    { id: 'wstep-3', inputId: 'w-retire',  min:35, max:75,     placeholder:'55' },
-  ];
+
+  // ステップ定義（dual時はstep2を挿入、それ以外はskip）
+  function getSteps() {
+    const base = ['wstep-0', 'wstep-1'];
+    if (wizHouseholdType === 'dual') base.push('wstep-2');
+    base.push('wstep-3', 'wstep-4');
+    return base;
+  }
 
   function getEl(id) { return document.getElementById(id); }
 
-  function focusCurrentInput() {
-    const inp = getEl(steps[currentStep].inputId);
-    if (inp) { inp.focus(); inp.select(); }
-  }
-
   function updateDots(step) {
-    steps.forEach((_, i) => {
+    const steps = getSteps();
+    const total = steps.length;
+    for (let i = 0; i < 5; i++) {
       const dot = getEl('wdot-' + i);
-      if (!dot) return;
-      dot.className = 'wiz-dot' +
-        (i < step  ? ' done'   : '') +
-        (i === step ? ' active' : '');
-    });
+      if (!dot) continue;
+      if (i >= total) { dot.style.display = 'none'; continue; }
+      dot.style.display = '';
+      dot.className = 'wiz-dot' + (i < step ? ' done' : '') + (i === step ? ' active' : '');
+    }
   }
 
-  function goToStep(nextStep) {
-    // animate out
-    const curr = getEl(steps[currentStep].id);
-    curr.classList.add('out');
+  function goToStep(nextIdx) {
+    const steps = getSteps();
+    const currId = steps[currentStep];
+    const curr = getEl(currId);
+    if (curr) { curr.classList.add('out'); }
     setTimeout(() => {
-      curr.style.display = 'none';
-      curr.classList.remove('out');
-      currentStep = nextStep;
-      const nxt = getEl(steps[currentStep].id);
-      nxt.style.display = 'block';
-      nxt.style.animation = 'none';
-      void nxt.offsetWidth; // reflow
-      nxt.style.animation = '';
+      if (curr) { curr.style.display = 'none'; curr.classList.remove('out'); }
+      currentStep = nextIdx;
+      const nxtId = steps[currentStep];
+      const nxt = getEl(nxtId);
+      if (nxt) {
+        nxt.style.display = 'block';
+        nxt.style.animation = 'none';
+        void nxt.offsetWidth;
+        nxt.style.animation = '';
+        // Update step label
+        updateStepLabel(nxtId, currentStep, steps.length);
+        // Focus first input if present
+        const inp = nxt.querySelector('input');
+        if (inp) { setTimeout(() => { inp.focus(); inp.select(); }, 50); }
+      }
       updateDots(currentStep);
-      focusCurrentInput();
     }, 280);
   }
 
-  function validateAndAdvance() {
-    const s = steps[currentStep];
-    const inp = getEl(s.inputId);
-    const val = parseFloat(inp.value);
-    if (!inp.value || isNaN(val) || val < s.min || val > s.max) {
-      inp.style.borderColor = 'var(--danger)';
-      inp.style.boxShadow = '0 0 0 4px rgba(255,71,87,.15)';
-      setTimeout(() => {
-        inp.style.borderColor = '';
-        inp.style.boxShadow = '';
-      }, 600);
-      inp.focus();
-      return;
-    }
+  function updateStepLabel(stepId, idx, total) {
+    const el = getEl(stepId)?.querySelector('.wiz-step-label');
+    if (el) el.textContent = `Step ${idx + 1} / ${total} — 基本診断`;
+  }
 
+  // ── 世帯タイプ選択 ────────────────────────────────────
+  window.selectHouseholdType = function(type) {
+    wizHouseholdType = type;
+    ['single','single-spouse','dual'].forEach(t => {
+      const btn = getEl('wiz-type-' + t);
+      if (btn) btn.classList.toggle('selected', t === type);
+    });
+    // ちょっと待ってから次へ
+    setTimeout(() => goToStep(1), 300);
+  };
+
+  // ── 子供人数選択 ─────────────────────────────────────
+  window.selectChildren = function(n) {
+    wizChildren = n;
+    document.querySelectorAll('.wiz-num-btn').forEach((btn, i) => {
+      btn.classList.toggle('selected', i === n || (n >= 3 && i === 3));
+    });
+    setTimeout(() => advanceStep(), 300);
+  };
+
+  // ── テキスト入力の次へ ────────────────────────────────
+  function advanceStep() {
+    const steps = getSteps();
     if (currentStep < steps.length - 1) {
       goToStep(currentStep + 1);
     } else {
@@ -7129,97 +7916,141 @@ function toggleGuidePanel() {
     }
   }
 
+  function validateCurrentInput() {
+    const steps = getSteps();
+    const stepId = steps[currentStep];
+    const inp = getEl(stepId)?.querySelector('input[type="number"]');
+    if (!inp) { advanceStep(); return; } // 選択ステップはボタン押下で進む
+    const v = parseFloat(inp.value);
+    if (!inp.value || isNaN(v) || v < parseFloat(inp.min || 0)) {
+      inp.style.borderColor = 'var(--danger)';
+      inp.style.boxShadow = '0 0 0 4px rgba(255,71,87,.15)';
+      setTimeout(() => { inp.style.borderColor = ''; inp.style.boxShadow = ''; }, 600);
+      inp.focus(); return;
+    }
+    advanceStep();
+  }
 
-
+  // ── ウィザード完了 → パラメータ設定 ─────────────────────
   function finishWizard() {
-    // collect values
-    const age       = parseFloat(getEl('w-age').value)     || 35;
-    const income    = parseFloat(getEl('w-income').value)   || 500;
-    const savings   = parseFloat(getEl('w-savings').value)  || 300;
-    const retireAge = parseFloat(getEl('w-retire').value)   || 55;
+    const age     = parseFloat(getEl('w-age')?.value)     || 35;
+    const income  = parseFloat(getEl('w-income')?.value)  || 450;
+    const incomeB = parseFloat(getEl('w-income-b')?.value)|| 280;
+    const ageB    = parseFloat(getEl('w-age-b')?.value)   || (age - 2);
+    const savings = parseFloat(getEl('w-savings')?.value) || 150;
 
-    // Show loading
+    // Loading アニメーション
     getEl('wiz-cards').style.display = 'none';
-    getEl('wizard-overlay').querySelector('.wiz-dots').style.display = 'none';
-    getEl('wizard-overlay').querySelector('.wiz-skip').style.display = 'none';
+    getEl('wiz-dots-wrap').style.display = 'none';
+    const skipBtn = document.querySelector('.wiz-skip');
+    if (skipBtn) skipBtn.style.display = 'none';
     const loadingEl = getEl('wiz-loading');
     loadingEl.style.display = 'flex';
 
-    const msgs = ['シミュレーション準備中...', '平均値をもとに自動設定中...', 'グラフを描画しています...'];
+    const msgs = [
+      '統計データで自動設定中...',
+      '60歳まで働くプランを計算中...',
+      '老後の資産推移をシミュレーション中...',
+    ];
     let mi = 0;
     const msgEl = getEl('wiz-loading-msg');
-    const ticker = setInterval(() => {
-      mi = (mi + 1) % msgs.length;
-      msgEl.textContent = msgs[mi];
-    }, 700);
+    const ticker = setInterval(() => { msgEl.textContent = msgs[++mi % msgs.length]; }, 700);
 
     setTimeout(() => {
       clearInterval(ticker);
 
-      // ── 税金計算（calcTax が定義されている前提） ──
-      let takeHomeRate = 0.78;
-      if (typeof calcTax === 'function') {
-        takeHomeRate = calcTax(income).rate;
-      }
+      const isDual = wizHouseholdType === 'dual';
+      const hasSpouse = wizHouseholdType !== 'single';
 
-      // ── 推定値を計算 ──
-      const monthlyExp = estimateMonthlyExpense(income, takeHomeRate);
-      const fireGoal   = estimateFireThreshold(monthlyExp);
-      const postExp    = Math.round(monthlyExp * JP_DEFAULTS.postFireExpenseRatio);
-      const retireExp  = Math.round(monthlyExp * JP_DEFAULTS.retireExpenseRatio);
+      // 税金計算
+      const taxA = typeof calcTax === 'function' ? calcTax(income * 10000) : { rate: 0.78 };
+      const taxB = (isDual && typeof calcTax === 'function') ? calcTax(incomeB * 10000) : { rate: 0.78 };
 
-      // ── スライダー / 数値フィールドへ反映 ──
+      // 月々の生活費推定（手取り × 62% ÷ 12ヶ月）
+      const netAnnualA = income * taxA.rate;
+      const netAnnualB = isDual ? incomeB * taxB.rate : 0;
+      const netAnnual = netAnnualA + netAnnualB;
+      const monthlyExp = Math.round(netAnnual * GOV_DEFAULTS.expenseRatio / 12);
+      const monthlyRetireExp = Math.round(monthlyExp * GOV_DEFAULTS.postRetireRatio);
+
+      // 子供の教育費をステージに追加（子供は今年生まれたと仮定）
+      const childEduTotal = wizChildren * GOV_DEFAULTS.children.eduCostPublic;
+
+      // 年金：世帯タイプ別
+      const pension = hasSpouse ? GOV_DEFAULTS.pension.couple : GOV_DEFAULTS.pension.single;
+
+      // FIRE目標は到達しない大きな値（定年まで働くモード）
+      const fireThreshold = 99999;
+
       function setSlider(id, val) {
-        const el = getEl(id);
-        if (!el) return;
-        el.value = val;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
+        const el = getEl(id); if (!el) return;
+        el.value = val; el.dispatchEvent(new Event('input', { bubbles: true }));
       }
       function setNumber(id, val) {
-        const el = getEl(id);
-        if (!el) return;
-        el.value = val;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
+        const el = getEl(id); if (!el) return;
+        el.value = val; el.dispatchEvent(new Event('input', { bubbles: true }));
       }
 
+      // ── 基本設定 ──
       setSlider('start-age', Math.min(Math.max(age, 25), 55));
       setNumber('num-initial-assets', savings);
       setSlider('initial-assets', savings);
+      setSlider('fire-threshold', fireThreshold);
       setSlider('income', income);
-      setSlider('fire-threshold', Math.min(Math.max(fireGoal, 1000), 50000));
-      setSlider('raise', JP_DEFAULTS.raiseRate);
-      setSlider('pension', JP_DEFAULTS.pension);
-      setSlider('base-infl', JP_DEFAULTS.inflation);
+      setSlider('raise', GOV_DEFAULTS.raiseRate);
+      setSlider('pension', pension);
+      setSlider('base-infl', GOV_DEFAULTS.inflation);
+      setSlider('w-working',  Math.round(GOV_DEFAULTS.investRatio * 100));
+      setSlider('w-retired',  Math.round(GOV_DEFAULTS.investRatioPost * 100));
+      setSlider('inheritance', GOV_DEFAULTS.inheritance);
 
-      // ライフステージ別支出 (stageData が存在すれば)
-      ['stage-exp-0','stage-exp-1','stage-exp-2','stage-exp-3'].forEach((sid, i) => {
-        const vals = [monthlyExp, monthlyExp, postExp, retireExp];
-        const el = getEl(sid);
-        if (el) { el.value = vals[i]; el.dispatchEvent(new Event('input',{bubbles:true})); }
-      });
+      // 共働き設定
+      if (isDual && typeof setHousehold === 'function') {
+        setHousehold('dual');
+        setSlider('income-b', incomeB);
+        setSlider('raise-b', GOV_DEFAULTS.raiseRate);
+      } else if (typeof setHousehold === 'function') {
+        setHousehold('single');
+      }
 
-      // ── 「平均値適用中」バッジを各パラメータに追加 ──
-      addAverageBadges();
+      // ライフステージ支出（定年まで → 定年後）
+      // ステージ0: 現役（現在〜60歳）, ステージ1以降: 定年後
+      const stageEls0 = getEl('stage-exp-0');
+      const stageEls1 = getEl('stage-exp-1');
+      const stageEls2 = getEl('stage-exp-2');
+      const stageEls3 = getEl('stage-exp-3');
+      [stageEls0, stageEls1].forEach(el => { if (el) { el.value = monthlyExp; el.dispatchEvent(new Event('input',{bubbles:true})); } });
+      [stageEls2, stageEls3].forEach(el => { if (el) { el.value = monthlyRetireExp; el.dispatchEvent(new Event('input',{bubbles:true})); } });
 
+      // 子供追加
+      if (wizChildren > 0 && typeof addChild === 'function') {
+        const currentYear = new Date().getFullYear();
+        for (let i = 0; i < Math.min(wizChildren, 3); i++) {
+          addChild();
+          // 最後に追加した子供の生まれ年を設定（5歳差）
+          const childList = document.querySelectorAll('.child-row');
+          const last = childList[childList.length - 1];
+          if (last) {
+            const byEl = last.querySelector('input[type="number"]');
+            if (byEl) { byEl.value = currentYear - i * 3; byEl.dispatchEvent(new Event('input',{bubbles:true})); }
+          }
+        }
+      }
 
-const ov = getEl('wizard-overlay');
-ov.classList.add('hidden'); // クラス追加
-ov.style.display = 'none';  // 物理的に消去
-ov.style.pointerEvents = 'none'; // クリック判定を完全に無効化
+      // ウィザードを閉じる
+      const ov = getEl('wizard-overlay');
+      ov.classList.add('hidden');
+      ov.style.display = 'none';
+      ov.style.pointerEvents = 'none';
+      document.querySelector('.app').style.filter = 'none';
+      document.querySelector('.app').style.pointerEvents = 'auto';
 
-document.querySelector('.app').style.filter = 'none';
-document.querySelector('.app').style.pointerEvents = 'auto'; // 'auto'にして確実に許可する
-
-      // ドラマチックにシミュレーションを実行
-
-
-      // データの読み込みロックを解除
       if (typeof _isLoading !== 'undefined') _isLoading = false;
-
-      // ★ここに追加：完了フラグを保存
       localStorage.setItem('wizard_completed', 'true');
 
-      // ドラマチックにシミュレーションを実行
+      // 初心者モードを確実にセット
+      if (typeof setMode === 'function') setMode('beginner');
+
       setTimeout(() => {
         if (typeof runSimulation === 'function') runSimulation();
       }, 300);
@@ -7227,105 +8058,55 @@ document.querySelector('.app').style.pointerEvents = 'auto'; // 'auto'にして�
     }, 1800);
   }
 
-
-
-  function addAverageBadges() {
-    const targets = [
-      { labelId: 'val-income',    paramId: 'income',          text: '平均値適用中' },
-      { labelId: 'val-raise',     paramId: 'raise',           text: '平均値適用中' },
-      { labelId: 'val-pension',   paramId: 'pension',         text: '平均値適用中' },
-      { labelId: 'val-base-infl', paramId: 'base-infl',       text: '平均値適用中' },
-    ];
-    targets.forEach(t => {
-      const valEl = getEl(t.labelId);
-      if (!valEl) return;
-      // don't add twice
-      if (valEl.parentNode.querySelector('.avg-badge')) return;
-      const badge = document.createElement('span');
-      badge.className = 'avg-badge';
-      badge.title = 'ウィザードで自動設定されました。クリックして調整できます';
-      badge.innerHTML = '📊 平均値';
-      badge.dataset.paramId = t.paramId;
-      badge.addEventListener('click', () => {
-        const slider = getEl(t.paramId);
-        if (slider) slider.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        badge.classList.add('cleared');
-        badge.innerHTML = '✏️ 調整済み';
-      });
-      valEl.parentNode.appendChild(badge);
-    });
-  }
-
+  // ── skipWizard ────────────────────────────────────────
   function skipWizard() {
     const ov = getEl('wizard-overlay');
     ov.classList.add('hidden');
-    ov.style.display = 'none';         // CSSの ~ セレクタを無効化するために必須
+    ov.style.display = 'none';
     ov.style.pointerEvents = 'none';
     document.querySelector('.app').style.filter = '';
-    document.querySelector('.app').style.pointerEvents = 'auto'; // 明示的に操作を許可
+    document.querySelector('.app').style.pointerEvents = 'auto';
   }
   window.skipWizard = skipWizard;
 
-  // ── キーボードナビゲーション ────────────────────────
+  // ── キーボード ─────────────────────────────────────────
   document.addEventListener('keydown', function(e) {
-    if (getEl('wizard-overlay').classList.contains('hidden')) return;
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      validateAndAdvance();
-    }
+    if (getEl('wizard-overlay')?.classList.contains('hidden')) return;
+    if (e.key === 'Enter') { e.preventDefault(); validateCurrentInput(); }
     if (e.key === 'Escape') skipWizard();
   });
 
-  // ── 各ステップのinput でEnter / blur ─────────────────
-  steps.forEach(s => {
-    const inp = document.getElementById(s.inputId);
+  // ── 各stepのinput Enterキー ────────────────────────────
+  ['w-age','w-income','w-age-b','w-income-b','w-savings'].forEach(id => {
+    const inp = document.getElementById(id);
     if (!inp) return;
     inp.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); validateAndAdvance(); }
+      if (e.key === 'Enter') { e.preventDefault(); validateCurrentInput(); }
     });
   });
 
-  // ── DOM ready で最初のステップにフォーカス ──────────
+  // ── DOM ready ─────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
     updateDots(0);
-    setTimeout(focusCurrentInput, 100);
+    // Focus first element
+    const firstInp = getEl('wstep-0')?.querySelector('button');
+    // No auto-focus for choice buttons
   });
-// ── ここから追加 ────────────────────────
+
   window.addEventListener('DOMContentLoaded', () => {
     const isCompleted = localStorage.getItem('wizard_completed');
-
     if (isCompleted === 'true') {
-      // 1. 幕を即座に消去
       const ov = getEl('wizard-overlay');
-      if (ov) {
-        ov.style.display = 'none';
-        ov.classList.add('hidden');
-        ov.style.pointerEvents = 'none';
-      }
-
-      // 2. メインアプリのロックを解除
+      if (ov) { ov.style.display = 'none'; ov.classList.add('hidden'); ov.style.pointerEvents = 'none'; }
       const appEl = document.querySelector('.app');
-      if (appEl) {
-        appEl.style.filter = 'none';
-        appEl.style.pointerEvents = 'auto';
-      }
-
-      // 3. データの復元とシミュレーション実行
-      // loadParameters が定義されている場合に実行
-      if (typeof loadParameters === 'function') {
-        loadParameters();
-      }
-
-      // データの読み込みロックを解除して実行
+      if (appEl) { appEl.style.filter = 'none'; appEl.style.pointerEvents = 'auto'; }
+      if (typeof loadParameters === 'function') loadParameters();
       if (typeof _isLoading !== 'undefined') _isLoading = false;
       if (typeof runSimulation === 'function') runSimulation();
     } else {
-      // 未完了なら通常通り最初のステップにフォーカス
       updateDots(0);
-      setTimeout(focusCurrentInput, 100);
     }
   });
-  // ── ここまで追加 ────────────────────────
 
 })(); // end IIFE
 
