@@ -63,8 +63,8 @@
   
   /* 型抜き（マスク）の設定 */
   /* 図形（Barパーツ）だけを型取るData URI（キャッシュ回避版） */
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect x='140' y='300' width='60' height='80' rx='10' fill='%23000'/%3E%3Crect x='226' y='220' width='60' height='160' rx='10' fill='%23000'/%3E%3Crect x='312' y='130' width='60' height='250' rx='10' fill='%23000'/%3E%3Ccircle cx='342' cy='130' r='12' fill='%23000'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect x='140' y='300' width='60' height='80' rx='10' fill='%23000'/%3E%3Crect x='226' y='220' width='60' height='160' rx='10' fill='%23000'/%3E%3Crect x='312' y='130' width='60' height='250' rx='10' fill='%23000'/%3E%3Ccircle cx='342' cy='130' r='12' fill='%23000'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect x='140' y='300' width='60' height='80' rx='10' fill='white'/%3E%3Crect x='226' y='220' width='60' height='160' rx='10' fill='white'/%3E%3Crect x='312' y='130' width='60' height='250' rx='10' fill='white'/%3E%3Ccircle cx='342' cy='130' r='12' fill='white'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect x='140' y='300' width='60' height='80' rx='10' fill='white'/%3E%3Crect x='226' y='220' width='60' height='160' rx='10' fill='white'/%3E%3Crect x='312' y='130' width='60' height='250' rx='10' fill='white'/%3E%3Ccircle cx='342' cy='130' r='12' fill='white'/%3E%3C/svg%3E");
   
   -webkit-mask-size: contain;
   mask-size: contain;
@@ -203,6 +203,7 @@ body::after{
   display:flex;align-items:center;justify-content:center;
   font-size:20px;flex-shrink:0;
   box-shadow:var(--glow-accent);
+  color: var(--accent);
 }
 .header-text{min-width:0;flex:1;}
 .header-sub{font-size:10px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
