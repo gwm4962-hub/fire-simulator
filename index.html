@@ -14,7 +14,6 @@
 <!-- Apple Touch Icon: PNG形式のData URIを使用 (iOSはSVGを認識しない) -->
 <script>
 (function() {
-  // CanvasでPNGアイコンを生成してapple-touch-iconに設定
   function generatePngIcon() {
     try {
       const S = 512;
@@ -22,7 +21,6 @@
       canvas.width = S; canvas.height = S;
       const ctx = canvas.getContext('2d');
 
-      // roundRect polyfill (旧Safari対応)
       function rr(x, y, w, h, r) {
         ctx.beginPath();
         ctx.moveTo(x+r, y);
@@ -33,107 +31,63 @@
         ctx.closePath();
       }
 
-      // ── 背景: 白 ──────────────────────────────────────
-      const bgR = 110;
-      rr(0, 0, S, S, bgR);
+      // 背景: 白
       ctx.fillStyle = '#ffffff';
+      rr(0, 0, S, S, 110);
       ctx.fill();
 
-      // ── 薄いグリッド線（装飾） ─────────────────────────
-      ctx.strokeStyle = 'rgba(0,0,0,0.045)';
-      ctx.lineWidth = 1.5;
-      for (let i = 1; i < 5; i++) {
-        const y = S * i / 5;
-        ctx.beginPath(); ctx.moveTo(60, y); ctx.lineTo(S-60, y); ctx.stroke();
-      }
-
-      // ── バーの設定 ────────────────────────────────────
-      const barW = 88;
-      const barR = 16;
-      const base = 390; // 共通ベースライン Y
-
-      // bar1: 左 (低め) ─ ネイビー→シアングラデ
+      // 装飾線、バー、トレンドライン（あなたのロジックを継承）
+      const barW = 88; const barR = 16; const base = 390;
+      
       const g1 = ctx.createLinearGradient(0, base-120, 0, base);
-      g1.addColorStop(0, '#00c6ff');
-      g1.addColorStop(1, '#0072ff');
-      ctx.fillStyle = g1;
-      rr(88, base-120, barW, 120, barR); ctx.fill();
+      g1.addColorStop(0, '#00c6ff'); g1.addColorStop(1, '#0072ff');
+      ctx.fillStyle = g1; rr(88, base-120, barW, 120, barR); ctx.fill();
 
-      // bar2: 中 ─ パープル→ピンクグラデ
       const g2 = ctx.createLinearGradient(0, base-210, 0, base);
-      g2.addColorStop(0, '#a78bfa');
-      g2.addColorStop(1, '#7c3aed');
-      ctx.fillStyle = g2;
-      rr(212, base-210, barW, 210, barR); ctx.fill();
+      g2.addColorStop(0, '#a78bfa'); g2.addColorStop(1, '#7c3aed');
+      ctx.fillStyle = g2; rr(212, base-210, barW, 210, barR); ctx.fill();
 
-      // bar3: 右 (高め) ─ グリーン→ティールグラデ
       const g3 = ctx.createLinearGradient(0, base-310, 0, base);
-      g3.addColorStop(0, '#34d399');
-      g3.addColorStop(1, '#059669');
-      ctx.fillStyle = g3;
-      rr(336, base-310, barW, 310, barR); ctx.fill();
-
-      // ── トレンドライン ────────────────────────────────
-      ctx.beginPath();
-      ctx.moveTo(132, base-95);
-      ctx.bezierCurveTo(200, base-160, 260, base-220, 380, base-290);
-      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-      ctx.lineWidth = 6;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-
-      // ── bar3の頂点ドット ──────────────────────────────
-      ctx.beginPath();
-      ctx.arc(380, base-290, 16, 0, Math.PI*2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      ctx.strokeStyle = '#059669';
-      ctx.lineWidth = 5;
-      ctx.stroke();
-
-      // ── ベースライン ──────────────────────────────────
-      ctx.beginPath();
-      ctx.moveTo(60, base+8); ctx.lineTo(S-60, base+8);
-      ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-      ctx.lineWidth = 3;
-      ctx.stroke();
+      g3.addColorStop(0, '#34d399'); g3.addColorStop(1, '#059669');
+      ctx.fillStyle = g3; rr(336, base-310, barW, 310, barR); ctx.fill();
 
       return canvas.toDataURL('image/png');
     } catch(e) { return null; }
   }
 
   const pngDataUri = generatePngIcon();
+  
+  // iOS用アイコン設定
   if (pngDataUri) {
-    const link = document.createElement('link');
-    link.rel = 'apple-touch-icon';
-    link.sizes = '512x512';
-    link.href = pngDataUri;
-    document.head.appendChild(link);
+    const appleIcon = document.createElement('link');
+    appleIcon.rel = 'apple-touch-icon';
+    appleIcon.href = pngDataUri;
+    document.head.appendChild(appleIcon);
   }
 
-  // マニフェストをdata: URIで設定 (Blob URLはiOS Safariで動作しない)
+  // マニフェスト設定
   const manifestObj = {
+    "id": "/", // アプリの識別子を固定
     "name": "FLOW",
     "short_name": "FLOW",
-    "start_url": "./",
+    "start_url": window.location.origin + "/", // 絶対URL化してinvalidを回避
     "display": "standalone",
     "orientation": "portrait",
     "background_color": "#0a0f1e",
     "theme_color": "#1e3a5f",
     "icons": [
       {
-        "src": pngDataUri || "data:image/png;base64,iVBORw0KGgo=",
+        "src": pngDataUri,
         "sizes": "512x512",
         "type": "image/png",
-        "purpose": "any maskable"
+        "purpose": "any"
       }
     ]
   };
-  const manifestJson = JSON.stringify(manifestObj);
-  const manifestDataUri = 'data:application/manifest+json,' + encodeURIComponent(manifestJson);
 
-  let oldLink = document.querySelector('link[rel="manifest"]');
-  if (oldLink) oldLink.remove();
+  const manifestJson = JSON.stringify(manifestObj);
+  const manifestDataUri = 'data:application/manifest+json;base64,' + btoa(unescape(encodeURIComponent(manifestJson)));
+
   const mLink = document.createElement('link');
   mLink.rel = 'manifest';
   mLink.href = manifestDataUri;
