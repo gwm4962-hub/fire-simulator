@@ -5,6 +5,13 @@
 <link rel="manifest" href="./manifest.json">
 <!-- ===== PWA: メタタグ & インラインマニフェスト ===== -->
 <meta name="description" content="FLOW｜資産運用・早期退職シミュレーション。モンテカルロ法で成功率を算出。">
+<meta property="og:title" content="FLOW | 資産シミュレーター">
+<meta property="og:description" content="モンテカルロ法・マルコフ連鎖・t分布で将来の資産を2,000パターン試算。FIRE達成年齢と成功率を計算します。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="FLOW | 資産シミュレーター">
+<meta name="twitter:description" content="モンテカルロ法でFIRE達成確率を試算。無料・広告なし。">
 <meta name="theme-color" content="#050810"> <!-- アプリの背景色 --bg と一致させる -->
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,7 +26,7 @@
 
   
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Flow</title>
+<title>FLOW | 資産シミュレーター</title>
 
 <script>
   window.MathJax = {
@@ -95,6 +102,7 @@
   --glow-accent: 0 0 24px rgba(0,212,255,.3);
   --glow-success: 0 0 24px rgba(168,255,120,.3);
   --glow-danger: 0 0 24px rgba(255,71,87,.25);
+  --accent-rgb: 0,212,255;
   /* Step colors */
   --step1: #00d4ff;
   --step2: #a8ff78;
@@ -655,15 +663,15 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
 }
 /* ===== モバイル：インラインfont-size強制上書き ===== */
 @media(max-width:600px){
-  /* 8〜9pxのインラインスタイルを13pxに */
-  [style*="font-size:8px"],[style*="font-size: 8px"],
-  [style*="font-size:9px"],[style*="font-size: 9px"] {
+  /* 8〜9pxのインラインスタイルを13pxに（条件サマリー以外） */
+  :not(#sim-condition-body *)[style*="font-size:8px"],:not(#sim-condition-body *)[style*="font-size: 8px"],
+  :not(#sim-condition-body *)[style*="font-size:9px"],:not(#sim-condition-body *)[style*="font-size: 9px"] {
     font-size:13px !important;
     line-height:1.8 !important;
   }
-  /* 10〜11pxのインラインスタイルを14pxに */
-  [style*="font-size:10px"],[style*="font-size: 10px"],
-  [style*="font-size:11px"],[style*="font-size: 11px"] {
+  /* 10〜11pxのインラインスタイルを14pxに（条件サマリー以外） */
+  :not(#sim-condition-body *)[style*="font-size:10px"],:not(#sim-condition-body *)[style*="font-size: 10px"],
+  :not(#sim-condition-body *)[style*="font-size:11px"],:not(#sim-condition-body *)[style*="font-size: 11px"] {
     font-size:14px !important;
     line-height:1.8 !important;
   }
@@ -677,6 +685,9 @@ input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.25);box-shadow
   /* タイムライン・凡例 */
   .tl-labels{font-size:12px !important;}
   .dist-legend-item{font-size:12px !important;}
+  /* 条件サマリーのフォントは専用で上書き */
+  #sim-condition-body .cond-label { font-size:12px !important; }
+  #sim-condition-body .cond-value { font-size:15px !important; }
 }
   .panel-body h3 {
     font-feature-settings: "palt"; /* 文字詰めを行い、見出しをよりプロっぽく見せる */
@@ -769,6 +780,13 @@ input[type="range"]:active::-webkit-slider-thumb {
 .scroll-hint span { display:inline-block; animation:bounce 1.6s ease-in-out infinite; }
 
 @media(max-width:600px){
+  .kpi-grid { gap: 8px; }
+  .kpi-card { padding: 14px 12px; }
+  .kpi-value { font-size: 22px; }
+  .kpi-label { font-size: 10px; }
+  .kpi-sub { font-size: 11px; }
+  .chart-wrapper { height: 300px; }
+  #minimap-container { display: none !important; }
   #floating-simulate { bottom:16px; right:12px; padding:11px 16px; font-size:12px; }
 }
 
@@ -820,8 +838,8 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   display: none; font-size: 10px; color: var(--accent3);
   font-family: var(--font-mono); animation: fadeIn .2s ease;
 }
-@keyframes fadeIn { from{opacity:0} to{opacity:1} }
-
+@keyframes fadeInQuick { from{opacity:0} to{opacity:1} }
+#share-copied-badge { animation: fadeInQuick .2s ease; }
 /* ===== CHART CAMERA BUTTON ===== */
 .chart-camera-btn {
   position: absolute; top: 10px; right: 10px; z-index: 50;
@@ -894,12 +912,80 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
+
+/* ===== RUN BUTTON PULSE ===== */
+@keyframes runPulse {
+  0%,100%{ box-shadow:0 4px 20px rgba(0,212,255,.4), 0 2px 8px rgba(0,0,0,.5); }
+  50%    { box-shadow:0 4px 32px rgba(0,212,255,.7), 0 0 60px rgba(0,212,255,.2); }
+}
+.run-btn:not(:disabled){ animation: runPulse 2.5s ease-in-out infinite; }
+.run-btn:hover{ animation: none; }
+
+/* ===== IMPROVED STEP FLOW ===== */
+.step-flow { gap: 2px; }
+.step-item { transition: background .2s, transform .15s; }
+.step-item:hover { transform: translateY(-1px); }
+
+/* ===== PANEL HEADER IMPROVED ===== */
+.panel-header {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ===== DIFF BTN FOCUS ===== */
+.diff-btn:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+.normalize-btn:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ===== BETTER SCROLLBAR ===== */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,.4); }
+
+/* ===== IMPROVED PRESET BUTTONS ===== */
+.preset-btn { border-radius: 8px !important; }
+.preset-btn:hover {
+  border-color: var(--accent) !important;
+  background: rgba(0,212,255,.08) !important;
+  color: var(--accent) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,212,255,.2);
+}
+.preset-btn.active-preset {
+  border-color: var(--accent3) !important;
+  background: rgba(168,255,120,.08) !important;
+  color: var(--accent3) !important;
+  box-shadow: 0 0 16px rgba(168,255,120,.2);
+}
+
+/* ===== STAGE CARD HOVER ===== */
+.stage-card { transition: border-color .2s, box-shadow .2s; }
+.stage-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.3); }
+
+/* ===== IMPROVED KPI FONT ===== */
+.kpi-value { letter-spacing: -1px; }
+
+/* ===== BETTER PLACEHOLDER ===== */
+.placeholder { border-style: dashed; animation: none; }
+.placeholder-icon { animation: float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+/* ===== STATUS BADGE ANIMATION ===== */
+#status-badge { transition: all .3s; }
+
 .kpi-card.success {
   background: linear-gradient(135deg, rgba(11,18,32,.9) 0%, rgba(10,26,18,.88) 100%) !important;
 }
 .kpi-card.danger {
   background: linear-gradient(135deg, rgba(11,18,32,.9) 0%, rgba(32,10,13,.88) 100%) !important;
 }
+.kpi-card.warning {
+  background: linear-gradient(135deg, rgba(11,18,32,.9) 0%, rgba(30,24,8,.88) 100%) !important;
+}
+.kpi-card.warning::before { background: linear-gradient(90deg, var(--warning), transparent); }
+.kpi-card.warning::after  { background: var(--warning); }
+.kpi-card.warning:hover   { border-color: rgba(255,209,102,.4); box-shadow: 0 0 24px rgba(255,209,102,.3); }
+.kpi-card.warning .kpi-value { color: var(--warning); text-shadow: 0 0 20px rgba(255,209,102,.4); }
 .kpi-card.info {
   background: linear-gradient(135deg, rgba(11,18,32,.9) 0%, rgba(8,22,36,.88) 100%) !important;
 }
@@ -1328,12 +1414,9 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   border-radius: 20px 20px 0 0;
   padding: 24px 24px 40px;
   width: 100%; max-width: 480px;
-  animation: slideUp .35s cubic-bezier(.22,1,.36,1);
+  animation: slideUpIos .35s cubic-bezier(.22,1,.36,1);
 }
-@keyframes slideUp {
-  from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
+@keyframes slideUpIos {
 .pwa-ios-box h3 {
   font-size: 15px; font-weight: 700; color: #fff;
   margin: 0 0 16px; text-align: center;
@@ -1393,11 +1476,259 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
 #pwa-installed-toast.show {
   opacity: 1; transform: translateX(-50%) translateY(0);
 }
+/* ===== FOOTER MODAL BUTTONS ===== */
+.footer-modal-btn {
+  padding:18px 14px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  cursor:pointer;
+  text-align:center;
+  transition:border-color .2s, background .2s, transform .15s;
+  width:100%;
+}
+.footer-modal-btn:hover { transform: translateY(-2px); }
+.footer-modal-btn.privacy:hover  { border-color:var(--accent);   background:rgba(0,212,255,.05); }
+.footer-modal-btn.disclaimer:hover { border-color:var(--warning); background:rgba(255,209,102,.05); }
+.footer-modal-btn.contact:hover  { border-color:#a8ff78; background:rgba(168,255,120,.05); }
+.footer-modal-btn.profile:hover  { border-color:#b388ff; background:rgba(179,136,255,.05); }
+
+/* ===== MODAL CONTACT LINKS ===== */
+#modal-content a[href*="x.com"]:hover       { border-color: #1d9bf0 !important; }
+#modal-content a[href*="buymeacoffee"]:hover { border-color: #FF813F !important; }
+
+/* ===== PWA STEP5 BUTTON ===== */
+#pwa-step5-btn {
+  transition: transform .15s, box-shadow .15s !important;
+}
+#pwa-step5-btn:hover {
+  transform: scale(1.02) !important;
+  box-shadow: 0 0 30px rgba(0,212,255,.7) !important;
+}
+</style>
+/* ===== TORNADO RUN BUTTON ===== */
+<style>
+.tornado-run-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #b388ff 0%, #7c4dff 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(124,77,255,.3);
+}
+.tornado-run-btn:hover { box-shadow: 0 6px 24px rgba(124,77,255,.5); transform: translateY(-1px); }
+.tornado-run-btn:active { transform: translateY(0); }
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .header, #wizard-overlay, #url-share-bar, #floating-simulate,
+  .mode-switcher, .step-flow, .run-btn, #progress-bar { display: none !important; }
+  .kpi-card { border: 1px solid #ccc !important; background: #fff !important; box-shadow: none !important; }
+  .kpi-value { color: #000 !important; text-shadow: none !important; }
+  .panel { border: 1px solid #ddd !important; background: #fafafa !important; }
+  canvas { max-width: 100% !important; }
+}
+</style>
+<style>
+html { scroll-behavior: smooth; }
+
+/* ===== IMPROVED PARAM SECTION ANIMATION ===== */
+.param-section-body {
+  transition: opacity .25s ease;
+}
+.param-section.collapsed .param-section-body {
+  opacity: 0;
+}
+
+/* ===== KEYBOARD FOCUS STYLES ===== */
+:focus-visible {
+  outline: 2px solid rgba(0,212,255,.6);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* ===== IMPROVED WIZARD CARD ===== */
+.wiz-choice-btn {
+  position: relative;
+  overflow: hidden;
+}
+.wiz-choice-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0,212,255,.05), transparent);
+  opacity: 0;
+  transition: opacity .2s;
+}
+.wiz-choice-btn:hover::after { opacity: 1; }
+
+/* ===== IMPROVED TABLE ROW HOVER ===== */
+.fire-table tbody tr:hover td { color: var(--text); }
+.fire-table tbody tr:hover td:last-child { color: var(--accent3); }
+
+/* ===== DIST BAR ROUNDED ===== */
+.dist-bar { border-radius: 8px; }
+.dist-segment:first-child { border-radius: 8px 0 0 8px; }
+.dist-segment:last-child { border-radius: 0 8px 8px 0; }
+
+/* ===== NUMBER INPUT ENHANCED ===== */
+.param-input-num:hover { border-color: rgba(0,212,255,.4); }
+
+/* ===== STEP FLOW ACTIVE STATE ===== */
+.step-flow a[href="#run-btn"] {
+  background: rgba(0,229,255,.07);
+  border: 1px solid rgba(0,229,255,.2);
+  border-radius: 6px;
+}
 </style>
 </head>
 <body data-mode="beginner">
 
+<!-- ===== MODE SELECTION SPLASH ===== -->
+<div id="mode-splash" style="
+  position:fixed;inset:0;z-index:99999;
+  background:radial-gradient(ellipse 80% 60% at 50% 30%, rgba(0,80,150,.18) 0%, transparent 70%), var(--bg, #050810);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+">
+  <div style="
+    max-width:480px;width:100%;
+    background:var(--surface,#0b1220);
+    border:1px solid var(--border,#1c3050);
+    border-radius:16px;
+    padding:32px 24px 28px;
+    text-align:center;
+    box-shadow:0 8px 48px rgba(0,0,0,.6);
+  ">
+    <div style="font-size:36px;margin-bottom:10px;">📊</div>
+    <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:#00d4ff;letter-spacing:1px;margin-bottom:4px;">FLOW</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.45);letter-spacing:2px;margin-bottom:24px;">資産シミュレーター</div>
+
+    <div style="font-size:15px;font-weight:700;color:#e2eef8;margin-bottom:18px;">
+      どのモードで始めますか？
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button onclick="startWithMode('beginner')" style="
+        padding:16px 18px;border-radius:10px;border:1px solid rgba(0,212,255,.35);
+        background:rgba(0,212,255,.08);color:#e2eef8;cursor:pointer;
+        text-align:left;display:flex;align-items:center;gap:14px;
+        transition:all .2s;font-family:'Noto Sans JP',sans-serif;
+      " onmouseover="this.style.borderColor='rgba(0,212,255,.7)';this.style.background='rgba(0,212,255,.14)';"
+         onmouseout="this.style.borderColor='rgba(0,212,255,.35)';this.style.background='rgba(0,212,255,.08)';">
+        <span style="font-size:26px;">🌱</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#00d4ff;margin-bottom:2px;">初心者モード（おすすめ）</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.6;">ウィザードが年齢・収入・貯蓄を質問します。シミュレーターが初めての方に。</div>
+        </div>
+      </button>
+
+      <button onclick="startWithMode('normal')" style="
+        padding:16px 18px;border-radius:10px;border:1px solid rgba(168,255,120,.25);
+        background:rgba(168,255,120,.05);color:#e2eef8;cursor:pointer;
+        text-align:left;display:flex;align-items:center;gap:14px;
+        transition:all .2s;font-family:'Noto Sans JP',sans-serif;
+      " onmouseover="this.style.borderColor='rgba(168,255,120,.6)';this.style.background='rgba(168,255,120,.1)';"
+         onmouseout="this.style.borderColor='rgba(168,255,120,.25)';this.style.background='rgba(168,255,120,.05)';">
+        <span style="font-size:26px;">📊</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#a8ff78;margin-bottom:2px;">通常モード</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.6;">全ての項目を自分で設定。投資・FIRE計画を詳しく分析したい方に。</div>
+        </div>
+      </button>
+
+      <button onclick="startWithMode('pro')" style="
+        padding:16px 18px;border-radius:10px;border:1px solid rgba(255,110,180,.2);
+        background:rgba(255,110,180,.04);color:#e2eef8;cursor:pointer;
+        text-align:left;display:flex;align-items:center;gap:14px;
+        transition:all .2s;font-family:'Noto Sans JP',sans-serif;
+      " onmouseover="this.style.borderColor='rgba(255,110,180,.5)';this.style.background='rgba(255,110,180,.09)';"
+         onmouseout="this.style.borderColor='rgba(255,110,180,.2)';this.style.background='rgba(255,110,180,.04)';">
+        <span style="font-size:26px;">🔬</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#ff6eb4;margin-bottom:2px;">プロモード</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.6;">感度分析・ヒートマップ等の高度な機能も全て使用可能。上級者向け。</div>
+        </div>
+      </button>
+    </div>
+
+    <div id="splash-returning" style="display:none;margin-top:16px;">
+      <button onclick="resumeSession()" style="
+        width:100%;padding:11px;border-radius:8px;
+        border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);
+        color:rgba(255,255,255,.55);font-size:12px;cursor:pointer;
+        font-family:'Noto Sans JP',sans-serif;transition:all .2s;
+      " onmouseover="this.style.background='rgba(255,255,255,.09)'"
+         onmouseout="this.style.background='rgba(255,255,255,.04)'">
+        🔄 前回の設定を復元して続ける
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // Splash logic — runs before DOMContentLoaded for fast rendering
+  function startWithMode(mode) {
+    const splash = document.getElementById('mode-splash');
+    if (splash) { splash.style.opacity = '0'; splash.style.transition = 'opacity .3s'; setTimeout(() => splash.style.display = 'none', 300); }
     
+    // Store chosen mode
+    localStorage.setItem('fire_sim_mode', mode);
+    localStorage.setItem('splash_seen', '1');
+    
+    if (mode === 'beginner') {
+      // Show wizard — wizard-overlay already visible by default
+      if (typeof setMode === 'function') setMode('beginner');
+    } else {
+      // Hide wizard, go straight to app
+      const wiz = document.getElementById('wizard-overlay');
+      if (wiz) { wiz.style.display = 'none'; wiz.classList.add('hidden'); wiz.style.pointerEvents = 'none'; }
+      const appEl = document.querySelector('.app');
+      if (appEl) { appEl.style.filter = 'none'; appEl.style.pointerEvents = 'auto'; }
+      if (typeof setMode === 'function') setMode(mode);
+    }
+  }
+  
+  function resumeSession() {
+    const splash = document.getElementById('mode-splash');
+    if (splash) { splash.style.opacity = '0'; splash.style.transition = 'opacity .3s'; setTimeout(() => splash.style.display = 'none', 300); }
+    const wiz = document.getElementById('wizard-overlay');
+    if (wiz) { wiz.style.display = 'none'; wiz.classList.add('hidden'); wiz.style.pointerEvents = 'none'; }
+    const appEl = document.querySelector('.app');
+    if (appEl) { appEl.style.filter = 'none'; appEl.style.pointerEvents = 'auto'; }
+    const savedMode = localStorage.getItem('fire_sim_mode') || 'normal';
+    if (typeof setMode === 'function') setMode(savedMode);
+  }
+  
+  window.startWithMode = startWithMode;
+  window.resumeSession = resumeSession;
+
+  // Check on DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', function() {
+    const hasSave = localStorage.getItem('FIRE_SIM_V4_SETTINGS');
+    if (hasSave) {
+      const el = document.getElementById('splash-returning');
+      if (el) el.style.display = 'block';
+    }
+    // If already seen splash and wizard was completed, skip splash
+    if (localStorage.getItem('splash_seen') && localStorage.getItem('wizard_completed') === 'true') {
+      const splash = document.getElementById('mode-splash');
+      if (splash) splash.style.display = 'none';
+    }
+  });
+})();
+</script>
+
 <!-- ===== BEGINNER WIZARD (初心者モード) ===== -->
 <div id="wizard-overlay">
   <div class="wizard-wrap">
@@ -1460,6 +1791,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
         </div>
         <div class="wiz-hint">給与所得者の中央値は約 <strong style="color:var(--accent)">450万円</strong>（2023年・国税庁）</div>
         <div class="wiz-enter-hint">入力後 <kbd>Enter</kbd> で次へ</div>
+        <button onclick="validateCurrentInput()" style="margin-top:16px;width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),#007ab8);border:none;border-radius:10px;color:#000;font-weight:700;font-size:15px;cursor:pointer;font-family:var(--font-body);">次へ →</button>
       </div>
 
       <!-- Step 2: 配偶者情報（共働きのみ表示） -->
@@ -1479,6 +1811,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
         </div>
         <div class="wiz-hint">女性の給与中央値は約 <strong style="color:var(--accent)">280万円</strong>（2023年・国税庁）</div>
         <div class="wiz-enter-hint">入力後 <kbd>Enter</kbd> で次へ</div>
+        <button onclick="validateCurrentInput()" style="margin-top:16px;width:100%;padding:14px;background:linear-gradient(135deg,var(--pink),#cc3399);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:15px;cursor:pointer;font-family:var(--font-body);">次へ →</button>
       </div>
 
       <!-- Step 3: 子供の人数 -->
@@ -1506,6 +1839,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
         </div>
         <div class="wiz-hint">30代の貯蓄中央値は約 <strong style="color:var(--accent)">150万円</strong>（金融広報中央委員会）</div>
         <div class="wiz-enter-hint">入力後 <kbd>Enter</kbd> で診断開始 🚀</div>
+        <button onclick="validateCurrentInput()" style="margin-top:16px;width:100%;padding:16px;background:linear-gradient(135deg,#00e5ff,#0088cc);border:none;border-radius:12px;color:#000;font-weight:700;font-size:16px;cursor:pointer;font-family:var(--font-body);letter-spacing:1px;box-shadow:0 4px 24px rgba(0,212,255,.5);">🚀 診断スタート！</button>
       </div>
 
     </div><!-- /#wiz-cards -->
@@ -1514,7 +1848,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
     <div id="wiz-loading">
       <div class="wiz-spinner"></div>
       <div class="wiz-loading-text" id="wiz-loading-msg">シミュレーション中...</div>
-      <div class="wiz-loading-sub">2,000パターンの人生を試算しています</div>
+      <div class="wiz-loading-sub" id="wiz-loading-sub">2,000パターンの人生を試算しています</div>
     </div>
 
     <button class="wiz-skip" onclick="skipWizard()">詳細設定から自分で入力する →</button>
@@ -1536,40 +1870,44 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
     <div class="header-text">
       <div class="header-sub">あしたの資産予報</div>
       <div class="header-title">FLOW</div>
-      <div class="header-tagline">モンテカルロ法で将来の資産を2,000パターン試算</div>
+      <div class="header-tagline">モンテカルロ法 × マルコフ連鎖で将来の資産を多パターン試算</div>
     </div>
     <div class="header-right">
       <div class="header-badge" id="status-badge">READY</div>
+      <div id="last-saved-label" style="font-size:9px;color:var(--text-dim);font-family:var(--font-mono);text-align:right;line-height:1.5;display:none;">
+        <div>最終保存</div>
+        <div id="last-saved-time" style="color:var(--accent3);"></div>
+      </div>
     </div>
   </div>
 
   <!-- ステップフロー -->
-  <div class="step-flow">
-    <a class="step-item s1" href="#step1-panel">
+  <nav class="step-flow" aria-label="設定ステップ">
+    <a class="step-item s1" href="#step1-panel" aria-label="ステップ1: 基本設定">
       <div class="step-num">1</div>
       <div class="step-text">基本設定</div>
     </a>
-    <span class="step-arrow">›</span>
-    <a class="step-item s2" href="#step2-panel">
+    <span class="step-arrow" aria-hidden="true">›</span>
+    <a class="step-item s2" href="#step2-panel" aria-label="ステップ2: 支出・ライフ">
       <div class="step-num">2</div>
       <div class="step-text">支出・ライフ</div>
     </a>
-    <span class="step-arrow">›</span>
-    <a class="step-item s3" href="#step3-panel">
+    <span class="step-arrow" aria-hidden="true">›</span>
+    <a class="step-item s3" href="#step3-panel" aria-label="ステップ3: 難易度設定">
       <div class="step-num">3</div>
       <div class="step-text">難易度設定</div>
     </a>
-    <span class="step-arrow">›</span>
-    <a class="step-item s4" href="#run-btn" style="background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.2);">
+    <span class="step-arrow" aria-hidden="true">›</span>
+    <a class="step-item s4" href="#run-btn" aria-label="シミュレーション実行" style="background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.2);">
       <div class="step-num">▶</div>
-      <div class="step-text" style="color:var(--accent);font-weight:700;">SIMULATE 実行！</div>
+      <div class="step-text" style="color:var(--accent);font-weight:700;">SIMULATE！</div>
     </a>
-    <span class="step-arrow">›</span>
-    <a class="step-item s5">
+    <span class="step-arrow" aria-hidden="true">›</span>
+    <a class="step-item s5" aria-label="ステップ5: 結果確認">
       <div class="step-num">5</div>
-      <div class="step-text">結果を見る →</div>
+      <div class="step-text">結果を見る</div>
     </a>
-  </div>
+  </nav>
 
   <!-- ===== MODE SWITCHER ===== -->
   <div id="mode-switcher">
@@ -1583,7 +1921,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
       <span class="mode-icon">🔬</span><span class="mode-label">プロ</span>
     </button>
     <div style="flex:2;font-size:10px;color:var(--text-dim);padding:4px 8px;line-height:1.5;" id="mode-desc">
-      シンプル表示：主要グラフと成功率のみ
+      🌱 初心者：ウィザードで簡単設定、主要グラフのみ表示
     </div>
   </div>
 
@@ -1593,6 +1931,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
     <input id="share-url-display" readonly value="設定を共有する..." onclick="this.select()">
     <span id="share-copied-badge">✓ コピー済み</span>
     <button class="share-copy-btn" onclick="copyShareUrl()" title="URLをコピー">コピー</button>
+    <button class="share-icon-btn" onclick="shareToX()" title="Xでシェア" style="font-size:14px;font-weight:700;">𝕏</button>
   </div>
 
   <!-- slider delta tooltip -->
@@ -1604,10 +1943,10 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
 
       <!-- ★ ツール概要ガイド -->
       <div class="panel" id="guide-panel">
-        <div class="panel-header" style="cursor:pointer;justify-content:space-between;" onclick="toggleGuidePanel()">
+        <button class="panel-header" style="cursor:pointer;justify-content:space-between;width:100%;background:none;border:none;text-align:left;" onclick="toggleGuidePanel()" aria-expanded="false" id="guide-toggle-btn">
           <span style="display:flex;align-items:center;gap:8px;"><span>📖</span> このシミュレーターの使い方</span>
           <span id="guide-toggle-icon" style="color:var(--text-dim);font-size:12px;transition:transform .3s;">▾</span>
-        </div>
+        </button>
         <div id="guide-body" style="display:none;">
         <div class="panel-body">
           <p style="font-size:13px;color:var(--text-mid);line-height:1.9;margin-bottom:16px;">
@@ -1689,7 +2028,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
               <span>設定完了度</span><span id="setup-pct">0%</span>
             </div>
             <div id="setup-progress-track" style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
-              <div id="setup-progress-bar-fill" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:2px;transition:width .4s ease;width:20%;"></div>
+              <div id="setup-progress-bar-fill" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:2px;transition:width .4s ease;width:0%;"></div>
             </div>
           </div>
 
@@ -1709,6 +2048,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
     <span id="val-initial-assets" style="display:none;">300</span>
     <input type="number" id="num-initial-assets" class="param-input-num"
            value="300" inputmode="numeric" min="0" max="10000" step="10"
+           autocomplete="off" aria-label="現在の資産（万円）"
            style="width:90px;">
   </div>
   <input type="range" id="initial-assets" min="0" max="10000" step="10" value="300">
@@ -1724,7 +2064,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   </div>
   <input type="range" id="fire-threshold" min="1000" max="50000" step="500" value="10000">
   <div class="range-labels"><span>1,000万</span><span>5億円</span></div>
-  <div class="hint-text">この金額に達すると「FIRE達成」と判定し、働き方を切り替えます。</div>
+  <div class="hint-text">この金額に達すると「FIRE達成」と判定し、働き方を切り替えます。<br>目安：年間支出の25倍（4%ルール）。月25万円なら <b style="color:var(--accent);">7,500万円</b>。</div>
 </div>
 
           <!-- 収入 -->
@@ -1867,15 +2207,14 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
           </div>
 
           <!-- ポートフォリオ & t分布 -->
-          <div class="adv-section pro-only" id="adv-portfolio-section">
-            <button class="adv-toggle" onclick="toggleAdv('adv-portfolio-section')" type="button">
+          <div class="adv-section" id="adv-portfolio-section">
+            <button class="adv-toggle open" onclick="toggleAdv('adv-portfolio-section')" type="button" aria-expanded="true">
               <span class="adv-toggle-left">
                 <span class="adv-toggle-icon">▶</span>
-                <span>📊 ポートフォリオ・リターン分布</span>
+                <span>📊 株式比率・リターン分布</span>
               </span>
-              <span class="adv-badge">ADVANCED</span>
             </button>
-            <div class="adv-body">
+            <div class="adv-body open">
               <div class="adv-body-inner">
           <div class="param-section" style="margin-bottom:0;">
             <div class="param-control">
@@ -1909,14 +2248,14 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
 
           <!-- 性別・寿命設定セクション（高度な設定） -->
 <div class="adv-section normal-only" id="adv-longevity-section" style="margin-bottom:14px;">
-  <button class="adv-toggle" onclick="toggleAdv('adv-longevity-section')" type="button">
+  <button class="adv-toggle open" onclick="toggleAdv('adv-longevity-section')" type="button" aria-expanded="true">
     <span class="adv-toggle-left">
       <span class="adv-toggle-icon">▶</span>
       <span>🧬 寿命・属性設定（高度）</span>
     </span>
     <span class="adv-badge">ADVANCED</span>
   </button>
-  <div class="adv-body">
+  <div class="adv-body open">
     <div class="adv-body-inner">
 <div class="param-section" style="margin-bottom:0">
   <div class="param-section-label">属性設定</div>
@@ -2029,7 +2368,9 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
       </div>
 
       <button class="run-btn" id="run-btn" onclick="runSimulation()">▶ シミュレーションを実行する</button>
-      <div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:8px;">2,000パターンの人生を試算します</div>
+      <div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:8px;" id="run-btn-subtext">
+        <span id="run-nsims-display">2,000</span>パターンの人生を試算します
+      </div>
       <div class="progress-bar" id="progress-bar">
         <div class="progress-fill" id="progress-fill"></div>
       </div>
@@ -2037,6 +2378,15 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
 
     <!-- ===== RIGHT PANEL ===== -->
     <div class="results-area">
+
+      <!-- ★ シミュレーション条件サマリー -->
+      <div class="panel" id="sim-condition-panel" style="display:none;">
+        <div class="panel-header" style="justify-content:space-between;">
+          <span>📋 シミュレーション条件</span>
+          <span id="sim-cond-timestamp" style="font-size:9px;color:var(--text-dim);font-family:var(--font-mono);"></span>
+        </div>
+        <div class="panel-body" id="sim-condition-body" style="padding:14px 16px;"></div>
+      </div>
 
       <!-- ①「いくら必要？」ゴールゲージ -->
       <div class="panel" id="goal-panel">
@@ -2174,14 +2524,18 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
       <!-- ③ チャート -->
       <div class="panel">
         <div class="panel-header" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
-          <span>📈 資産推移シミュレーション</span>
+          <span style="display:flex;align-items:center;gap:8px;">
+            📈 資産推移シミュレーション
+            <span id="sim-count-badge" style="display:none;font-size:9px;padding:2px 7px;background:rgba(168,255,120,.1);border:1px solid rgba(168,255,120,.25);color:var(--accent3);border-radius:3px;font-family:var(--font-mono);"></span>
+          </span>
           <div style="display:flex;align-items:center;gap:8px;">
             <!-- 実質価値トグル -->
             <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text-dim);font-family:var(--font-mono);">
-              <div id="real-toggle-wrap" style="position:relative;width:32px;height:16px;flex-shrink:0;" onclick="toggleRealValue()">
+              <button id="real-toggle-wrap" role="switch" aria-checked="true" aria-label="実質価値表示の切り替え"
+                onclick="toggleRealValue()" style="position:relative;width:32px;height:16px;flex-shrink:0;background:none;border:none;padding:0;cursor:pointer;">
                 <div style="position:absolute;inset:0;background:var(--accent);border-radius:8px;transition:background .2s;" id="real-toggle-bg"></div>
                 <div style="position:absolute;top:2px;left:2px;width:12px;height:12px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.4);transform:translateX(16px);" id="real-toggle-knob"></div>
-              </div>
+              </button>
               実質価値
             </label>
             <span id="chart-legend-note" style="font-size:9px;color:var(--text-dim);letter-spacing:1px;"></span>
@@ -2195,7 +2549,8 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
         <div id="chart-container">
           <div class="placeholder">
             <div class="placeholder-icon">📊</div>
-            <div class="placeholder-text">パラメータを設定して SIMULATE を実行</div>
+            <div class="placeholder-text">パラメータを設定して「▶ シミュレーション実行」を押してください</div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:8px;">あなたの人生プランを<span style="color:var(--accent);">2,000通り</span>試算します</div>
           </div>
         </div>
       </div>
@@ -2336,12 +2691,22 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
             </div>
 
             <!-- カラースケール凡例 -->
-            <div style="display:flex;align-items:center;gap:8px;margin-top:12px;justify-content:center;">
-              <span style="font-size:11px;color:var(--danger);">低 0%</span>
-              <div style="height:10px;flex:1;max-width:200px;border-radius:5px;
-                background:linear-gradient(90deg,#ff4757,#ffd166,#a8ff78);"></div>
-              <span style="font-size:11px;color:var(--accent3);">高 100%</span>
-              <span style="font-size:10px;color:var(--text-dim);margin-left:8px;">FIRE成功率</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:14px;">
+              <div style="font-size:9px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;">FIRE成功率カラースケール</div>
+              <div style="display:flex;align-items:center;gap:8px;width:100%;max-width:320px;">
+                <span style="font-size:10px;color:var(--danger);font-family:var(--font-mono);flex-shrink:0;">0%</span>
+                <div style="position:relative;height:12px;flex:1;border-radius:6px;overflow:visible;
+                  background:linear-gradient(90deg,#ff4757 0%,#ff9a3c 25%,#ffd166 50%,#7fff9a 75%,#a8ff78 100%);">
+                  <!-- 50%マーカー -->
+                  <div style="position:absolute;left:50%;top:-4px;transform:translateX(-50%);font-size:9px;color:var(--text-dim);font-family:var(--font-mono);white-space:nowrap;">50%</div>
+                  <!-- 70%マーカー -->
+                  <div style="position:absolute;left:70%;bottom:-14px;transform:translateX(-50%);font-size:9px;color:#ffd166;font-family:var(--font-mono);white-space:nowrap;">70%</div>
+                  <!-- 90%マーカー -->
+                  <div style="position:absolute;left:90%;bottom:-14px;transform:translateX(-50%);font-size:9px;color:#a8ff78;font-family:var(--font-mono);white-space:nowrap;">90%</div>
+                </div>
+                <span style="font-size:10px;color:var(--accent3);font-family:var(--font-mono);flex-shrink:0;">100%</span>
+              </div>
+              <div style="font-size:9px;color:var(--text-dim);margin-top:8px;">🟡 70%= 最低ライン　🟢 90%= 安全圏</div>
             </div>
           </div>
 
@@ -2354,17 +2719,15 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
 <div class="panel sensitivity-section pro-only" style="margin-top:0;" id="tornado-panel">
   <div class="panel-header">🌪️ 感度分析：トルネードチャート & 安全率</div>
   <div class="panel-body">
-    <p style="font-size:11px;color:var(--text-dim);margin-bottom:14px;">
-      各パラメータを ±10% 変動させたときの最終資産中央値への影響を可視化します。影響度が大きい順に並べたトルネード形状が、リスク要因の優先順位を示します。
+    <p style="font-size:11px;color:var(--text-dim);margin-bottom:14px;line-height:1.7;">
+      各パラメータを ±10% 変動させたときの成功率への影響を可視化します。<br>
+      バーが長いほど「そのパラメータへの依存度が高い」ことを意味します。どこを改善すれば最も効果的かが一目でわかります。
     </p>
 
     <button id="btn-tornado"
             onclick="runTornadoAnalysis()"
-            style="width:100%; padding:14px; background:linear-gradient(135deg,#b388ff 0%,#7c4dff 100%);
-                   border:none; border-radius:6px; color:#fff; font-family:var(--font-mono);
-                   font-size:13px; font-weight:700; letter-spacing:2px; cursor:pointer;
-                   transition:all .25s; margin-bottom:14px;">
-      🌪️ トルネード分析を実行
+            class="tornado-run-btn">
+      🌪️ トルネード分析を実行（シミュレーション要）
     </button>
 
     <!-- 進捗バー -->
@@ -2373,7 +2736,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
     </div>
 
     <!-- トルネードチャート -->
-    <div id="tornado-chart-wrap" style="display:none;position:relative;height:380px;margin-bottom:20px;">
+    <div id="tornado-chart-wrap" style="display:none;position:relative;margin-bottom:20px;">
       <canvas id="tornadoChart"></canvas>
     </div>
 
@@ -2383,13 +2746,13 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
         <!-- 安全率カード -->
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;position:relative;overflow:hidden;">
           <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#a8ff78,transparent);"></div>
-          <div style="font-size:10px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">安全率（Safety Factor）</div>
+          <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">安全率（Safety Factor）</div>
           <div style="font-size:32px;font-weight:700;font-family:var(--font-mono);" id="safety-factor-val">—</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:6px;" id="safety-factor-desc">生涯支出 vs 生涯収入の比率</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:6px;" id="safety-factor-desc">生涯支出 vs 生涯収入の比率</div>
           <div id="safety-factor-def"></div>
           <div id="safety-breakeven"></div>
           <div id="safety-critical"></div>
-          <div style="margin-top:10px;font-size:11px;color:var(--text-dim);">
+          <div style="margin-top:10px;font-size:12px;color:var(--text-dim);">
             <span style="color:#a8ff78;">≥ 1.5</span> 堅牢 ／ 
             <span style="color:#ffd166;">1.2〜1.5</span> 許容 ／ 
             <span style="color:#ff4757;">&lt; 1.0</span> 危険
@@ -2398,10 +2761,10 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
         <!-- トレードオフカード -->
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;position:relative;overflow:hidden;">
           <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#ffd166,transparent);"></div>
-          <div style="font-size:10px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">利回り −1% の補填額</div>
+          <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">利回り −1% の補填額</div>
           <div style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:#ffd166;" id="tradeoff-val">—</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:6px;">年間収入の追加増加が必要</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:4px;" id="tradeoff-desc"></div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:6px;">年間収入の追加増加が必要</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:4px;" id="tradeoff-desc"></div>
         </div>
       </div>
 
@@ -2519,7 +2882,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
       <span style="width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);display:inline-block;flex-shrink:0;"></span>
       レジーム遷移確率
     </span>
-    <button class="normalize-btn" onclick="normalizeAll()">自動正規化</button>
+    <button class="normalize-btn" onclick="normalizeAll()" title="各行の確率の合計を自動的に100%に揃えます">⚡ 自動正規化</button>
   </div>
   <div class="panel-body">
     <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;line-height:1.7;">
@@ -2811,37 +3174,25 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
     <!-- 2. 運営者・法的ページへのリンク（フッター的役割） -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;">
 
-      <button onclick="openModal('privacy')"
-        style="padding:18px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s;width:100%;"
-        onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(0,212,255,0.05)'"
-        onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
+      <button onclick="openModal('privacy')" class="footer-modal-btn privacy">
         <div style="font-size:22px;margin-bottom:6px;">🔒</div>
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;">プライバシーポリシー</div>
         <div style="font-size:11px;color:var(--text-dim);">AdSense・Cookieについて</div>
       </button>
 
-      <button onclick="openModal('disclaimer')"
-        style="padding:18px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s;width:100%;"
-        onmouseover="this.style.borderColor='var(--warning)';this.style.background='rgba(255,209,102,0.05)'"
-        onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
+      <button onclick="openModal('disclaimer')" class="footer-modal-btn disclaimer">
         <div style="font-size:22px;margin-bottom:6px;">⚠️</div>
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;">免責事項</div>
         <div style="font-size:11px;color:var(--text-dim);">投資判断と自己責任について</div>
       </button>
 
-      <button onclick="openModal('contact')"
-        style="padding:18px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s;width:100%;"
-        onmouseover="this.style.borderColor='#a8ff78';this.style.background='rgba(168,255,120,0.05)'"
-        onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
+      <button onclick="openModal('contact')" class="footer-modal-btn contact">
         <div style="font-size:22px;margin-bottom:6px;">✉️</div>
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;">お問い合わせ</div>
         <div style="font-size:11px;color:var(--text-dim);">不具合・改善要望はこちら</div>
       </button>
 
-      <button onclick="openModal('profile')"
-        style="padding:18px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s;width:100%;"
-        onmouseover="this.style.borderColor='#b388ff';this.style.background='rgba(179,136,255,0.05)'"
-        onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
+      <button onclick="openModal('profile')" class="footer-modal-btn profile">
         <div style="font-size:22px;margin-bottom:6px;">👤</div>
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;">運営者情報</div>
         <div style="font-size:11px;color:var(--text-dim);">開発者プロフィール</div>
@@ -2864,6 +3215,35 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
 
 <script>
 // ============================================================
+// グローバルエラーハンドリング
+// ============================================================
+// Suppress ResizeObserver loop limit exceeded error (common Chart.js mobile issue)
+const _origError = window.onerror;
+window.onerror = function(msg, src, line, col, err) {
+  if (typeof msg === 'string' && msg.includes('ResizeObserver loop')) return true;
+  if (_origError) return _origError(msg, src, line, col, err);
+};
+
+window.addEventListener('error', function(e) {
+  if (e && e.message && e.message.includes('ResizeObserver loop')) {
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    return true;
+  }
+}, true);
+
+window.addEventListener('unhandledrejection', e => {
+  const btn = document.getElementById('run-btn');
+  if (btn) { btn.disabled = false; }
+  const badge = document.getElementById('status-badge');
+  if (badge) {
+    badge.textContent = 'ERROR';
+    badge.style.color = 'var(--danger)';
+  }
+  console.error('[FLOW] 未処理のエラー:', e.reason);
+});
+
+// ============================================================
 // ============================================================
 // Advanced Settings Accordion
 // ============================================================
@@ -2873,13 +3253,15 @@ function toggleAdv(sectionId) {
   const btn = section.querySelector('.adv-toggle');
   const body = section.querySelector('.adv-body');
   const isOpen = body.classList.contains('open');
-  
+
   if (isOpen) {
     body.classList.remove('open');
     btn.classList.remove('open');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
   } else {
     body.classList.add('open');
     btn.classList.add('open');
+    if (btn) btn.setAttribute('aria-expanded', 'true');
     // Re-init sliders inside if needed
     section.querySelectorAll('input[type="range"]').forEach(s => updateSliderFill(s));
   }
@@ -2938,6 +3320,15 @@ function flashBadge(text, color) {
   const prevStyle = badge.style.cssText;
   badge.textContent = text;
   badge.style.color = color || 'var(--accent3)';
+  // 保存時刻を更新
+  if (text.startsWith('SAVED')) {
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    const el = document.getElementById('last-saved-time');
+    const wrap = document.getElementById('last-saved-label');
+    if (el) el.textContent = timeStr;
+    if (wrap) wrap.style.display = 'block';
+  }
   _badgeTimer = setTimeout(() => {
     badge.textContent = prevText;
     badge.style.cssText = prevStyle;
@@ -2979,7 +3370,6 @@ function saveParameters() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
     flashBadge('SAVED ✓', 'var(--accent3)');
-    console.log('[FLOW] 設定を保存しました');
   } catch(e) {
     console.warn('[FLOW] 保存失敗:', e);
   }
@@ -3054,7 +3444,6 @@ function loadParameters() {
       } catch(e) { console.warn('[FLOW] ライフステージ復元失敗:', e); }
     }
 
-    console.log('[FLOW] 設定を復元しました');
   } finally {
     _isLoading = false; // ← 必ずフラグを戻す
   }
@@ -3175,8 +3564,13 @@ bindSlider('base-infl',     'val-base-infl',      v=>`${Number(v).toFixed(1)}%`)
 bindSlider('w-working',     'val-w-working',      v=>`${v}%`);
 bindSlider('w-retired',     'val-w-retired',      v=>`${v}%`);
 bindSlider('tdof',          'val-tdof',           v=>Number(v)>=30?'ほぼ正規分布':`t(df=${v})`);
-bindSlider('med-adv',       'val-med-adv',        v=>`${Number(v).toFixed(1)}%/年`);
-bindSlider('nsims',         'val-nsims',          v=>`${Number(v).toLocaleString()}回`);
+bindSlider('med-adv',       'sim-med-val',        v=>`${Number(v).toFixed(1)}%`);
+bindSlider('nsims', 'val-nsims', v => {
+  const n = Number(v).toLocaleString();
+  const el = document.getElementById('run-nsims-display');
+  if (el) el.textContent = n;
+  return `${n}回`;
+});
 // 「現在の資産」の連動は下部のIIFEで一元管理
 
 // ============================================================
@@ -3228,30 +3622,50 @@ function renderTimeline() {
   const maxAge = Math.max(...sorted.map(s=>s.to));
   const span   = Math.max(1, maxAge - minAge);
 
+  // Build non-overlapping segments: advance cursor, clip overlapping stages
   let html = `<div class="tl-bar">`;
   let cursor = minAge;
-  sorted.forEach((s, idx) => {
-    if (s.from > cursor) {
-      // gap
-      const gw = ((s.from - cursor) / span * 100).toFixed(1);
-      html += `<div class="tl-seg" style="width:${gw}%;background:var(--surface3);opacity:.4;font-size:8px;">…</div>`;
+  sorted.forEach((s) => {
+    const segStart = Math.max(s.from, cursor);
+    const segEnd   = s.to;
+    if (segEnd <= segStart) return; // fully overlapped, skip
+
+    if (segStart > cursor) {
+      // gap segment
+      const gw = ((segStart - cursor) / span * 100).toFixed(1);
+      html += `<div class="tl-seg" style="width:${gw}%;background:var(--surface3);opacity:.4;font-size:8px;flex-shrink:0;">…</div>`;
     }
-    const w = (Math.max(0, s.to - s.from) / span * 100).toFixed(1);
+    const w = ((segEnd - segStart) / span * 100).toFixed(1);
     const col = stageColor(expStages.indexOf(s));
-    html += `<div class="tl-seg" style="width:${w}%;background:${col}22;border-left:2px solid ${col};" title="${s.label}: ${s.exp}万円/年">
-      <span style="color:${col};padding:0 4px;">${s.exp}万</span>
+    const shortLabel = s.label.length > 8 ? s.label.slice(0,7)+'…' : s.label;
+    html += `<div class="tl-seg" style="width:${w}%;background:${col}22;border-left:2px solid ${col};flex-shrink:0;" title="${s.label} (${s.from}〜${s.to}歳): ${s.exp}万円/年">
+      <span style="color:${col};padding:0 3px;font-size:8px;white-space:nowrap;overflow:hidden;">${s.exp}万</span>
     </div>`;
-    cursor = s.to;
+    cursor = segEnd;
   });
   html += `</div>`;
-  html += `<div class="tl-labels"><span>${minAge}歳</span><span>${Math.round((minAge+maxAge)/2)}歳</span><span>${maxAge}歳</span></div>`;
+
+  // Age labels: start / quarter / half / three-quarter / end
+  const q1 = Math.round(minAge + span * 0.25);
+  const mid = Math.round(minAge + span * 0.5);
+  const q3 = Math.round(minAge + span * 0.75);
+  html += `<div class="tl-labels"><span>${minAge}歳</span><span>${mid}歳</span><span>${maxAge}歳</span></div>`;
   bar.innerHTML = html;
 }
+
+// Track collapsed state for edu group
+let _eduGroupCollapsed = true;
 
 function renderStages() {
   const container = document.getElementById('expense-stages');
   container.innerHTML = '';
-  expStages.forEach((s, idx) => {
+
+  const normalStages = expStages.filter(s => !s._autoEdu);
+  const eduStages    = expStages.filter(s =>  s._autoEdu);
+
+  // Render normal stages
+  normalStages.forEach((s) => {
+    const idx = expStages.indexOf(s);
     const col = stageColor(idx);
     const card = document.createElement('div');
     card.className = 'stage-card';
@@ -3260,29 +3674,84 @@ function renderStages() {
       <div class="stage-card-top">
         <div class="stage-color-bar" style="background:${col};box-shadow:0 0 8px ${col}55;"></div>
         <input class="stage-label-input" value="${s.label}" placeholder="ステージ名"
-               onchange="updateStage(${s.id},'label',this.value)">
-        <button class="stage-delete-btn" onclick="deleteStage(${s.id})" title="削除">×</button>
+               autocomplete="off" aria-label="ステージ名"
+               oninput="updateStage(${s.id},'label',this.value)">
+        <button class="stage-delete-btn" onclick="deleteStage(${s.id})" title="このステージを削除" aria-label="ステージを削除">×</button>
       </div>
       <div class="stage-fields">
         <div class="stage-field">
           <label>開始年齢</label>
           <input type="number" value="${s.from}" min="0" max="120" step="1"
-                 onchange="updateStage(${s.id},'from',parseInt(this.value))">
+                 autocomplete="off" aria-label="開始年齢"
+                 oninput="updateStage(${s.id},'from',parseInt(this.value))">
         </div>
         <div class="stage-field">
           <label>終了年齢</label>
           <input type="number" value="${s.to}" min="1" max="120" step="1"
-                 onchange="updateStage(${s.id},'to',parseInt(this.value))">
+                 autocomplete="off" aria-label="終了年齢"
+                 oninput="updateStage(${s.id},'to',parseInt(this.value))">
         </div>
         <div class="stage-field">
           <label>年間支出(万)</label>
           <input type="number" value="${s.exp}" min="0" max="5000" step="10"
-                 onchange="updateStage(${s.id},'exp',parseInt(this.value))">
+                 autocomplete="off" aria-label="年間支出（万円）"
+                 oninput="updateStage(${s.id},'exp',parseInt(this.value))">
         </div>
       </div>
     `;
     container.appendChild(card);
   });
+
+  // Render education stages as a collapsible group
+  if (eduStages.length > 0) {
+    const totalEduCost = eduStages.reduce((sum, s) => sum + (s.exp * (s.to - s.from)), 0);
+    const groupDiv = document.createElement('div');
+    groupDiv.style.cssText = 'border:1px solid rgba(0,212,255,.2);border-radius:8px;margin-bottom:8px;overflow:hidden;';
+    
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(0,212,255,.06);cursor:pointer;user-select:none;';
+    header.innerHTML = `
+      <span style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--accent);">
+        <span id="edu-group-arrow" style="display:inline-block;transition:transform .2s;transform:${_eduGroupCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'};">▾</span>
+        🎓 子ども教育費ステージ（${eduStages.length}件）
+      </span>
+      <span style="font-size:11px;color:var(--text-dim);">合計約 ${totalEduCost}万円</span>
+    `;
+    header.addEventListener('click', () => {
+      _eduGroupCollapsed = !_eduGroupCollapsed;
+      const arrow = document.getElementById('edu-group-arrow');
+      const body  = document.getElementById('edu-group-body');
+      if (arrow) arrow.style.transform = _eduGroupCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+      if (body)  body.style.display = _eduGroupCollapsed ? 'none' : 'block';
+    });
+    groupDiv.appendChild(header);
+
+    const body = document.createElement('div');
+    body.id = 'edu-group-body';
+    body.style.display = _eduGroupCollapsed ? 'none' : 'block';
+
+    eduStages.forEach((s) => {
+      const idx = expStages.indexOf(s);
+      const col = stageColor(idx);
+      const card = document.createElement('div');
+      card.style.cssText = 'border-top:1px solid rgba(0,212,255,.1);padding:10px 12px;';
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="width:3px;height:16px;border-radius:2px;background:${col};flex-shrink:0;"></div>
+          <span style="font-size:12px;font-weight:600;color:var(--text);flex:1;">${s.label}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div style="font-size:11px;color:var(--text-dim);">開始: <b style="color:var(--text-mid);">${s.from}歳</b></div>
+          <div style="font-size:11px;color:var(--text-dim);">終了: <b style="color:var(--text-mid);">${s.to}歳</b></div>
+          <div style="font-size:11px;color:var(--text-dim);">年間: <b style="color:var(--accent);">${s.exp}万円</b></div>
+        </div>
+      `;
+      body.appendChild(card);
+    });
+    groupDiv.appendChild(body);
+    container.appendChild(groupDiv);
+  }
+
   renderTimeline();
 }
 
@@ -3352,22 +3821,18 @@ _isLoading = false;
  */
 function handlePresetClick(btn, type) {
     // 1. 全てのプリセットボタンのスタイルをリセット
-    // ※ HTML側でボタンに class="preset-btn" を付与している前提です
     document.querySelectorAll('.preset-btn').forEach(b => {
-        b.style.borderColor = 'var(--border)';
-        b.style.background = 'var(--surface2)';
-        b.style.color = 'var(--text-dim)';
-        b.style.boxShadow = 'none';
-        b.style.transform = 'translateY(0)';
+        b.style.borderColor = '';
+        b.style.background = '';
+        b.style.color = '';
+        b.style.boxShadow = '';
+        b.style.transform = '';
+        b.classList.remove('active-preset');
     });
 
-    // 2. クリックされたボタンをアクティブ（光る）状態にする
+    // 2. クリックされたボタンをアクティブにする
     if (btn) {
-        btn.style.borderColor = 'var(--accent)';
-        btn.style.background = 'rgba(0, 212, 255, 0.1)'; // ほんのりアクセント色
-        btn.style.color = 'var(--accent)';
-        btn.style.boxShadow = 'var(--glow-accent)';
-        btn.style.transform = 'translateY(-2px)'; // 浮き上がる演出
+        btn.classList.add('active-preset');
     }
 
     // 3. 既存のロジックでデータを反映
@@ -3719,6 +4184,92 @@ function renderGoalGauge({ currentAssets, fireThr, assets65, needAt65, surplus65
   `;
 }
 
+// ============================================================
+// シミュレーション条件サマリー
+// ============================================================
+function renderSimConditionSummary({ startAge, initAssets, fireThr, annualIncome, annualIncomeB, isDual,
+    wWork, wRetire, baseInfl, monthlyPension, N, successRate, fireAgeMed, currentDifficulty,
+    children, expStages }) {
+
+  const panel = document.getElementById('sim-condition-panel');
+  const body  = document.getElementById('sim-condition-body');
+  const ts    = document.getElementById('sim-cond-timestamp');
+  if (!panel || !body) return;
+
+  panel.style.display = 'block';
+  const now = new Date();
+  if (ts) ts.textContent = now.toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+
+  const fmt万 = v => {
+    const n = Math.round(v / 10000);
+    return n >= 10000 ? (n/10000).toFixed(1) + '億円' : n.toLocaleString() + '万円';
+  };
+
+  const diffLabels = { hard:'💀 ハード', normal:'📊 普通', easy:'🌈 楽観' };
+  const diffLabel  = diffLabels[currentDifficulty] || currentDifficulty;
+
+  const successColor = successRate >= 0.8 ? '#a8ff78' : successRate >= 0.6 ? '#ffd166' : '#ff4757';
+  const fireAgeText  = fireAgeMed ? fireAgeMed + '歳' : '未達成';
+
+  const eduStages = (expStages||[]).filter(function(s){ return s._autoEdu; });
+  const childText = children && children.length > 0
+    ? children.length + '人（' + eduStages.length + 'ステージ）'
+    : 'なし';
+
+  var workStages   = (expStages||[]).filter(function(s){ return !s._autoEdu && s.from < (fireAgeMed || 60); });
+  var retireStages = (expStages||[]).filter(function(s){ return !s._autoEdu && s.from >= (fireAgeMed || 60); });
+  var workExp   = workStages.length   ? Math.round(workStages.reduce(function(a,s){return a+s.exp;},0)/workStages.length)   : null;
+  var retireExp = retireStages.length ? Math.round(retireStages.reduce(function(a,s){return a+s.exp;},0)/retireStages.length) : null;
+
+  var items = [
+    { icon:'🎂', label:'現在年齢',     value: startAge + '歳',         color:'var(--accent)' },
+    { icon:'💰', label:'現在の資産',   value: fmt万(initAssets),        color:'var(--accent)' },
+    { icon:'🎯', label:'FIRE目標額',   value: fmt万(fireThr),           color:'#ffd166' },
+    { icon:'💼', label:'年収（額面）', value: isDual ? fmt万(annualIncome) + '＋' + fmt万(annualIncomeB) : fmt万(annualIncome), color:'var(--accent3)' },
+    { icon:'📈', label:'株式比率',     value: '現役' + Math.round(wWork*100) + '% / FIRE後' + Math.round(wRetire*100) + '%', color:'var(--text-mid)' },
+    { icon:'💹', label:'インフレ率',   value: (baseInfl*100).toFixed(1) + '%/年', color:'var(--text-mid)' },
+    { icon:'👴', label:'月額年金',     value: Math.round(monthlyPension/10000) + '万円/月', color:'#b388ff' },
+    { icon:'🏫', label:'子ども教育費', value: childText,                color:'var(--text-mid)' },
+    { icon:'🏠', label:'現役時支出',   value: workExp !== null ? '約' + workExp + '万円/年' : '—', color:'var(--text-mid)' },
+    { icon:'🌴', label:'FIRE後支出',   value: retireExp !== null ? '約' + retireExp + '万円/年' : '—', color:'var(--text-mid)' },
+    { icon:'⚙️', label:'市場シナリオ', value: diffLabel,               color:'var(--text-mid)' },
+    { icon:'🔁', label:'試行回数',     value: N.toLocaleString() + '回', color:'var(--text-dim)' },
+  ];
+
+  var adviceText = successRate >= 0.9 ? '✅ 非常に安全な計画です。このまま続けましょう。'
+    : successRate >= 0.8 ? '👍 概ね良好な計画です。支出管理を意識して継続を。'
+    : successRate >= 0.7 ? '⚠️ やや不安定。収入増・支出削減・FIRE目標の見直しを検討してください。'
+    : successRate >= 0.5 ? '🔴 成功率が低めです。設定を見直し、貯蓄率の向上が必要です。'
+    : '💀 計画の大幅な見直しが必要です。';
+
+  var bgColor = successRate >= 0.8 ? 'rgba(168,255,120,.07)' : successRate >= 0.6 ? 'rgba(255,209,102,.07)' : 'rgba(255,71,87,.07)';
+
+  body.innerHTML =
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:14px;">' +
+    items.map(function(it) {
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">' +
+        '<span style="font-size:20px;flex-shrink:0;line-height:1;">' + it.icon + '</span>' +
+        '<div style="min-width:0;">' +
+          '<div style="font-size:11px;color:var(--text-dim);letter-spacing:.3px;margin-bottom:3px;line-height:1.3;">' + it.label + '</div>' +
+          '<div style="font-size:14px;font-weight:700;color:' + it.color + ';font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;">' + it.value + '</div>' +
+        '</div></div>';
+    }).join('') +
+    '</div>' +
+    '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 16px;border-radius:10px;background:' + bgColor + ';border:1px solid ' + successColor + '44;">' +
+      '<div style="text-align:center;min-width:70px;">' +
+        '<div style="font-size:26px;font-weight:700;font-family:var(--font-mono);color:' + successColor + ';line-height:1;">' + (successRate*100).toFixed(1) + '%</div>' +
+        '<div style="font-size:11px;color:var(--text-dim);margin-top:4px;">FIRE成功率</div>' +
+      '</div>' +
+      '<div style="width:1px;height:40px;background:var(--border);flex-shrink:0;"></div>' +
+      '<div style="text-align:center;min-width:70px;">' +
+        '<div style="font-size:26px;font-weight:700;font-family:var(--font-mono);color:#ffd166;line-height:1;">' + fireAgeText + '</div>' +
+        '<div style="font-size:11px;color:var(--text-dim);margin-top:4px;">FIRE年齢（中央値）</div>' +
+      '</div>' +
+      '<div style="flex:1;min-width:180px;font-size:13px;color:var(--text-mid);line-height:1.8;padding-left:4px;">' + adviceText + '</div>' +
+    '</div>';
+}
+
+
 function renderRetireChecklist({ assets65, needAt65, surplus65, pensionAnnual, expAt65, retireYears, monthlyRetire }) {
   const el = document.getElementById('retire-checklist');
   const fmt万 = v => Math.abs(v) >= 1e8 ? (v/1e8).toFixed(1)+'億' : Math.round(v/1e4).toLocaleString()+'万';
@@ -3997,13 +4548,15 @@ let _realValueOn = false;
 
 function toggleRealValue() {
   _realValueOn = !_realValueOn;
-  const bg   = document.getElementById('real-toggle-bg');
-  const knob = document.getElementById('real-toggle-knob');
-  const kpi  = document.getElementById('purchasing-power-kpi');
+  const bg    = document.getElementById('real-toggle-bg');
+  const knob  = document.getElementById('real-toggle-knob');
+  const kpi   = document.getElementById('purchasing-power-kpi');
+  const wrap  = document.getElementById('real-toggle-wrap');
 
   if (bg)   bg.style.background   = _realValueOn ? 'var(--accent)' : 'var(--border)';
   if (knob) knob.style.transform  = _realValueOn ? 'translateX(16px)' : 'translateX(0)';
   if (kpi)  kpi.style.display     = _realValueOn ? 'block' : 'none';
+  if (wrap) wrap.setAttribute('aria-checked', String(_realValueOn));
 
   // Chart.jsのデータセット表示切替
   if (chartInstance) {
@@ -4040,6 +4593,16 @@ function renderActionPlan({ successRate, bankruptRate, fireAgeMed, startAge, sur
   const body  = document.getElementById('action-plan-body');
   if (!panel || !body) return;
   panel.style.display = 'block';
+
+  // NaN/undefined ガード
+  successRate   = isFinite(successRate)   ? successRate   : 0;
+  bankruptRate  = isFinite(bankruptRate)  ? bankruptRate  : 0;
+  surplus65     = isFinite(surplus65)     ? surplus65     : 0;
+  expAt65       = isFinite(expAt65)       ? expAt65       : 0;
+  pensionAnnual = isFinite(pensionAnnual) ? pensionAnnual : 0;
+  assets65      = isFinite(assets65)      ? assets65      : 0;
+  needAt65      = isFinite(needAt65)      ? needAt65      : 0;
+  monthlyRetire = isFinite(monthlyRetire) ? monthlyRetire : 0;
 
   const fmt万 = v => Math.abs(v) >= 1e8 ? (v/1e8).toFixed(1)+'億円' : Math.round(v/1e4).toLocaleString()+'万円';
   const pct   = v => (v*100).toFixed(1) + '%';
@@ -4387,6 +4950,28 @@ const REGIMES = [
 ];
 
 async function runSimulation() {
+  // ── 入力バリデーション ──────────────────────────────────
+  const _age = parseInt(document.getElementById('start-age').value);
+  const _income = parseInt(document.getElementById('income').value);
+  const _assets = parseInt(document.getElementById('initial-assets').value);
+  const _fire = parseInt(document.getElementById('fire-threshold').value);
+  const errors = [];
+  if (isNaN(_age) || _age < 20 || _age > 70) errors.push('・開始年齢が異常です（20〜70歳の範囲で設定してください）');
+  if (isNaN(_income) || _income <= 0) errors.push('・額面年収を入力してください');
+  if (isNaN(_assets) || _assets < 0) errors.push('・現在の資産が異常です');
+  if (isNaN(_fire) || _fire <= 0) errors.push('・FIRE達成目標資産を設定してください');
+  if (errors.length > 0) {
+    const btn2 = document.getElementById('run-btn');
+    btn2.style.background = 'linear-gradient(135deg,#ff4757,#cc2233)';
+    btn2.style.boxShadow = '0 4px 20px rgba(255,71,87,.5)';
+    setTimeout(() => {
+      btn2.style.background = '';
+      btn2.style.boxShadow = '';
+    }, 1500);
+    alert('⚠️ 入力エラー\n\n' + errors.join('\n'));
+    return;
+  }
+
   // Validate TM
   if(tmValues.some(row=>row.reduce((a,b)=>a+b,0)!==100)){
     if(!confirm('遷移確率の合計が100%でない行があります。自動正規化してから実行しますか？')) return;
@@ -4395,10 +4980,11 @@ async function runSimulation() {
 // --- 計算開始と同時に現在の設定を確実に保存 ---
   saveParameters();
 
-
-
   const btn=document.getElementById('run-btn'); btn.disabled=true;
+  btn.textContent = '⏳ 計算中...';
   const badge=document.getElementById('status-badge');
+
+  try {
   badge.textContent='RUNNING';
   badge.style.cssText='display:inline-flex;align-items:center;gap:6px;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--accent);font-size:10px;font-family:var(--font-mono);padding:5px 12px;border-radius:3px;letter-spacing:1.5px;';
   const pBar=document.getElementById('progress-bar'), pFill=document.getElementById('progress-fill');
@@ -4427,9 +5013,6 @@ async function runSimulation() {
   const wWork         =parseInt(document.getElementById('w-working').value)/100;
   const wRetire       =parseInt(document.getElementById('w-retired').value)/100;
   const tDof          =parseInt(document.getElementById('tdof').value);
-  // デバッグ例
-console.log("med-adv element:", document.getElementById('med-adv'));
-// null と表示されたら、そのIDがHTML上に存在しない
   const medAdv        =parseFloat(document.getElementById('med-adv').value)/100;
   const N             =parseInt(document.getElementById('nsims').value);
   const gender        =selectedGender;
@@ -4646,11 +5229,34 @@ if(dead[i]) continue; // skip financials if died this step
   const fireGap = Math.max(0, fireThr - currentAssets);
 
   // ---- Update KPIs ----
-  document.getElementById('kpi-success').textContent   = (nS/N*100).toFixed(1) + '%';
+  const successRate100 = nS/N*100;
+  document.getElementById('kpi-success').textContent   = successRate100.toFixed(1) + '%';
   document.getElementById('kpi-bankrupt').textContent  = (nB/N*100).toFixed(1) + '%';
   document.getElementById('kpi-median').textContent    = mf.toFixed(1) + '億';
   document.getElementById('kpi-fire-age').textContent  = pfa(50);
   document.getElementById('kpi-death-age').textContent = mda;
+
+  // 成功率KPIカードの色を動的に変更（85%超→緑 / 70-85%→黄 / 70%未満→赤）
+  const successCard = document.getElementById('kpi-success')?.closest('.kpi-card');
+  if (successCard) {
+    successCard.classList.remove('success', 'danger', 'warning');
+    if (successRate100 >= 85) {
+      successCard.classList.add('success');
+    } else if (successRate100 >= 70) {
+      successCard.classList.add('warning');
+    } else {
+      successCard.classList.add('danger');
+    }
+  }
+  // 破産率KPIカードの色を動的に変更
+  const bankruptCard = document.getElementById('kpi-bankrupt')?.closest('.kpi-card');
+  if (bankruptCard) {
+    bankruptCard.classList.remove('success', 'danger', 'warning');
+    const bRate = nB/N*100;
+    if (bRate <= 5) bankruptCard.classList.add('success');
+    else if (bRate <= 15) bankruptCard.classList.add('warning');
+    else bankruptCard.classList.add('danger');
+  }
 
   // FIRE残り年数
   const fireAgeMed = medFireAge;
@@ -4687,12 +5293,12 @@ if(dead[i]) continue; // skip financials if died this step
 
   document.getElementById('kpi-monthly-retire').textContent = monthlyRetire.toLocaleString() + '万/月';
 
-  // kpi-sectionはnormal/proモード時のみ表示
-  const kpiSec = document.getElementById('kpi-section');
-  if (kpiSec) {
-    const mode = document.body.getAttribute('data-mode') || 'beginner';
-    kpiSec.style.display = (mode === 'normal' || mode === 'pro') ? 'block' : 'none';
-  }
+  // kpi-sectionはnormal/proモード時のみ表示（setModeと同じロジック）
+  const kpiSec2 = document.getElementById('kpi-section');
+  const bSumm2  = document.getElementById('beginner-summary');
+  const mode2   = document.body.getAttribute('data-mode') || 'beginner';
+  if (kpiSec2) kpiSec2.style.display = (mode2 === 'normal' || mode2 === 'pro') ? 'block' : 'none';
+  if (bSumm2)  bSumm2.style.display  = mode2 === 'beginner' ? 'block' : 'none';
 
   // ---- FIRE Age table ----
   const pctiles = [10, 25, 50, 75, 90];
@@ -4718,6 +5324,14 @@ if(dead[i]) continue; // skip financials if died this step
 
   // ---- Goal ゲージ ----
   renderGoalGauge({ currentAssets, fireThr, assets65, needAt65, surplus65, startAge, fireAgeMed, lifeExp });
+
+  // ---- シミュレーション条件サマリー ----
+  renderSimConditionSummary({
+    startAge, initAssets, fireThr, annualIncome, annualIncomeB, isDual,
+    wWork, wRetire, baseInfl, monthlyPension, N,
+    successRate: nS/N, fireAgeMed, currentDifficulty,
+    children, expStages,
+  });
 
   // ---- 老後チェックリスト ----
   renderRetireChecklist({ assets65, needAt65, surplus65, pensionAnnual, expAt65, retireYears, monthlyRetire });
@@ -4763,7 +5377,8 @@ if(dead[i]) continue; // skip financials if died this step
   cont.innerHTML=`
     <div style="position:relative;">
       <div class="chart-wrapper"><canvas id="myChart"></canvas></div>
-      <button class="chart-camera-btn" onclick="saveChartPNG()" title="グラフを画像として保存">📷</button>
+      <button class="chart-camera-btn" onclick="saveChartPNG()" title="グラフを画像として保存" style="top:10px;right:50px;">📷</button>
+      <button class="chart-camera-btn" onclick="exportSimCSV()" title="シミュレーション結果をCSVでエクスポート" style="top:10px;right:10px;">📊</button>
     </div>
     <div id="minimap-container" class="visible">
       <canvas id="minimapCanvas"></canvas>
@@ -4789,6 +5404,17 @@ if(dead[i]) continue; // skip financials if died this step
   window._lastStartAge = startAge;
 
   if(chartInstance){chartInstance.destroy();chartInstance=null;}
+  
+  // Re-create canvas to avoid stale dimensions on mobile (fixes chart glitch/corruption bug)
+  const chartWrapper = document.querySelector('#chart-container .chart-wrapper');
+  if (chartWrapper) {
+    const oldCanvas = document.getElementById('myChart');
+    if (oldCanvas) {
+      const newCanvas = document.createElement('canvas');
+      newCanvas.id = 'myChart';
+      oldCanvas.replaceWith(newCanvas);
+    }
+  }
 
   const pathDS=[];
   for(let ci=0;ci<Math.min(80,CP);ci++){
@@ -4933,10 +5559,19 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
   // Update URL share
   setTimeout(updateShareUrl, 50);
 
-  badge.textContent='DONE';
+  badge.textContent='DONE ✓';
   badge.style.cssText='display:inline-flex;align-items:center;gap:6px;background:rgba(168,255,120,.1);border:1px solid rgba(168,255,120,.3);color:#a8ff78;font-size:10px;font-family:var(--font-mono);padding:5px 12px;border-radius:3px;letter-spacing:1.5px;';
   btn.disabled=false;
+  btn.textContent = '▶ もう一度シミュレーション';
   pBar.style.display='none';
+  // シム回数バッジを更新
+  const simBadge = document.getElementById('sim-count-badge');
+  if (simBadge) { simBadge.textContent = N.toLocaleString() + '回試算済'; simBadge.style.display = 'inline'; }
+  // ページタイトルにFIRE成功率を反映
+  const successEl = document.getElementById('kpi-success');
+  if (successEl && successEl.textContent !== '—') {
+    document.title = `FLOW | 成功率 ${successEl.textContent} | 資産シミュレーター`;
+  }
 
   // 購買力KPIを更新
   updatePurchasingPowerKPI(baseInfl, T, startAge);
@@ -4960,6 +5595,21 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
       setTimeout(() => c.classList.add('revealed'), i * 60);
     });
   }, 100);
+
+  } catch(err) {
+    console.error('[FLOW] シミュレーションエラー:', err);
+    btn.disabled = false;
+    btn.textContent = '▶ シミュレーションを実行する';
+    const pBar2 = document.getElementById('progress-bar');
+    if (pBar2) pBar2.style.display = 'none';
+    badge.textContent = 'ERROR';
+    badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:rgba(255,71,87,.12);border:1px solid rgba(255,71,87,.3);color:#ff4757;font-size:10px;font-family:var(--font-mono);padding:5px 12px;border-radius:3px;letter-spacing:1.5px;';
+    setTimeout(() => {
+      badge.textContent = 'READY';
+      badge.style.cssText = '';
+    }, 4000);
+    alert('⚠️ シミュレーション中にエラーが発生しました。\nページを再読み込みしてもう一度お試しください。\n\n' + (err?.message || err));
+  }
 }
 // ============================================================
 // ★ V19 BEGINNER SUMMARY
@@ -5057,9 +5707,9 @@ function updateBeginnerSummary({ med, assets65, expAt65, pensionAnnual, successR
 // ---- 1. MODE SWITCHER ----
 let currentMode = 'beginner';
 const MODE_DESCS = {
-  beginner: 'シンプル表示：主要グラフと成功率のみ',
-  normal:   '通常表示：グラフ＋主要指標＋ライフステージ支出',
-  pro:      'プロ表示：全機能解放（感度分析・遷移行列・詳細設定）'
+  beginner: '🌱 初心者：ウィザードで簡単設定、主要グラフと成功率のみ表示',
+  normal:   '📊 通常：グラフ＋主要指標＋ライフステージ設定が利用可能',
+  pro:      '🔬 プロ：全機能解放（感度分析・遷移行列・t分布・詳細設定）'
 };
 
 function setMode(mode) {
@@ -5073,13 +5723,14 @@ function setMode(mode) {
 
   // KPIセクション表示切り替え（シミュレーション済みの場合）
   const kpiSec = document.getElementById('kpi-section');
-  const bSumm = document.getElementById('beginner-summary');
-  if (kpiSec && kpiSec.querySelector('#kpi-success')?.textContent !== '—') {
-    kpiSec.style.display = (mode === 'normal' || mode === 'pro') ? 'block' : 'none';
+  const bSumm  = document.getElementById('beginner-summary');
+  const hasResult = document.getElementById('kpi-success')?.textContent !== '—';
+
+  if (kpiSec) {
+    kpiSec.style.display = (mode === 'normal' || mode === 'pro') && hasResult ? 'block' : 'none';
   }
-  // beginner summaryはbeginnerモード時のみ（かつシミュ済みなら）
-  if (bSumm && bSumm.style.display !== 'none' && mode !== 'beginner') {
-    bSumm.style.display = 'none';
+  if (bSumm) {
+    bSumm.style.display = mode === 'beginner' && hasResult ? 'block' : 'none';
   }
 }
 
@@ -5146,6 +5797,16 @@ function copyShareUrl() {
   }).catch(() => {
     el.select(); document.execCommand('copy');
   });
+}
+
+function shareToX() {
+  const urlEl = document.getElementById('share-url-display');
+  const url = urlEl?.value || location.href;
+  const successEl = document.getElementById('kpi-success');
+  const rate = successEl && successEl.textContent !== '—' ? `FIRE成功率 ${successEl.textContent} ` : '';
+  const text = encodeURIComponent(`${rate}| FLOWで資産シミュレーションしました 📊\n`);
+  const encodedUrl = encodeURIComponent(url);
+  window.open(`https://x.com/intent/tweet?text=${text}&url=${encodedUrl}`, '_blank', 'noopener');
 }
 
 // Load from URL on init
@@ -5363,7 +6024,38 @@ function saveChartPNG() {
   link.click();
 }
 
-// ---- 6. SIGMA BANDS TOGGLE ----
+// ---- CSV EXPORT ----
+function exportSimCSV() {
+  if (!window._lastSimData) {
+    alert('先にシミュレーションを実行してください。');
+    return;
+  }
+  const { med, p10, p25, p75, p90, ages, label } = window._lastSimData;
+  const rows = [['年齢', '10パーセンタイル(億)', '25パーセンタイル(億)', '中央値(億)', '75パーセンタイル(億)', '90パーセンタイル(億)']];
+  const toOku = v => (v / 1e8).toFixed(4);
+  if (ages && med) {
+    for (let i = 0; i < ages.length; i++) {
+      rows.push([
+        ages[i],
+        toOku(p10?.[i] ?? 0),
+        toOku(p25?.[i] ?? 0),
+        toOku(med[i] ?? 0),
+        toOku(p75?.[i] ?? 0),
+        toOku(p90?.[i] ?? 0),
+      ]);
+    }
+  }
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const bom = '\uFEFF'; // Excel対応UTF-8 BOM
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fire_sim_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  flashBadge('CSV出力 ✓', '#a8ff78');
+}
 let _sigmaBandDatasets = [];
 function toggleSigmaBands() {
   const btn = document.getElementById('chart-sigma-btn');
@@ -5666,7 +6358,12 @@ async function runSensitivityAnalysis() {
 
   } catch(e) {
     console.error('ヒートマップエラー:', e);
-    alert('計算中にエラーが発生しました: ' + e.message);
+    const container = document.getElementById('heatmap-canvas-container');
+    if (container) {
+      container.innerHTML = `<div style="padding:24px;text-align:center;color:var(--danger);font-family:var(--font-mono);font-size:12px;">
+        ⚠️ ヒートマップ計算エラー<br><span style="color:var(--text-dim);font-size:11px;">${e.message || e}</span>
+      </div>`;
+    }
   } finally {
     btn.disabled = false;
     btn.textContent = '🔥 再実行';
@@ -6487,12 +7184,15 @@ const MODAL_CONTENT = {
           ['📱 スマホで表示が崩れる','機種名・OSバージョン・ブラウザ名をお知らせください。できる限り対応します。'],
           ['🔢 計算結果の解釈方法','ツール内の「クイックガイド」や「数理モデル解説」パネルをご確認ください。'],
           ['📧 返信がない','スパムフォルダをご確認ください。1週間以上経過しても返信がない場合は再度ご連絡ください。'],
+          ['📊 成功率は何%あれば安全？','一般的には70%以上が「合格ライン」、90%以上が「安全圏」とされます。ただし生活費の柔軟性（支出を減らせる余地）があれば70%でも実質的なリスクは低くなります。'],
+          ['🎯 FIRE達成目標資産はいくらにすれば？','「4%ルール」では年間支出の25倍が目安です。月30万円の生活なら年360万円×25倍＝9,000万円。ただし日本の場合は年金受給があるため、実態に合わせて減額できます。'],
+          ['📁 結果をExcelで分析したい','チャート右上の「📊」ボタンからCSVエクスポートできます。年齢別の中央値・パーセンタイル値が取得できます。'],
         ].map(([q,a])=>`
           <details style="padding:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
             <summary style="padding:10px 12px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);list-style:none;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.02);">
               <span>${q}</span>
             </summary>
-            <div style="padding:10px 12px;font-size:12px;color:var(--text-dim);border-top:1px solid var(--border);background:rgba(255,255,255,0.01);">${a}</div>
+            <div style="padding:10px 12px;font-size:12px;color:var(--text-dim);border-top:1px solid var(--border);background:rgba(255,255,255,0.01);line-height:1.7;">${a}</div>
           </details>
         `).join('')}
       </div>
@@ -7320,7 +8020,13 @@ async function runTornadoAnalysis() {
 
   } catch(err) {
     console.error('トルネード分析エラー:', err);
-    alert('分析中にエラーが発生しました: ' + err.message);
+    const wrap = document.getElementById('tornado-chart-wrap');
+    if (wrap) {
+      wrap.style.display = 'block';
+      wrap.innerHTML = `<div style="padding:24px;text-align:center;color:var(--danger);font-family:var(--font-mono);font-size:12px;">
+        ⚠️ 感度分析エラー<br><span style="color:var(--text-dim);font-size:11px;">${err.message || err}</span>
+      </div>`;
+    }
   } finally {
     progWrap.style.display = 'none';
     btn.disabled = false;
@@ -7331,6 +8037,11 @@ async function runTornadoAnalysis() {
 function drawTornadoChart(results, baseVal) {
   const wrap = document.getElementById('tornado-chart-wrap');
   wrap.style.display = 'block';
+
+  // 行数に応じて高さを動的に決定（1行あたり最低50px、タイトル・凡例分60px追加）
+  const rowH = Math.max(50, Math.min(70, Math.floor(window.innerWidth / results.length / 2)));
+  const dynamicHeight = results.length * rowH + 60;
+  wrap.style.height = dynamicHeight + 'px';
 
   if (tornadoChartInstance) { tornadoChartInstance.destroy(); tornadoChartInstance = null; }
   const oldCanvas = document.getElementById('tornadoChart');
@@ -7545,7 +8256,7 @@ function displaySafetyResults({ safetyFactor, worstVal, planVal, requiredExtraIn
   const defEl = document.getElementById('safety-factor-def');
   if (defEl) {
     defEl.innerHTML = `
-      <div style="font-size:11px;color:var(--text-dim);margin-top:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:4px;line-height:1.7;">
+      <div style="font-size:12px;color:var(--text-dim);margin-top:8px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:6px;line-height:1.8;">
         <b style="color:var(--text);">安全率の定義：</b>生涯総支出に対する生涯総収入（資産含む）の比率ベース。
         <span style="color:#a8ff78;">1.2以上</span>＝安全圏 ／ <span style="color:#ffd166;">1.0〜1.2</span>＝要注意 ／ <span style="color:#ff4757;">1.0未満</span>＝危険
       </div>`;
@@ -7556,7 +8267,7 @@ function displaySafetyResults({ safetyFactor, worstVal, planVal, requiredExtraIn
   if (beEl && breakEven != null) {
     const pct = Math.round((breakEven - 1) * 100);
     beEl.innerHTML = `
-      <div style="font-size:11px;color:var(--text-dim);margin-top:8px;padding:8px 10px;background:rgba(255,71,87,0.05);border:1px solid rgba(255,71,87,0.2);border-radius:4px;line-height:1.7;">
+      <div style="font-size:12px;color:var(--text-dim);margin-top:8px;padding:10px 12px;background:rgba(255,71,87,0.05);border:1px solid rgba(255,71,87,0.2);border-radius:6px;line-height:1.8;">
         📌 <b style="color:var(--warning);">支出ブレークイーブン点：</b>
         現在の支出が <b style="color:#ff4757;">+${pct}%</b> 増加すると安全率が1.0を下回ります
         （現在の${breakEven.toFixed(2)}倍まで許容）
@@ -7567,7 +8278,7 @@ function displaySafetyResults({ safetyFactor, worstVal, planVal, requiredExtraIn
   const critEl = document.getElementById('safety-critical');
   if (critEl && topFactor) {
     critEl.innerHTML = `
-      <div style="font-size:11px;padding:8px 10px;background:rgba(255,209,102,0.07);border:1px solid rgba(255,209,102,0.25);border-radius:4px;margin-top:8px;line-height:1.7;">
+      <div style="font-size:12px;padding:10px 12px;background:rgba(255,209,102,0.07);border:1px solid rgba(255,209,102,0.25);border-radius:6px;margin-top:8px;line-height:1.8;">
         ⚡ <b style="color:#ffd166;">最注目レバー：${topFactor}</b> — この項目が安全率に最も大きな影響を与えています。優先的に改善を検討してください。
       </div>`;
   }
@@ -7586,12 +8297,12 @@ function displaySafetyResults({ safetyFactor, worstVal, planVal, requiredExtraIn
     : '近似計算（先にSIMULATEを実行すると精度向上）';
 
   document.getElementById('worst-scenario-detail').innerHTML = `
-    <span style="color:var(--text-dim);font-size:11px;">${sourceLabel}</span><br><br>
+    <span style="color:var(--text-dim);font-size:12px;">${sourceLabel}</span><br><br>
     計画シナリオ 安全率: <b style="color:#a8ff78;">${planVal.toFixed(2)}</b><br>
     最悪ケース 安全率: <b style="color:#ff4757;">${worstVal.toFixed(2)}</b><br>
     差分: <b style="color:#ffd166;">${(planVal - worstVal).toFixed(2)}</b>
     ${worstSource === 'sim' && lastFinalAssets
-      ? `<br><span style="font-size:11px;color:var(--text-dim);">試行数 ${lastFinalAssets.length}件の下位10%から推定</span>`
+      ? `<br><span style="font-size:12px;color:var(--text-dim);">試行数 ${lastFinalAssets.length}件の下位10%から推定</span>`
       : ''}
   `;
 }
@@ -7786,10 +8497,12 @@ document.addEventListener('DOMContentLoaded', () => {
 function toggleGuidePanel() {
   const body = document.getElementById('guide-body');
   const icon = document.getElementById('guide-toggle-icon');
+  const btn  = document.getElementById('guide-toggle-btn');
   if (!body) return;
   const isOpen = body.style.display !== 'none';
   body.style.display = isOpen ? 'none' : 'block';
   if (icon) icon.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
+  if (btn)  btn.setAttribute('aria-expanded', String(!isOpen));
 }
 
 /* =====================================================
@@ -7907,7 +8620,7 @@ function toggleGuidePanel() {
     }
   }
 
-  function validateCurrentInput() {
+  window.validateCurrentInput = function validateCurrentInput() {
     const steps = getSteps();
     const stepId = steps[currentStep];
     const inp = getEl(stepId)?.querySelector('input[type="number"]');
@@ -7937,11 +8650,18 @@ function toggleGuidePanel() {
     if (skipBtn) skipBtn.style.display = 'none';
     const loadingEl = getEl('wiz-loading');
     loadingEl.style.display = 'flex';
+    // nsims スライダーの値を反映
+    const nsimsEl = document.getElementById('nsims');
+    const nsimsVal = nsimsEl ? parseInt(nsimsEl.value).toLocaleString() : '2,000';
+    const subEl = getEl('wiz-loading-sub');
+    if (subEl) subEl.textContent = nsimsVal + 'パターンの人生を試算しています';
 
     const msgs = [
       '統計データで自動設定中...',
-      '60歳まで働くプランを計算中...',
-      '老後の資産推移をシミュレーション中...',
+      '税金・手取り率を計算中...',
+      '老後の支出パターンを推計中...',
+      '2,000パターンの人生を試算中...',
+      '結果を分析しています...',
     ];
     let mi = 0;
     const msgEl = getEl('wiz-loading-msg');
@@ -8043,7 +8763,15 @@ function toggleGuidePanel() {
       if (typeof setMode === 'function') setMode('beginner');
 
       setTimeout(() => {
-        if (typeof runSimulation === 'function') runSimulation();
+        if (typeof runSimulation === 'function') {
+          runSimulation().then(() => {
+            // シミュレーション完了後、チャートまでスクロール
+            setTimeout(() => {
+              const target = document.getElementById('chart-container') || document.getElementById('beginner-summary');
+              if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 400);
+          }).catch(() => {});
+        }
       }, 300);
 
     }, 1800);
@@ -8091,6 +8819,9 @@ function toggleGuidePanel() {
       if (ov) { ov.style.display = 'none'; ov.classList.add('hidden'); ov.style.pointerEvents = 'none'; }
       const appEl = document.querySelector('.app');
       if (appEl) { appEl.style.filter = 'none'; appEl.style.pointerEvents = 'auto'; }
+      // Also hide splash since returning user
+      const splash = document.getElementById('mode-splash');
+      if (splash) splash.style.display = 'none';
       if (typeof loadParameters === 'function') loadParameters();
       if (typeof _isLoading !== 'undefined') _isLoading = false;
       if (typeof runSimulation === 'function') runSimulation();
@@ -8141,10 +8872,7 @@ function toggleGuidePanel() {
                 color:#000; font-size:14px; font-weight:700; cursor:pointer;
                 font-family:var(--font-mono,monospace);
                 box-shadow:0 0 20px rgba(0,212,255,.4);
-                transition:transform .15s,box-shadow .15s;
               "
-              onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 0 30px rgba(0,212,255,.7)'"
-              onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 0 20px rgba(0,212,255,.4)'"
             >📲 ホーム画面に追加する</button>
             <div id="pwa-step5-already" style="display:none;text-align:center;font-size:12px;color:#a8ff78;margin-top:10px;font-family:var(--font-mono,monospace);">
               ✅ すでにインストール済みです
@@ -8152,10 +8880,10 @@ function toggleGuidePanel() {
           </div>
 
 <!-- 投げ銭ボタン開始 -->
-<div style="margin: 30px 0; text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
-  <p style="font-size: 0.9em; color: #888;">シミュレーターがお役に立ちましたら、開発を応援いただけると嬉しいです！</p>
-  <a href="https://buymeacoffee.com/start.simu" target="_blank" style="text-decoration: none;">
-    <img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=start.simu&button_colour=FF813F&font_colour=ffffff&font_family=Lato&outline_colour=ffffff&coffee_colour=FFDD00" alt="Buy Me A Coffee">
+<div style="margin: 30px 0; text-align: center; border-top: 1px solid var(--border); padding-top: 20px;">
+  <p style="font-size: 0.9em; color: var(--text-dim); margin-bottom: 12px;">シミュレーターがお役に立ちましたら、開発を応援いただけると嬉しいです！</p>
+  <a href="https://buymeacoffee.com/start.simu" target="_blank" rel="noopener" style="text-decoration: none;">
+    <img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=start.simu&button_colour=FF813F&font_colour=ffffff&font_family=Lato&outline_colour=ffffff&coffee_colour=FFDD00" alt="Buy Me A Coffee" style="height:44px;border-radius:8px;">
   </a>
 </div>
 <!-- 投げ銭ボタン終了 -->
