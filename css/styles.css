@@ -1444,7 +1444,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   transform: scale(1.02) !important;
   box-shadow: 0 0 30px rgba(0,212,255,.7) !important;
 }
-</style>
+
 .tornado-run-btn {
   width: 100%;
   padding: 14px;
