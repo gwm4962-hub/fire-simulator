@@ -1638,8 +1638,13 @@ function setDifficulty(mode) {
   // 6. 説明文を更新
   document.getElementById('difficulty-desc').textContent = def.desc;
 
-  // 7. df値と遷移行列スライダー制御（新機能）
-  setDifficultyEnhanced(mode);
+  // 7. df値と遷移行列スライダー制御（コールバック経由でui.jsの関数を呼ぶ）
+  if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.setDifficultyEnhanced === 'function') {
+    _simCallbacks.setDifficultyEnhanced(mode);
+  } else if (typeof setDifficultyEnhanced === 'function') {
+    // フォールバック: ui.jsがグローバルに定義されている場合
+    setDifficultyEnhanced(mode);
+  }
 
   // 8. 定常分布の再計算
   renderRegimeDashboard();
@@ -2339,4 +2344,16 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
     }, 4000);
     alert('⚠️ シミュレーション中にエラーが発生しました。\nページを再読み込みしてもう一度お試しください。\n\n' + (err?.message || err));
   }
+}
+
+// ============================================================
+// initSimCallbacks — simulation.js のコールバック注入口
+//
+// app.js から呼ばれ、ui.js / charts.js など他モジュールの
+// 関数を受け取る。これにより simulation → ui の直接依存を排除。
+// ============================================================
+let _simCallbacks = {};
+
+function initSimCallbacks(callbacks) {
+  _simCallbacks = callbacks || {};
 }

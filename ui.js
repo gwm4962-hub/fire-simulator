@@ -1477,3 +1477,47 @@ function toggleGuidePanel() {
   if (btn)  btn.setAttribute('aria-expanded', String(!isOpen));
 }
 
+
+// ============================================================
+// toggleAdv / updateSliderFill — app.jsから移動
+// (app.jsにも後方互換でシムが残るが、正規定義はここ)
+// ============================================================
+// ※ app.jsに既存の定義があるため、未定義の場合のみ定義する
+if (typeof window._uiHelpersRegistered === 'undefined') {
+  window._uiHelpersRegistered = true;
+
+  // Advanced Settings Accordion
+  window.toggleAdv = function(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    const btn  = section.querySelector('.adv-toggle');
+    const body = section.querySelector('.adv-body');
+    const isOpen = body.classList.contains('open');
+    if (isOpen) {
+      body.classList.remove('open');
+      if (btn) { btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+    } else {
+      body.classList.add('open');
+      if (btn) { btn.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+      section.querySelectorAll('input[type="range"]').forEach(s => updateSliderFill(s));
+    }
+  };
+
+  // Dynamic slider gradient
+  window.updateSliderFill = function(slider) {
+    const min = parseFloat(slider.min) || 0;
+    const max = parseFloat(slider.max) || 100;
+    const val = parseFloat(slider.value);
+    const pct = ((val - min) / (max - min) * 100).toFixed(1);
+    slider.style.setProperty('--pct', pct + '%');
+  };
+}
+
+// ============================================================
+// initUiCallbacks — ui.js のコールバック注入口
+// ============================================================
+let _uiCallbacks = {};
+
+function initUiCallbacks(callbacks) {
+  _uiCallbacks = callbacks || {};
+}

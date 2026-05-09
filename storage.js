@@ -101,20 +101,17 @@ function saveParameters() {
   // 難易度
   s.difficulty = (typeof currentDifficulty !== 'undefined') ? currentDifficulty : 'normal';
 
-  // 遷移行列
-  if (typeof tmValues !== 'undefined') {
-    s.tmValues = JSON.stringify(tmValues);
-  }
+  // 遷移行列（コールバック優先、フォールバックでグローバル参照）
+  const _tmValues = _cb('getTmValues') ?? (typeof tmValues !== 'undefined' ? tmValues : null);
+  if (_tmValues) s.tmValues = JSON.stringify(_tmValues);
 
   // REGIMES
-  if (typeof REGIMES !== 'undefined') {
-    s.regimes = JSON.stringify(REGIMES);
-  }
+  const _REGIMES = _cb('getREGIMES') ?? (typeof REGIMES !== 'undefined' ? REGIMES : null);
+  if (_REGIMES) s.regimes = JSON.stringify(_REGIMES);
 
   // ライフステージ
-  if (typeof expStages !== 'undefined') {
-    s.expenseStages = JSON.stringify(expStages);
-  }
+  const _expStages = _cb('getExpStages') ?? (typeof expStages !== 'undefined' ? expStages : null);
+  if (_expStages) s.expenseStages = JSON.stringify(_expStages);
 
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
@@ -146,49 +143,68 @@ function loadParameters() {
     });
 
     // 性別
-    if (s.gender && typeof setGender === 'function') {
-      setGender(s.gender);
+    if (s.gender) {
+      const _setGender = _cb('setGender') ?? (typeof setGender === 'function' ? setGender : null);
+      if (_setGender) _setGender(s.gender);
     }
 
     // 難易度（TM・REGIMESより先に適用してから後で上書き）
-    if (s.difficulty && typeof setDifficulty === 'function') {
-      setDifficulty(s.difficulty);
+    if (s.difficulty) {
+      const _setDifficulty = _cb('setDifficulty') ?? (typeof setDifficulty === 'function' ? setDifficulty : null);
+      if (_setDifficulty) _setDifficulty(s.difficulty);
     }
 
     // 遷移行列（難易度のデフォルト値を上書き）
-    if (s.tmValues && typeof tmValues !== 'undefined') {
+    const _tmValues = _cb('getTmValues') ?? (typeof tmValues !== 'undefined' ? tmValues : null);
+    if (s.tmValues && _tmValues) {
       try {
         const loaded = JSON.parse(s.tmValues);
         loaded.forEach((row, ri) => {
           row.forEach((v, ci) => {
-            tmValues[ri][ci] = v;
+            _tmValues[ri][ci] = v;
             const sl   = document.getElementById(`tms-${ri}-${ci}`);
             const disp = document.getElementById(`tmv-${ri}-${ci}`);
             if (sl)   sl.value = v;
             if (disp) disp.textContent = v + '%';
           });
-          if (typeof updateSum === 'function') updateSum(ri);
+          const _updateSum = _cb('updateSum') ?? (typeof updateSum === 'function' ? updateSum : null);
+          if (_updateSum) _updateSum(ri);
         });
       } catch(e) { console.warn('[FLOW] TM復元失敗:', e); }
     }
 
     // REGIMES
-    if (s.regimes && typeof REGIMES !== 'undefined') {
+    const _REGIMES = _cb('getREGIMES') ?? (typeof REGIMES !== 'undefined' ? REGIMES : null);
+    if (s.regimes && _REGIMES) {
       try {
         const loaded = JSON.parse(s.regimes);
-        loaded.forEach((r, i) => Object.assign(REGIMES[i], r));
-        if (typeof updateRegimeCards === 'function') updateRegimeCards();
+        loaded.forEach((r, i) => Object.assign(_REGIMES[i], r));
+        const _updateRegimeCards = _cb('updateRegimeCards') ?? (typeof updateRegimeCards === 'function' ? updateRegimeCards : null);
+        if (_updateRegimeCards) _updateRegimeCards();
       } catch(e) { console.warn('[FLOW] REGIMES復元失敗:', e); }
     }
 
     // ライフステージ
-    if (s.expenseStages && typeof expStages !== 'undefined') {
+    if (s.expenseStages) {
       try {
         const loaded = JSON.parse(s.expenseStages);
         if (Array.isArray(loaded) && loaded.length > 0) {
-          expStages = loaded;
-          stageIdCounter = Math.max(...loaded.map(st => st.id || 0), 0);
-          if (typeof renderStages === 'function') renderStages();
+          const _setExpStages = _cb('setExpStages') ?? null;
+          const _setStageIdCounter = _cb('setStageIdCounter') ?? null;
+          if (_setExpStages) {
+            _setExpStages(loaded);
+          } else if (typeof expStages !== 'undefined') {
+            // フォールバック
+            expStages = loaded;
+          }
+          const maxId = Math.max(...loaded.map(st => (typeof st.id === 'number' ? st.id : 0)), 0);
+          if (_setStageIdCounter) {
+            _setStageIdCounter(maxId);
+          } else if (typeof stageIdCounter !== 'undefined') {
+            stageIdCounter = maxId;
+          }
+          const _renderStages = _cb('renderStages') ?? (typeof renderStages === 'function' ? renderStages : null);
+          if (_renderStages) _renderStages();
         }
       } catch(e) { console.warn('[FLOW] ライフステージ復元失敗:', e); }
     }
@@ -212,5 +228,41 @@ function registerAutoSaveListeners() {
 // ---- 後方互換 ----
 const saveAllSettings = saveParameters;
 const loadAllSettings = loadParameters;
-  
-  // ... 以降、既存のロジック ...
+
+// ============================================================
+// initStorage — コールバック注入パターンで循環依存を解消
+//
+// simulation.js / ui.js 側の状態や関数を直接 import する代わりに、
+// app.js が「コールバックオブジェクト」として渡す。
+// これにより storage → simulation の依存が消え、依存グラフが一方向になる。
+//
+// 引数 callbacks の形:
+// {
+//   getREGIMES:          () => REGIMES,       // グローバル配列の参照を返す
+//   getTmValues:         () => tmValues,       // 遷移行列
+//   getExpStages:        () => expStages,      // ライフステージ配列
+//   setExpStages:        (v) => { expStages=v },
+//   getStageIdCounter:   () => stageIdCounter,
+//   setStageIdCounter:   (v) => { stageIdCounter=v },
+//   renderStages:        () => renderStages(),
+//   updateRegimeCards:   () => updateRegimeCards(),
+//   setDifficulty:       (m) => setDifficulty(m),
+//   setGender:           (g) => setGender(g),
+//   updateSum:           (ri) => updateSum(ri),
+//   getCurrentDifficulty:() => currentDifficulty,
+// }
+// ============================================================
+let _storageCallbacks = null;
+
+function initStorage(callbacks) {
+  _storageCallbacks = callbacks;
+}
+
+// REGIMES/tmValues/expStages を安全に取得するヘルパー
+function _cb(name, ...args) {
+  if (_storageCallbacks && typeof _storageCallbacks[name] === 'function') {
+    return _storageCallbacks[name](...args);
+  }
+  // フォールバック: グローバル変数を直接参照（モジュール化前の後方互換）
+  return undefined;
+}

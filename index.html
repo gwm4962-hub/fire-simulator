@@ -1697,10 +1697,53 @@
 </div>
 <!-- 投げ銭ボタン終了 -->
 
+<!-- ===== Android インストール手順モーダル ===== -->
+<div id="pwa-android-modal" style="
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,.75);align-items:center;justify-content:center;
+" onclick="if(event.target===this)pwaCloseAndroidModal()">
+  <div style="
+    background:#0d1829;border:1px solid rgba(0,212,255,.3);border-radius:16px;
+    padding:24px 20px;max-width:340px;width:90%;position:relative;
+  ">
+    <button onclick="pwaCloseAndroidModal()" style="
+      position:absolute;top:12px;right:14px;background:none;border:none;
+      color:rgba(255,255,255,.5);font-size:22px;cursor:pointer;line-height:1;
+    ">×</button>
+    <div style="font-size:22px;margin-bottom:10px;">📲</div>
+    <h3 style="color:#00d4ff;font-size:16px;margin:0 0 14px;">Android でホーム画面に追加</h3>
+    <ol style="color:rgba(255,255,255,.8);font-size:13px;line-height:2;padding-left:18px;margin:0 0 16px;">
+      <li>画面右上の <b style="color:#ffd166;">︙ メニュー</b> をタップ</li>
+      <li><b style="color:#a8ff78;">「アプリをインストール」</b> または<br>
+          <b style="color:#a8ff78;">「ホーム画面に追加」</b> を選択</li>
+      <li>確認ダイアログで <b style="color:#a8ff78;">「インストール」</b> をタップ</li>
+    </ol>
+    <div style="font-size:11px;color:rgba(255,255,255,.4);line-height:1.7;margin-bottom:16px;">
+      ※ Chrome 以外のブラウザや、すでにインストール済みの場合は表示されないことがあります。<br>
+      ※ ページを再読み込みしてから再度お試しください。
+    </div>
+    <button onclick="pwaCloseAndroidModal()" style="
+      width:100%;padding:12px;border:none;border-radius:8px;
+      background:linear-gradient(135deg,#00d4ff,#0099cc);
+      color:#000;font-size:13px;font-weight:700;cursor:pointer;
+    ">閉じる</button>
+  </div>
+</div>
+<!-- ===== Android インストール手順モーダル終了 ===== -->
 
 
-<!-- ===== アプリケーションスクリプト ===== -->
-<!-- 読み込み順序: app(init) → storage → simulation → charts → ui → wizard → pwa -->
+
+<!-- ===== アプリケーションスクリプト =====
+     依存グラフ（一方向のみ・循環依存なし）:
+       storage.js     ─ 依存なし（app.jsからコールバックを受け取るだけ）
+       simulation.js  → storage.js
+       charts.js      → storage.js, simulation.js
+       ui.js          → storage.js, simulation.js, charts.js
+       app.js         → 全モジュール（コールバック注入・HTML onclick公開）
+       wizard.js      → storage.js, simulation.js, charts.js, ui.js
+       splash.js      → charts.js
+       pwa.js         → 独立（SW登録・インストールバナー）
+     ===== -->
 <script src="./app.js"></script>
 <script src="./storage.js"></script>
 <script src="./simulation.js"></script>
