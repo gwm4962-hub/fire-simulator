@@ -1424,3 +1424,12 @@ function initVolatilityDragExplorer() {
   updateVD();
 }
 
+
+// ============================================================
+// initChartsCallbacks — charts.js のコールバック注入口
+// ============================================================
+let _chartsCallbacks = {};
+
+function initChartsCallbacks(callbacks) {
+  _chartsCallbacks = callbacks || {};
+}

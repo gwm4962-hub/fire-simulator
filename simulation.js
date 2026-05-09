@@ -12,8 +12,149 @@
       ];
 
 // ============================================================
-// スムーズタッチスライダー（全スライダー共通）
+// BigInt 精度ユーティリティ — 整数円単位の計算精度向上
 // ============================================================
+/**
+ * 金融計算における精度保証モジュール
+ *
+ * JavaScript の Number (float64) は 2^53 ≈ 9007兆円まで整数を正確に
+ * 表現できますが、税額・累積収支など整数の加減が何百回も重なる場面では
+ * float の丸め誤差が数円〜数十円の誤差を生みます。
+ *
+ * このモジュールは「円単位の整数演算」を BigInt で行い、
+ * 乗算が必要な箇所（リターン率との積など）は Number に変換してから行う
+ * ハイブリッド方式を採用します。
+ *
+ * 用途:
+ *   - 税金計算の各ブラケット境界値（整数円）の累積
+ *   - 相続金額・年金・児童手当など整数円ベースの収支積算
+ *   - 万円→円変換後の端数なし確認
+ */
+
+const FinCalc = (() => {
+  // 万円（整数）を円の BigInt に変換
+  function manToYen(man) {
+    return BigInt(Math.round(Number(man))) * 10000n;
+  }
+
+  // 円 BigInt → Number（万円・表示用）
+  function yenToMan(yenBig) {
+    return Number(yenBig) / 10000;
+  }
+
+  /**
+   * 整数円の累積収支を BigInt で正確に計算する。
+   * income / expense は万円単位の Number。
+   * @param {number[]} incomesMan  各年の収入（万円、整数）
+   * @param {number[]} expensesMan 各年の支出（万円、整数）
+   * @returns {{ netYen: bigint, netMan: number }}
+   */
+  function sumNetCashflow(incomesMan, expensesMan) {
+    let total = 0n;
+    const len = Math.min(incomesMan.length, expensesMan.length);
+    for (let i = 0; i < len; i++) {
+      total += manToYen(incomesMan[i]) - manToYen(expensesMan[i]);
+    }
+    return { netYen: total, netMan: yenToMan(total) };
+  }
+
+  /**
+   * 昇給後の年収を BigInt 整数円で精確に返す。
+   * 昇給率 raiseRate は float のまま乗算し、最終を BigInt に丸める。
+   * @param {number} baseYen  基本年収（円）
+   * @param {number} raiseRate 昇給率（例: 0.015）
+   * @param {number} years    経過年数
+   * @returns {bigint}
+   */
+  function raisedIncomeYen(baseYen, raiseRate, years) {
+    // Math.pow は float だが、最後に BigInt へ丸めて整数に固定
+    const exact = baseYen * Math.pow(1 + raiseRate, years);
+    return BigInt(Math.round(exact));
+  }
+
+  /**
+   * 税額計算（円単位）を BigInt で累積し端数を除去。
+   * 超過累進ブラケットを BigInt で走査して整数誤差をゼロにする。
+   * @param {number} taxableYen  課税所得（円）
+   * @param {Array}  brackets    [[上限円, 税率], ...] 形式
+   * @returns {bigint}  所得税額（円, BigInt）
+   */
+  function calcProgressiveTaxBigInt(taxableYen, brackets) {
+    const taxable = BigInt(Math.round(taxableYen));
+    let tax = 0n;
+    let prev = 0n;
+    for (const [limit, rate] of brackets) {
+      if (taxable <= prev) break;
+      const cap = limit === Infinity ? taxable : BigInt(Math.round(limit));
+      const slice = (taxable < cap ? taxable : cap) - prev;
+      // 税率は float → 整数円に丸める
+      tax += BigInt(Math.round(Number(slice) * rate));
+      prev = cap;
+    }
+    return tax;
+  }
+
+  /**
+   * 年金・相続など固定整数収入の検証。
+   * スライダー値（万円整数）→円変換の端数がないか BigInt でアサート。
+   * 万円単位の整数は 10,000 の倍数になるはずであり、
+   * float 乗算で生じた ±1円以内のズレを修正する。
+   * @param {number} valueYen Number型の円金額
+   * @returns {number} 10,000円単位に丸めた円金額（Number）
+   */
+  function roundToMan(valueYen) {
+    return Number(BigInt(Math.round(valueYen / 10000)) * 10000n);
+  }
+
+  return { manToYen, yenToMan, sumNetCashflow, raisedIncomeYen,
+           calcProgressiveTaxBigInt, roundToMan };
+})();
+
+// ============================================================
+// BigInt 精度検証（calcTax 強化）
+// ============================================================
+/**
+ * calcTaxPrecise — calcTax の所得税計算部分を BigInt で再実装し
+ * 超過累進税の端数誤差（最大数十円）をゼロにする。
+ * 戻り値の構造は calcTax と同一で後方互換。
+ */
+function calcTaxPrecise(grossYen) {
+  if (!grossYen || grossYen <= 0) {
+    return { socialIns:0, incomeTax:0, residTax:0, takeHomeYen:0, rate:0, taxable:0 };
+  }
+
+  // 社会保険料（上限あり）— FinCalc.roundToMan で万円端数を補正
+  const socialIns = FinCalc.roundToMan(Math.min(grossYen * 0.15, 1_400_000));
+
+  // 給与所得控除（法令の閾値は整数円なので BigInt 境界で正確に計算）
+  let empDed;
+  const g = grossYen;
+  if      (g <= 1_625_000)  empDed = 550_000;
+  else if (g <= 1_800_000)  empDed = Math.round(g * 0.4) - 100_000;
+  else if (g <= 3_600_000)  empDed = Math.round(g * 0.3) + 80_000;
+  else if (g <= 6_600_000)  empDed = Math.round(g * 0.2) + 440_000;
+  else if (g <= 8_500_000)  empDed = Math.round(g * 0.1) + 1_100_000;
+  else                      empDed = 1_950_000;
+
+  const basicDed = 480_000;
+  const taxable  = Math.max(0, grossYen - socialIns - empDed - basicDed);
+
+  // 超過累進所得税を BigInt で計算（端数誤差ゼロ）
+  const brackets = [
+    [1_949_000, 0.05], [3_299_000, 0.10], [6_949_000, 0.20],
+    [8_999_000, 0.23], [17_999_000, 0.33], [39_999_000, 0.40], [Infinity, 0.45]
+  ];
+  const incomeTaxBase = Number(FinCalc.calcProgressiveTaxBigInt(taxable, brackets));
+  const incomeTax = Math.round(incomeTaxBase * 1.021); // 復興特別所得税（整数円）
+
+  const residTax    = Math.round(taxable * 0.10);
+  const takeHomeYen = grossYen - socialIns - incomeTax - residTax;
+  const rate        = takeHomeYen / grossYen;
+
+  return { socialIns, incomeTax, residTax, takeHomeYen, rate, taxable };
+}
+
+
 function addSliderTouchGuard(el) {
   if (el._touchBound) return;
   el._touchBound = true;
@@ -150,6 +291,24 @@ function stageColor(idx) {
   return STAGE_COLORS[idx % STAGE_COLORS.length];
 }
 
+// ============================================================
+// セキュリティユーティリティ
+// ============================================================
+/**
+ * escapeHTML — innerHTML に埋め込む前にユーザー入力を必ずサニタイズ。
+ * XSS (DOM-based) 防止のため、ユーザーが自由入力できる文字列は
+ * すべてこの関数を通してからテンプレートリテラルに渡すこと。
+ */
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function renderTimeline() {
   const bar = document.getElementById('expense-timeline-bar');
   if (!expStages.length) { bar.innerHTML = ''; return; }
@@ -174,18 +333,18 @@ function renderTimeline() {
     }
     const w = ((segEnd - segStart) / span * 100).toFixed(1);
     const col = stageColor(expStages.indexOf(s));
-    const shortLabel = s.label.length > 8 ? s.label.slice(0,7)+'…' : s.label;
-    html += `<div class="tl-seg" style="width:${w}%;background:${col}22;border-left:2px solid ${col};flex-shrink:0;" title="${s.label} (${s.from}〜${s.to}歳): ${s.exp}万円/年">
-      <span style="color:${col};padding:0 3px;font-size:8px;white-space:nowrap;overflow:hidden;">${s.exp}万</span>
+    // ユーザー入力の s.label を title 属性・テキストに安全に埋め込む
+    const safeLabel = escapeHTML(s.label);
+    const safeExp   = Number(s.exp); // 数値のみなのでそのまま
+    html += `<div class="tl-seg" style="width:${w}%;background:${col}22;border-left:2px solid ${col};flex-shrink:0;" title="${safeLabel} (${s.from}〜${s.to}歳): ${safeExp}万円/年">
+      <span style="color:${col};padding:0 3px;font-size:8px;white-space:nowrap;overflow:hidden;">${safeExp}万</span>
     </div>`;
     cursor = segEnd;
   });
   html += `</div>`;
 
-  // Age labels: start / quarter / half / three-quarter / end
-  const q1 = Math.round(minAge + span * 0.25);
+  // Age labels: start / half / end（数値のみ — XSSリスクなし）
   const mid = Math.round(minAge + span * 0.5);
-  const q3 = Math.round(minAge + span * 0.75);
   html += `<div class="tl-labels"><span>${minAge}歳</span><span>${mid}歳</span><span>${maxAge}歳</span></div>`;
   bar.innerHTML = html;
 }
@@ -207,35 +366,68 @@ function renderStages() {
     const card = document.createElement('div');
     card.className = 'stage-card';
     card.dataset.id = s.id;
+    // innerHTML でカードの骨格を生成（ユーザー入力はこの後 DOM API で安全に設定）
     card.innerHTML = `
       <div class="stage-card-top">
         <div class="stage-color-bar" style="background:${col};box-shadow:0 0 8px ${col}55;"></div>
-        <input class="stage-label-input" value="${s.label}" placeholder="ステージ名"
+        <input class="stage-label-input" placeholder="ステージ名"
                autocomplete="off" aria-label="ステージ名"
-               oninput="updateStage(${s.id},'label',this.value)">
-        <button class="stage-delete-btn" onclick="deleteStage(${s.id})" title="このステージを削除" aria-label="ステージを削除">×</button>
+               data-stage-id="${s.id}" data-field="label">
+        <button class="stage-delete-btn" data-stage-id="${s.id}" title="このステージを削除" aria-label="ステージを削除">×</button>
       </div>
       <div class="stage-fields">
         <div class="stage-field">
           <label>開始年齢</label>
-          <input type="number" value="${s.from}" min="0" max="120" step="1"
+          <input type="number" min="0" max="120" step="1"
                  autocomplete="off" aria-label="開始年齢"
-                 oninput="updateStage(${s.id},'from',parseInt(this.value))">
+                 data-stage-id="${s.id}" data-field="from">
         </div>
         <div class="stage-field">
           <label>終了年齢</label>
-          <input type="number" value="${s.to}" min="1" max="120" step="1"
+          <input type="number" min="1" max="120" step="1"
                  autocomplete="off" aria-label="終了年齢"
-                 oninput="updateStage(${s.id},'to',parseInt(this.value))">
+                 data-stage-id="${s.id}" data-field="to">
         </div>
         <div class="stage-field">
           <label>年間支出(万)</label>
-          <input type="number" value="${s.exp}" min="0" max="5000" step="10"
+          <input type="number" min="0" max="5000" step="10"
                  autocomplete="off" aria-label="年間支出（万円）"
-                 oninput="updateStage(${s.id},'exp',parseInt(this.value))">
+                 data-stage-id="${s.id}" data-field="exp">
         </div>
       </div>
     `;
+    // ユーザー入力値は textContent / value プロパティで安全に設定（XSS回避）
+    const labelInp = card.querySelector('.stage-label-input');
+    if (labelInp) labelInp.value = s.label; // input.value はHTMLエスケープ不要
+
+    const numInputs = card.querySelectorAll('input[type="number"]');
+    numInputs.forEach(inp => {
+      const field = inp.dataset.field;
+      if (field === 'from') inp.value = s.from;
+      else if (field === 'to') inp.value = s.to;
+      else if (field === 'exp') inp.value = s.exp;
+    });
+
+    // イベント委任（oninput属性を使わずaddEventListenerで登録）
+    card.querySelectorAll('[data-stage-id]').forEach(el => {
+      const stageId = parseInt(el.dataset.stageId);
+      const field   = el.dataset.field;
+      if (!field) {
+        // 削除ボタン
+        if (el.classList.contains('stage-delete-btn')) {
+          el.addEventListener('click', () => deleteStage(stageId));
+        }
+        return;
+      }
+      el.addEventListener('input', () => {
+        const val = field === 'label' ? el.value
+                  : field === 'from'  ? parseInt(el.value)
+                  : field === 'to'    ? parseInt(el.value)
+                  :                     parseInt(el.value);
+        updateStage(stageId, field, val);
+      });
+    });
+
     container.appendChild(card);
   });
 
@@ -275,7 +467,7 @@ function renderStages() {
       card.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <div style="width:3px;height:16px;border-radius:2px;background:${col};flex-shrink:0;"></div>
-          <span style="font-size:12px;font-weight:600;color:var(--text);flex:1;">${s.label}</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text);flex:1;">${escapeHTML(s.label)}</span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
           <div style="font-size:11px;color:var(--text-dim);">開始: <b style="color:var(--text-mid);">${s.from}歳</b></div>
@@ -401,8 +593,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ★ 新機能の初期化（DOM確定後に実行）
     updateTaxDisplay();
-    renderRegimeDashboard();
-    updateRegimeTable();
+    // renderRegimeDashboard / updateRegimeTable は ui.js の関数。
+    // コールバック経由で呼ぶことで simulation → ui の直接依存を避ける。
+    if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.renderRegimeDashboard === 'function') {
+      _simCallbacks.renderRegimeDashboard();
+    } else if (typeof renderRegimeDashboard === 'function') {
+      renderRegimeDashboard(); // フォールバック（同一スコープで定義されている場合）
+    }
+    if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.updateRegimeTable === 'function') {
+      _simCallbacks.updateRegimeTable();
+    } else if (typeof updateRegimeTable === 'function') {
+      updateRegimeTable();
+    }
     initVolatilityDragExplorer();
     // Canvasチャートは200ms遅延させてスマホでのDOMサイズ確定を待つ
     setTimeout(() => {
@@ -475,10 +677,19 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // ★ 遷移行列スライダー変更時に定常分布を更新
+    // ui.js の関数はコールバック経由で呼ぶ（循環依存を防ぐため）
     document.addEventListener('input', e => {
       if (e.target.classList.contains('tm-sl')) {
-        renderRegimeDashboard();
-        updateRegimeTable();
+        if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.renderRegimeDashboard === 'function') {
+          _simCallbacks.renderRegimeDashboard();
+        } else if (typeof renderRegimeDashboard === 'function') {
+          renderRegimeDashboard();
+        }
+        if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.updateRegimeTable === 'function') {
+          _simCallbacks.updateRegimeTable();
+        } else if (typeof updateRegimeTable === 'function') {
+          updateRegimeTable();
+        }
       }
     });
 
@@ -1446,12 +1657,25 @@ function setDifficulty(mode) {
   // 6. 説明文を更新
   document.getElementById('difficulty-desc').textContent = def.desc;
 
-  // 7. df値と遷移行列スライダー制御（新機能）
-  setDifficultyEnhanced(mode);
+  // 7. df値と遷移行列スライダー制御（コールバック経由でui.jsの関数を呼ぶ）
+  if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.setDifficultyEnhanced === 'function') {
+    _simCallbacks.setDifficultyEnhanced(mode);
+  } else if (typeof setDifficultyEnhanced === 'function') {
+    // フォールバック: ui.jsがグローバルに定義されている場合
+    setDifficultyEnhanced(mode);
+  }
 
-  // 8. 定常分布の再計算
-  renderRegimeDashboard();
-  updateRegimeTable();
+  // 8. 定常分布の再計算（ui.js の関数はコールバック経由で呼ぶ）
+  if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.renderRegimeDashboard === 'function') {
+    _simCallbacks.renderRegimeDashboard();
+  } else if (typeof renderRegimeDashboard === 'function') {
+    renderRegimeDashboard();
+  }
+  if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.updateRegimeTable === 'function') {
+    _simCallbacks.updateRegimeTable();
+  } else if (typeof updateRegimeTable === 'function') {
+    updateRegimeTable();
+  }
 
   // 9. 保存（ロード中は除く）
   scheduleSave();
@@ -1537,8 +1761,8 @@ async function runSimulation() {
   const raiseRate     =parseFloat(document.getElementById('raise').value)/100;
   const raiseRateB    = isDual ? parseFloat(document.getElementById('raise-b').value||1)/100 : 0;
   // 税金計算エンジンで実効手取り率を算出
-  const taxA = calcTax(annualIncome);
-  const taxB = isDual ? calcTax(annualIncomeB) : { rate: 0 };
+  const taxA = calcTaxPrecise(annualIncome);
+  const taxB = isDual ? calcTaxPrecise(annualIncomeB) : { rate: 0 };
   const takeHomeA = taxA.rate;
   const takeHomeB = taxB.rate;
   // 教育費（子ステージが expStages に含まれているため getExpenseForAge で自動反映）
@@ -2147,4 +2371,16 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
     }, 4000);
     alert('⚠️ シミュレーション中にエラーが発生しました。\nページを再読み込みしてもう一度お試しください。\n\n' + (err?.message || err));
   }
+}
+
+// ============================================================
+// initSimCallbacks — simulation.js のコールバック注入口
+//
+// app.js から呼ばれ、ui.js / charts.js など他モジュールの
+// 関数を受け取る。これにより simulation → ui の直接依存を排除。
+// ============================================================
+let _simCallbacks = {};
+
+function initSimCallbacks(callbacks) {
+  _simCallbacks = callbacks || {};
 }

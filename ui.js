@@ -247,10 +247,13 @@ const MODAL_CONTENT = {
 };
 
 function openModal(key) {
+  // 許可リスト検証 — 意図しないキーアクセス（プロトタイプ汚染等）を防止
+  const ALLOWED_KEYS = ['privacy', 'disclaimer', 'contact', 'profile'];
+  if (!ALLOWED_KEYS.includes(key)) return;
   const modal = document.getElementById('site-modal');
   const content = document.getElementById('modal-content');
-  if (!modal || !content || !MODAL_CONTENT[key]) return;
-  content.innerHTML = MODAL_CONTENT[key];
+  if (!modal || !content || !Object.prototype.hasOwnProperty.call(MODAL_CONTENT, key)) return;
+  content.innerHTML = MODAL_CONTENT[key]; // MODAL_CONTENT はハードコード定数のため安全
   modal.style.display = 'block';
   document.body.style.overflow = 'hidden';
 }
@@ -540,8 +543,8 @@ function updateTaxDisplay() {
   const isDual = currentHousehold === 'dual';
   const grossB = isDual ? parseInt(document.getElementById('income-b').value || 300) * 10000 : 0;
 
-  const tA = calcTax(grossA);
-  const tB = isDual ? calcTax(grossB) : null;
+  const tA = calcTaxPrecise(grossA);
+  const tB = isDual ? calcTaxPrecise(grossB) : null;
 
   const fmt = v => (v / 10000).toFixed(0) + '万';
   const totalGross = grossA + grossB;
@@ -869,7 +872,7 @@ function runSingleSimFast(cfg) { return runSafetyMarginSim(cfg); }
 // 現在のUI設定からベースラインcfgを作る
 function buildBaselineCfg() {
   const annualIncome = Math.max(1, parseInt(document.getElementById('income').value)||500) * 10000;
-  const taxResult = calcTax(annualIncome);
+  const taxResult = calcTaxPrecise(annualIncome);
   return {
     startAge:      parseInt(document.getElementById('start-age').value)||30,
     initAssets:    (parseInt(document.getElementById('initial-assets').value)||0)*10000,
@@ -925,8 +928,8 @@ async function runTornadoAnalysis() {
     // 感度対象パラメータ
     const factors = [
       { label:'年間収入',
-        plus:  c=>({...c, annualIncome: c.annualIncome*1.10, takeHome: calcTax(c.annualIncome*1.10).rate }),
-        minus: c=>({...c, annualIncome: c.annualIncome*0.90, takeHome: calcTax(c.annualIncome*0.90).rate }) },
+        plus:  c=>({...c, annualIncome: c.annualIncome*1.10, takeHome: calcTaxPrecise(c.annualIncome*1.10).rate }),
+        minus: c=>({...c, annualIncome: c.annualIncome*0.90, takeHome: calcTaxPrecise(c.annualIncome*0.90).rate }) },
       { label:'年間支出',
         plus:  c=>({...c, expScale: Math.max(0.1, c.expScale*0.90) }), // 支出−10%→有利
         minus: c=>({...c, expScale: c.expScale*1.10 }) },
@@ -1192,7 +1195,7 @@ function calcSafetyAndTradeoff(base, planVal) {
   const boostedCfg = {
     ...base,
     annualIncome: base.annualIncome + incomeDelta,
-    takeHome: calcTax(base.annualIncome + incomeDelta).rate,
+    takeHome: calcTaxPrecise(base.annualIncome + incomeDelta).rate,
   };
   const boostedVal = runSafetyMarginSim(boostedCfg);
   const marginGainPerIncome = boostedVal - planVal;
@@ -1474,3 +1477,91 @@ function toggleGuidePanel() {
   if (btn)  btn.setAttribute('aria-expanded', String(!isOpen));
 }
 
+
+// ============================================================
+// toggleAdv / updateSliderFill — app.jsから移動
+// (app.jsにも後方互換でシムが残るが、正規定義はここ)
+// ============================================================
+// ※ app.jsに既存の定義があるため、未定義の場合のみ定義する
+if (typeof window._uiHelpersRegistered === 'undefined') {
+  window._uiHelpersRegistered = true;
+
+  // Advanced Settings Accordion
+  window.toggleAdv = function(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    const btn  = section.querySelector('.adv-toggle');
+    const body = section.querySelector('.adv-body');
+    const isOpen = body.classList.contains('open');
+    if (isOpen) {
+      body.classList.remove('open');
+      if (btn) { btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+    } else {
+      body.classList.add('open');
+      if (btn) { btn.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+      section.querySelectorAll('input[type="range"]').forEach(s => updateSliderFill(s));
+    }
+  };
+
+  // Dynamic slider gradient
+  window.updateSliderFill = function(slider) {
+    const min = parseFloat(slider.min) || 0;
+    const max = parseFloat(slider.max) || 100;
+    const val = parseFloat(slider.value);
+    const pct = ((val - min) / (max - min) * 100).toFixed(1);
+    slider.style.setProperty('--pct', pct + '%');
+  };
+}
+
+// ============================================================
+// updateRegimeTable — 遷移行列の確率をテーブルに反映する
+//
+// HTML に id="regime-table" が存在する場合のみ描画する。
+// 存在しない場合は何もしない（安全なスタブ）。
+// simulation.js からコールバック経由で呼ばれる。
+// ============================================================
+function updateRegimeTable() {
+  const el = document.getElementById('regime-table');
+  if (!el) return; // HTMLに要素がなければ無視
+
+  // tmValues と RNAMES / REMOJI は simulation.js のグローバル変数
+  if (typeof tmValues === 'undefined' || typeof RNAMES === 'undefined') return;
+
+  const labels = (typeof REMOJI !== 'undefined')
+    ? RNAMES.map((n, i) => REMOJI[i] + ' ' + n)
+    : RNAMES;
+  const colors = ['var(--bull)','var(--normal)','var(--bear)','var(--infla)'];
+
+  let html = `
+    <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:var(--font-mono);">
+      <thead>
+        <tr>
+          <th style="padding:6px 8px;text-align:left;color:var(--text-dim);border-bottom:1px solid var(--border);">遷移元 → 先</th>
+          ${labels.map((l, i) => `<th style="padding:6px 8px;text-align:center;color:${colors[i]};border-bottom:1px solid var(--border);">${l}</th>`).join('')}
+          <th style="padding:6px 8px;text-align:center;color:var(--text-dim);border-bottom:1px solid var(--border);">合計</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tmValues.map((row, ri) => {
+          const sum = row.reduce((a, b) => a + b, 0);
+          const sumColor = sum === 100 ? 'var(--success, #a8ff78)' : 'var(--danger, #ff4757)';
+          return `<tr>
+            <td style="padding:6px 8px;color:${colors[ri]};font-weight:700;">${labels[ri]}</td>
+            ${row.map((v, ci) => `<td style="padding:6px 8px;text-align:center;color:${ri === ci ? colors[ci] : 'var(--text-mid)'};">${v}%</td>`).join('')}
+            <td style="padding:6px 8px;text-align:center;color:${sumColor};font-weight:700;">${sum}%</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+
+  el.innerHTML = html;
+}
+
+// ============================================================
+// initUiCallbacks — ui.js のコールバック注入口
+// ============================================================
+let _uiCallbacks = {};
+
+function initUiCallbacks(callbacks) {
+  _uiCallbacks = callbacks || {};
+}
