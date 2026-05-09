@@ -595,6 +595,8 @@ window.addEventListener('DOMContentLoaded', () => {
     updateTaxDisplay();
     renderRegimeDashboard();
     updateRegimeTable();
+    renderRegimeDashboard();
+    updateRegimeTable();
     initVolatilityDragExplorer();
     // Canvasチャートは200ms遅延させてスマホでのDOMサイズ確定を待つ
     setTimeout(() => {
@@ -669,6 +671,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // ★ 遷移行列スライダー変更時に定常分布を更新
     document.addEventListener('input', e => {
       if (e.target.classList.contains('tm-sl')) {
+        renderRegimeDashboard();
+        updateRegimeTable();
         renderRegimeDashboard();
         updateRegimeTable();
       }
@@ -797,6 +801,160 @@ function tRandom(df) {
   // Normalise variance: Var(t_df) = df/(df-2)  →  divide by sqrt(df/(df-2))
   const scale=(df>2)?Math.sqrt(df/(df-2)):1;
   return raw/scale;
+}
+
+// ============================================================
+// 多変量t分布サンプラー（2変数 Cholesky 分解ベース）
+//
+// 既存コードの「zBondCorr = corr * zStock + sqrt(1-corr²) * zBond」は
+// 2×2 Cholesky 分解と等価だが、以下の関数で明示的に実装することで
+// ① テスト可能な純粋関数として切り出す
+// ② 将来的に N 変数への拡張が容易になる
+// ③ zStock / zBond の自由度を個別制御できる
+//
+// 引数:
+//   { mu: [μ₁, μ₂], sigma: [σ₁, σ₂], corr: ρ, df: 自由度 }
+//   すべて変量は「単位分散 t(df) に正規化済み」を仮定。
+//   corr は [-1, 1] の相関係数。
+//
+// 戻り値: [r₁, r₂]  各資産クラスの年間リターン（小数）
+// ============================================================
+function samplingFromBivariateT({ mu, sigma, corr, df }) {
+  // --- Step 1: 独立した t(df) ショック 2 本を生成 ---
+  const z1 = tRandom(df);
+  const z2 = tRandom(df);
+
+  // --- Step 2: Cholesky 分解で相関を注入 ---
+  // 2×2 相関行列 [[1, ρ], [ρ, 1]] の Cholesky 因子:
+  //   L = [[1, 0], [ρ, sqrt(1-ρ²)]]
+  // → z_corr = L × [z1, z2]ᵀ
+  const rho   = Math.max(-0.999, Math.min(0.999, corr ?? 0));
+  const z1c   = z1;                                             // 1列目はそのまま
+  const z2c   = rho * z1 + Math.sqrt(Math.max(0, 1 - rho * rho)) * z2;
+
+  // --- Step 3: μ + σ × z でリターンを生成 ---
+  const r1 = mu[0] + sigma[0] * z1c;
+  const r2 = mu[1] + sigma[1] * z2c;
+
+  return [r1, r2];
+}
+
+
+// ============================================================
+// 一時イベント（タイムライン）管理システム
+//
+// expStages が「期間ベースの継続支出」を管理するのに対し、
+// oneTimeEvents は「特定年だけ発生する一時収支」を管理する。
+//
+// データ構造:
+//   { id, age, amount, type, label }
+//   - age:    発生年齢（整数）
+//   - amount: 収支金額（万円、正=収入、負=支出）
+//   - type:   'income' | 'expense' | 'asset'（資産増減）
+//   - label:  UI 表示名
+//
+// 利用例:
+//   住宅購入（-3,000万円、40歳）
+//   退職金受取（+1,500万円、60歳）
+//   大規模修繕（-800万円、55歳）
+//   相続（+2,000万円、55歳）
+// ============================================================
+let oneTimeEvents = [];
+let oneTimeEventIdCounter = 0;
+
+/**
+ * 指定年齢の一時キャッシュフロー合計を円で返す。
+ * simulation.js の年次ループから呼ばれる純粋関数。
+ * @param {number} age  シミュレーション中の現在年齢
+ * @param {Array}  evs  oneTimeEvents 配列（デフォルトはグローバル変数）
+ * @returns {number}    円単位のキャッシュフロー（正=収入、負=支出）
+ */
+function getOneTimeEventCashflow(age, evs = oneTimeEvents) {
+  return evs
+    .filter(e => e.age === age)
+    .reduce((sum, e) => sum + e.amount * 10_000, 0); // 万円→円
+}
+
+/**
+ * 一時イベントを追加する。
+ * @param {{ age, amount, type, label }} ev
+ * @returns {number}  新しいイベントの id
+ */
+function addOneTimeEvent(ev = {}) {
+  const id = ++oneTimeEventIdCounter;
+  oneTimeEvents.push({
+    id,
+    age:    parseInt(ev.age)    || 45,
+    amount: parseFloat(ev.amount) || 0,
+    type:   ev.type  || 'expense',
+    label:  ev.label || '一時イベント',
+  });
+  renderOneTimeEventList();
+  return id;
+}
+
+/**
+ * 一時イベントを削除する。
+ * @param {number} id
+ */
+function removeOneTimeEvent(id) {
+  oneTimeEvents = oneTimeEvents.filter(e => e.id !== id);
+  renderOneTimeEventList();
+}
+
+/**
+ * 一時イベントの一覧を id="one-time-event-list" に描画する。
+ * HTMLに要素がなければ何もしない（安全なスタブ）。
+ */
+function renderOneTimeEventList() {
+  const el = document.getElementById('one-time-event-list');
+  if (!el) return;
+
+  if (oneTimeEvents.length === 0) {
+    el.innerHTML = `<div style="font-size:11px;color:var(--text-dim);padding:8px 0;">
+      一時イベントはまだ追加されていません。<br>
+      住宅購入・退職金・相続など特定年のみ発生する収支を追加できます。
+    </div>`;
+    return;
+  }
+
+  const typeIcon  = { income: '💰', expense: '💸', asset: '🏦' };
+  const typeColor = { income: '#a8ff78', expense: '#ff4757', asset: '#00d4ff' };
+  const typeLabel = { income: '収入', expense: '支出', asset: '資産変動' };
+
+  el.innerHTML = oneTimeEvents
+    .sort((a, b) => a.age - b.age)
+    .map(e => {
+      const color   = typeColor[e.type]  || 'var(--text-mid)';
+      const icon    = typeIcon[e.type]   || '📌';
+      const tLabel  = typeLabel[e.type]  || e.type;
+      const amtStr  = (e.amount >= 0 ? '+' : '') + e.amount.toLocaleString() + '万円';
+      const safeLabel = escapeHTML ? escapeHTML(e.label) : String(e.label);
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;
+                    background:var(--surface2);border-radius:6px;border:1px solid var(--border);
+                    margin-bottom:6px;" data-ote-id="${e.id}">
+          <span style="font-size:16px;flex-shrink:0;">${icon}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:600;color:var(--text);
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${safeLabel}
+            </div>
+            <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);">
+              ${e.age}歳 ／ <span style="color:${color};">${amtStr}</span>
+              <span style="color:var(--text-dim);"> (${tLabel})</span>
+            </div>
+          </div>
+          <button onclick="removeOneTimeEvent(${e.id})"
+                  aria-label="${safeLabel}を削除"
+                  style="background:none;border:none;color:var(--text-dim);
+                         cursor:pointer;font-size:16px;padding:4px;
+                         border-radius:4px;flex-shrink:0;line-height:1;"
+                  onmouseover="this.style.color='var(--danger)'"
+                  onmouseout="this.style.color='var(--text-dim)'">×</button>
+        </div>`;
+    })
+    .join('');
 }
 
 // ============================================================
@@ -1803,6 +1961,9 @@ function setDifficulty(mode) {
   // 8. 定常分布の再計算
   renderRegimeDashboard();
   updateRegimeTable();
+  // 8. 定常分布の再計算
+  renderRegimeDashboard();
+  updateRegimeTable();
 
   // 9. 保存（ロード中は除く）
   scheduleSave();
@@ -1985,9 +2146,18 @@ if(dead[i]) continue; // skip financials if died this step
       // samplingFromBivariateT で相関付き2変量t分布からリターンをサンプリング。
       // 引数の corr はレジームごとに定義された株式・債券間の相関係数。
       // tDof は UI スライダーで制御可能な自由度パラメータ。
+      // samplingFromBivariateT で相関付き2変量t分布からリターンをサンプリング。
+      // 引数の corr はレジームごとに定義された株式・債券間の相関係数。
+      // tDof は UI スライダーで制御可能な自由度パラメータ。
       let stockPart = assets[i] * w;
       let bondPart  = assets[i] * (1 - w);
 
+      const [retS, retB] = samplingFromBivariateT({
+        mu:    rg.mu,
+        sigma: rg.sigma,
+        corr:  rg.corr,
+        df:    tDof,
+      });
       const [retS, retB] = samplingFromBivariateT({
         mu:    rg.mu,
         sigma: rg.sigma,
@@ -2021,6 +2191,10 @@ if(dead[i]) continue; // skip financials if died this step
       if(age>=65) income+=(monthlyPension*12)*0.85*Math.pow(1.005,age-65);
       if(age===inheritA[i*2])   income+=inheritAmt;
       if(age===inheritA[i*2+1]) income+=inheritAmt;
+      // ---- 一時イベント（タイムライン）キャッシュフロー ----
+      // oneTimeEvents 配列に登録された特定年のみ発生する収支（住宅購入・退職金・修繕費など）
+      // 全シミュ経路で同一適用（確定イベント）。正=収入、負=費用として income に加算する。
+      income += getOneTimeEventCashflow(age);
       // ---- 一時イベント（タイムライン）キャッシュフロー ----
       // oneTimeEvents 配列に登録された特定年のみ発生する収支（住宅購入・退職金・修繕費など）
       // 全シミュ経路で同一適用（確定イベント）。正=収入、負=費用として income に加算する。
@@ -2510,6 +2684,22 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
     });
   }
 
+  // チャートのアクセシブルテキストサマリーを更新（charts.js）
+  if (typeof updateChartA11ySummary === 'function') {
+    const age65idx = Math.max(0, 65 - startAge);
+    updateChartA11ySummary({
+      startAge,
+      successRate:        nS / N,
+      bankruptRate:       nB / N,
+      medianFireAge:      farr.length > 0 ? farr[Math.floor(farr.length * .5)] + '歳' : '未達成',
+      medianFinalAssets:  mf,
+      medianDeathAge:     mda,
+      medAt65:            age65idx < T ? med[age65idx] : 0,
+      pct10At65:          age65idx < T ? p10[age65idx] : 0,
+      pct90At65:          age65idx < T ? p90[age65idx] : 0,
+    });
+  }
+
   // 結果エリアへスムーズスクロール（スマホで特に有効）
   setTimeout(() => {
     const isBeginner = document.body.getAttribute('data-mode') === 'beginner';
@@ -2551,6 +2741,15 @@ let _simCallbacks = {};
 function initSimCallbacks(callbacks) {
   _simCallbacks = callbacks || {};
 }
+
+// ── 一時イベント・バリデーター関連のグローバル公開 ──────────────
+// app.js の expose リストへの追加も忘れずに（下記は直接登録）
+window.addOneTimeEvent    = addOneTimeEvent;
+window.removeOneTimeEvent = removeOneTimeEvent;
+window.renderOneTimeEventList = renderOneTimeEventList;
+// samplingFromBivariateT と getOneTimeEventCashflow はテストから参照されるため公開
+window.samplingFromBivariateT  = samplingFromBivariateT;
+window.getOneTimeEventCashflow = getOneTimeEventCashflow;
 
 // ── 一時イベント・バリデーター関連のグローバル公開 ──────────────
 // app.js の expose リストへの追加も忘れずに（下記は直接登録）

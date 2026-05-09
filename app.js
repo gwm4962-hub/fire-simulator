@@ -156,6 +156,11 @@ window.addEventListener('load', function initModules() {
     'pwaTriggerInstall', 'pwaDismissBanner', 'pwaCloseIosModal', 'pwaStep5Install',
     // ui.js で定義。simulation.js からコールバック経由で呼ぶために window にも公開。
     'renderRegimeDashboard', 'updateRegimeTable',
+    // validator.js — バリデーター層
+    'validateField', 'validateSimParams', 'validateOneTimeEvent',
+    'validateWizardInput', 'UIValidator',
+    // simulation.js — 一時イベントタイムライン
+    'addOneTimeEvent', 'removeOneTimeEvent', 'renderOneTimeEventList',
   ];
   expose.forEach(name => {
     if (typeof window[name] === 'undefined' && typeof eval(name) !== 'undefined') {
