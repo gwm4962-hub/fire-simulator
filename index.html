@@ -6535,11 +6535,7 @@ async function runTornadoAnalysis() {
   } finally {
     const progWrap = document.getElementById('tornado-progress-wrap');
     progWrap.style.display = 'none';
-    const btn = document.getElementById('btn-tornado');
     btn.disabled = false;
-    const label = btn.querySelector('.label');
-    if (label) {
-      label.textContent = 'トルネード分析を実行（シミュレーション要）';
     }
   }
 }
