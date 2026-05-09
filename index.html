@@ -1187,31 +1187,57 @@
         </div>
       </div>
 
+
 <!-- ★ トルネードチャート & 安全率パネル -->
 <div class="panel sensitivity-section pro-only" style="margin-top:0;" id="tornado-panel">
-  <div class="panel-header">🌪️ 感度分析：トルネードチャート & 安全率</div>
-  <div class="panel-body">
-    <p style="font-size:11px;color:var(--text-dim);margin-bottom:14px;line-height:1.7;">
-      各パラメータを ±10% 変動させたときの成功率への影響を可視化します。<br>
-      バーが長いほど「そのパラメータへの依存度が高い」ことを意味します。どこを改善すれば最も効果的かが一目でわかります。
-    </p>
+  <div class="panel-header">🌪️ 感度分析：トルネードチャート & 安全率</div>
+  <div class="panel-body">
+    <p style="font-size:11px;color:var(--text-dim);margin-bottom:14px;line-height:1.7;">
+      各パラメータを ±10% 変動させたときの成功率への影響を可視化します。<br>
+      バーが長いほど「そのパラメータへの依存度が高い」ことを意味します。どこを改善すれば最も効果的かが一目でわかります。
+    </p>
 
 <button id="btn-tornado" 
-        onclick="runTornadoAnalysis()" 
-        class="tornado-run-btn">
-  <span>🌪️</span>
-  <span class="label">トルネード分析を実行（シミュレーション要）</span>
+        onclick="runTornadoAnalysis()" 
+        class="tornado-run-btn">
+  <span>🌪️</span>
+  <span class="label">トルネード分析を実行（シミュレーション要）</span>
 </button>
 
-    <!-- 進捗バー -->
-    <div id="tornado-progress-wrap" style="display:none;background:var(--border);border-radius:2px;height:4px;margin-bottom:14px;">
-      <div id="tornado-progress-bar" style="width:0%;height:100%;background:#b388ff;transition:width 0.15s;"></div>
-    </div>
+    <!-- 進捗バー -->
+    <div id="tornado-progress-wrap" style="display:none;background:var(--border);border-radius:2px;height:4px;margin-bottom:14px;">
+      <div id="tornado-progress-bar" style="width:0%;height:100%;background:#b388ff;transition:width 0.15s;"></div>
+    </div>
 
-    <!-- トルネードチャート -->
-    <div id="tornado-chart-wrap" style="display:none;position:relative;margin-bottom:20px;">
-      <canvas id="tornadoChart"></canvas>
-    </div>
+    <!-- トルネードチャート -->
+    <div id="tornado-chart-wrap" style="display:none;position:relative;margin-bottom:20px;">
+      <canvas id="tornadoChart"></canvas>
+    </div>
+<!-- ★ トルネードチャート & 安全率パネル -->
+<div class="panel sensitivity-section pro-only" style="margin-top:0;" id="tornado-panel">
+  <div class="panel-header">🌪️ 感度分析：トルネードチャート & 安全率</div>
+  <div class="panel-body">
+    <p style="font-size:11px;color:var(--text-dim);margin-bottom:14px;line-height:1.7;">
+      各パラメータを ±10% 変動させたときの成功率への影響を可視化します。<br>
+      バーが長いほど「そのパラメータへの依存度が高い」ことを意味します。どこを改善すれば最も効果的かが一目でわかります。
+    </p>
+
+<button id="btn-tornado" 
+        onclick="runTornadoAnalysis()" 
+        class="tornado-run-btn">
+  <span>🌪️</span>
+  <span class="label">トルネード分析を実行（シミュレーション要）</span>
+</button>
+
+    <!-- 進捗バー -->
+    <div id="tornado-progress-wrap" style="display:none;background:var(--border);border-radius:2px;height:4px;margin-bottom:14px;">
+      <div id="tornado-progress-bar" style="width:0%;height:100%;background:#b388ff;transition:width 0.15s;"></div>
+    </div>
+
+    <!-- トルネードチャート -->
+    <div id="tornado-chart-wrap" style="display:none;position:relative;margin-bottom:20px;">
+      <canvas id="tornadoChart"></canvas>
+    </div>
 
     <!-- 安全率 & トレードオフ -->
     <div id="safety-section" style="display:none;">
