@@ -1514,6 +1514,50 @@ if (typeof window._uiHelpersRegistered === 'undefined') {
 }
 
 // ============================================================
+// updateRegimeTable — 遷移行列の確率をテーブルに反映する
+//
+// HTML に id="regime-table" が存在する場合のみ描画する。
+// 存在しない場合は何もしない（安全なスタブ）。
+// simulation.js からコールバック経由で呼ばれる。
+// ============================================================
+function updateRegimeTable() {
+  const el = document.getElementById('regime-table');
+  if (!el) return; // HTMLに要素がなければ無視
+
+  // tmValues と RNAMES / REMOJI は simulation.js のグローバル変数
+  if (typeof tmValues === 'undefined' || typeof RNAMES === 'undefined') return;
+
+  const labels = (typeof REMOJI !== 'undefined')
+    ? RNAMES.map((n, i) => REMOJI[i] + ' ' + n)
+    : RNAMES;
+  const colors = ['var(--bull)','var(--normal)','var(--bear)','var(--infla)'];
+
+  let html = `
+    <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:var(--font-mono);">
+      <thead>
+        <tr>
+          <th style="padding:6px 8px;text-align:left;color:var(--text-dim);border-bottom:1px solid var(--border);">遷移元 → 先</th>
+          ${labels.map((l, i) => `<th style="padding:6px 8px;text-align:center;color:${colors[i]};border-bottom:1px solid var(--border);">${l}</th>`).join('')}
+          <th style="padding:6px 8px;text-align:center;color:var(--text-dim);border-bottom:1px solid var(--border);">合計</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tmValues.map((row, ri) => {
+          const sum = row.reduce((a, b) => a + b, 0);
+          const sumColor = sum === 100 ? 'var(--success, #a8ff78)' : 'var(--danger, #ff4757)';
+          return `<tr>
+            <td style="padding:6px 8px;color:${colors[ri]};font-weight:700;">${labels[ri]}</td>
+            ${row.map((v, ci) => `<td style="padding:6px 8px;text-align:center;color:${ri === ci ? colors[ci] : 'var(--text-mid)'};">${v}%</td>`).join('')}
+            <td style="padding:6px 8px;text-align:center;color:${sumColor};font-weight:700;">${sum}%</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+
+  el.innerHTML = html;
+}
+
+// ============================================================
 // initUiCallbacks — ui.js のコールバック注入口
 // ============================================================
 let _uiCallbacks = {};

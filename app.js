@@ -106,12 +106,15 @@ window.addEventListener('load', function initModules() {
   }
 
   // --- simulation.js へのコールバック注入 ---
-  // setDifficulty 内から ui.js の setDifficultyEnhanced を呼ぶため注入
+  // setDifficulty / DOMContentLoaded 初期化 / TMスライダーから ui.js の関数を
+  // 安全に呼べるようにする。これにより simulation → ui の直接依存を断ち切る。
   if (typeof initSimCallbacks === 'function') {
     initSimCallbacks({
       setDifficultyEnhanced: (mode) => typeof setDifficultyEnhanced === 'function' && setDifficultyEnhanced(mode),
       updateRegimeCards:     ()     => typeof updateRegimeCards      === 'function' && updateRegimeCards(),
+      // renderRegimeDashboard は ui.js で定義。simulation.js から直接参照できないためここで橋渡し。
       renderRegimeDashboard: ()     => typeof renderRegimeDashboard  === 'function' && renderRegimeDashboard(),
+      // updateRegimeTable は ui.js で定義（未実装の場合は安全に無視）。
       updateRegimeTable:     ()     => typeof updateRegimeTable       === 'function' && updateRegimeTable(),
     });
   }
@@ -151,6 +154,8 @@ window.addEventListener('load', function initModules() {
     'startWithMode', 'resumeSession', 'skipWizard',
     'selectHouseholdType', 'selectChildren', 'validateCurrentInput',
     'pwaTriggerInstall', 'pwaDismissBanner', 'pwaCloseIosModal', 'pwaStep5Install',
+    // ui.js で定義。simulation.js からコールバック経由で呼ぶために window にも公開。
+    'renderRegimeDashboard', 'updateRegimeTable',
   ];
   expose.forEach(name => {
     if (typeof window[name] === 'undefined' && typeof eval(name) !== 'undefined') {

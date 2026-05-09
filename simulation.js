@@ -593,8 +593,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ★ 新機能の初期化（DOM確定後に実行）
     updateTaxDisplay();
-    renderRegimeDashboard();
-    updateRegimeTable();
+    // renderRegimeDashboard / updateRegimeTable は ui.js の関数。
+    // コールバック経由で呼ぶことで simulation → ui の直接依存を避ける。
+    if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.renderRegimeDashboard === 'function') {
+      _simCallbacks.renderRegimeDashboard();
+    } else if (typeof renderRegimeDashboard === 'function') {
+      renderRegimeDashboard(); // フォールバック（同一スコープで定義されている場合）
+    }
+    if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.updateRegimeTable === 'function') {
+      _simCallbacks.updateRegimeTable();
+    } else if (typeof updateRegimeTable === 'function') {
+      updateRegimeTable();
+    }
     initVolatilityDragExplorer();
     // Canvasチャートは200ms遅延させてスマホでのDOMサイズ確定を待つ
     setTimeout(() => {
@@ -667,10 +677,19 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // ★ 遷移行列スライダー変更時に定常分布を更新
+    // ui.js の関数はコールバック経由で呼ぶ（循環依存を防ぐため）
     document.addEventListener('input', e => {
       if (e.target.classList.contains('tm-sl')) {
-        renderRegimeDashboard();
-        updateRegimeTable();
+        if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.renderRegimeDashboard === 'function') {
+          _simCallbacks.renderRegimeDashboard();
+        } else if (typeof renderRegimeDashboard === 'function') {
+          renderRegimeDashboard();
+        }
+        if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.updateRegimeTable === 'function') {
+          _simCallbacks.updateRegimeTable();
+        } else if (typeof updateRegimeTable === 'function') {
+          updateRegimeTable();
+        }
       }
     });
 
@@ -1646,9 +1665,17 @@ function setDifficulty(mode) {
     setDifficultyEnhanced(mode);
   }
 
-  // 8. 定常分布の再計算
-  renderRegimeDashboard();
-  updateRegimeTable();
+  // 8. 定常分布の再計算（ui.js の関数はコールバック経由で呼ぶ）
+  if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.renderRegimeDashboard === 'function') {
+    _simCallbacks.renderRegimeDashboard();
+  } else if (typeof renderRegimeDashboard === 'function') {
+    renderRegimeDashboard();
+  }
+  if (typeof _simCallbacks !== 'undefined' && typeof _simCallbacks.updateRegimeTable === 'function') {
+    _simCallbacks.updateRegimeTable();
+  } else if (typeof updateRegimeTable === 'function') {
+    updateRegimeTable();
+  }
 
   // 9. 保存（ロード中は除く）
   scheduleSave();
