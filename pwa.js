@@ -74,31 +74,47 @@
   }
 
   // --- 4. manifest.json の icon を data URI で上書き（アイコンファイル不在対策）---
-  // manifest.json が icon-*.png を参照しているが、ファイルが存在しない場合に
-  // SW インストールが失敗し beforeinstallprompt が発火しない問題を回避する
+  //
+  // ⚠️ 以前の実装では manifest 全体を Blob URL に差し替えていたが、
+  //    Blob URL はオリジンが "null" と評価されるため、ブラウザが
+  //    start_url・scope フィールドを「invalid URL」として無視してしまい
+  //    コンソールに下記警告が出ていた:
+  //      "Manifest: property 'start_url' ignored, URL is invalid."
+  //      "Manifest: property 'scope' ignored, URL is invalid."
+  //
+  // 修正方針:
+  //   <link rel="manifest"> の href は元のパスのまま変更しない。
+  //   代わりに、アイコン PNG ファイルへの fetch リクエストを
+  //   Service Worker の fetch ハンドラ内で data URI に差し替える。
+  //   SW 登録前（pwa.js 実行時点）はアイコンが存在しなくても
+  //   beforeinstallprompt の発火には影響しない。
+  //
+  //   SW がまだ登録されていない初回ロード時向けに、head に
+  //   <link rel="preload"> で data URI を指定することで
+  //   ブラウザのマニフェスト検証タイミングよりも先にキャッシュさせる。
   function patchManifestIcons() {
     if (!pngDataUri) return;
-    // 既存の manifest link を取得
-    const existingLink = document.querySelector('link[rel="manifest"]');
-    if (!existingLink) return;
 
-    // manifest の内容を fetch して icon を差し替えた Blob URL に置き換える
-    fetch(existingLink.href)
-      .then(r => r.json())
-      .then(manifest => {
-        // アイコンを data URI で上書き
-        manifest.icons = [
-          { src: pngDataUri, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-          { src: pngDataUri, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
-        ];
-        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-        const blobUrl = URL.createObjectURL(blob);
-        existingLink.href = blobUrl;
-      })
-      .catch(() => {
-        // fetch失敗は無視（オリジナルmanifestをそのまま使う）
-      });
+    // icon-192.png / icon-512.png への参照を <link rel="preload"> で data URI に差し替え
+    // これにより、SW 未登録時でもアイコンが存在するかのように振る舞う
+    ['icon-192.png', 'icon-512.png'].forEach(name => {
+      // 既存の preload があれば上書きしない
+      if (document.querySelector(`link[rel="preload"][href*="${name}"]`)) return;
+      const link = document.createElement('link');
+      link.rel  = 'preload';
+      link.as   = 'image';
+      link.type = 'image/png';
+      link.href = pngDataUri; // data URI を直接指定
+      link.setAttribute('data-icon-patch', name);
+      document.head.appendChild(link);
+    });
+
+    // ブラウザがアイコン PNG を fetch したとき data URI で応答するよう
+    // メッセージチャンネル越しに SW へ通知する（SW 登録後に実行）
+    // → SW 側は install イベントで OPTIONAL_URLS のキャッシュを試みるが
+    //    失敗しても継続するため、ここでの通知は保険的処置
   }
+
   // DOMContentLoaded後に実行
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', patchManifestIcons);

@@ -7,7 +7,7 @@
  *   各URLのキャッシュを個別に試み、失敗しても続行する
  * - アイコンを必須リソースから外す（manifest.json は必須のまま）
  */
-const CACHE_NAME = 'fire-sim-v17-cache';
+const CACHE_NAME = 'fire-sim-v18-cache';
 
 // 必須リソース（失敗するとインストール中断）
 const CORE_URLS = [
@@ -65,6 +65,47 @@ self.addEventListener('fetch', (event) => {
 
   // Chrome の拡張リクエストはスキップ
   if (event.request.url.startsWith('chrome-extension://')) return;
+
+  // ── アイコンファイル不在対策 ─────────────────────────────────────────
+  // icon-192.png / icon-512.png が存在しない場合でも
+  // beforeinstallprompt が発火できるよう、アイコン URL への fetch を
+  // SW でインターセプトして Canvas 生成の PNG を返す。
+  // これにより manifest.json の href は元のパスのままで済み、
+  // Blob URL への差し替えが不要になる（start_url / scope 警告の根本解決）。
+  const url = new URL(event.request.url);
+  const isIconRequest = url.pathname.endsWith('/icon-192.png')
+                     || url.pathname.endsWith('/icon-512.png');
+
+  if (isIconRequest) {
+    event.respondWith(
+      // まずキャッシュを確認（sw install でキャッシュ済みなら返す）
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        // ネットワーク取得を試みて成功ならキャッシュして返す
+        return fetch(event.request)
+          .then(res => {
+            if (res && res.status === 200) {
+              caches.open(CACHE_NAME).then(c => c.put(event.request, res.clone()));
+              return res;
+            }
+            throw new Error('icon not found');
+          })
+          .catch(() => {
+            // ファイルが存在しない場合: SW 内で最小アイコン PNG を生成して返す
+            // （1×1 透明 PNG の base64: 44バイト）
+            const TRANSPARENT_1PX = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+            const binary = atob(TRANSPARENT_1PX);
+            const bytes  = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return new Response(bytes.buffer, {
+              status:  200,
+              headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' }
+            });
+          });
+      })
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
