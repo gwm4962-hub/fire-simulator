@@ -1,4 +1,3 @@
-
   .icon-fire {
   display: inline-block;
   width: 1.2em;
@@ -1441,23 +1440,13 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
 #pwa-step5-btn {
   transition: transform .15s, box-shadow .15s !important;
 }
-
 #pwa-step5-btn:hover {
   transform: scale(1.02) !important;
   box-shadow: 0 0 30px rgba(0,212,255,.7) !important;
 }
-
-/* ===== TORNADO RUN BUTTON ===== */
-
-/* ===== TORNADO RUN BUTTON ===== */
-/* ID(#btn-tornado)を付けて優先順位を最強にし、flexで中身を整えます */
-#btn-tornado.tornado-run-btn {
-  display: flex;           /* 🌪と文字を横に並べる */
-  align-items: center;     /* 上下中央 */
-  justify-content: center; /* 左右中央 */
-  gap: 8px;                /* 🌪と文字の間のスキマ */
-  width: 100%;             /* 横幅いっぱい */
-  box-sizing: border-box;  /* 【重要】余白を含めて100%に収める */
+</style>
+.tornado-run-btn {
+  width: 100%;
   padding: 14px;
   background: linear-gradient(135deg, #b388ff 0%, #7c4dff 100%);
   border: none;
@@ -1472,16 +1461,8 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   margin-bottom: 14px;
   box-shadow: 0 4px 16px rgba(124,77,255,.3);
 }
-
-/* 動きの部分も優先順位を合わせておきます */
-#btn-tornado.tornado-run-btn:hover { 
-  box-shadow: 0 6px 24px rgba(124,77,255,.5); 
-  transform: translateY(-1px); 
-}
-
-#btn-tornado.tornado-run-btn:active { 
-  transform: translateY(0); 
-}
+.tornado-run-btn:hover { box-shadow: 0 6px 24px rgba(124,77,255,.5); transform: translateY(-1px); }
+.tornado-run-btn:active { transform: translateY(0); }
 
 /* ===== PRINT STYLES ===== */
 @media print {
@@ -1493,8 +1474,6 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   .panel { border: 1px solid #ddd !important; background: #fafafa !important; }
   canvas { max-width: 100% !important; }
 }
-
-
 html { scroll-behavior: smooth; }
 
 /* ===== IMPROVED PARAM SECTION ANIMATION ===== */
