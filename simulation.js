@@ -2028,12 +2028,7 @@ if(dead[i]) continue; // skip financials if died this step
       let stockPart = assets[i] * w;
       let bondPart  = assets[i] * (1 - w);
 
-      const [retS, retB] = samplingFromBivariateT({
-        mu:    rg.mu,
-        sigma: rg.sigma,
-        corr:  rg.corr,
-        df:    tDof,
-      });
+
       const [retS, retB] = samplingFromBivariateT({
         mu:    rg.mu,
         sigma: rg.sigma,
