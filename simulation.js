@@ -110,9 +110,6 @@ const FinCalc = (() => {
            calcProgressiveTaxBigInt, roundToMan };
 })();
 
-// テスト環境（new Function スコープ）でも参照できるよう globalThis に登録
-(typeof globalThis !== 'undefined' ? globalThis : window).FinCalc = FinCalc;
-
 // ============================================================
 // BigInt 精度検証（calcTax 強化）
 // ============================================================
@@ -991,6 +988,7 @@ function samplingFromBivariateT({ mu, sigma, corr, df }) {
 
   return [r1, r2];
 }
+
 // Gompertz-Makeham annual death probability at given age
 // h(x) = alpha * exp(beta * x) + gamma   (continuous hazard)
 // P(die this year) = 1 - exp(-h(x))
@@ -2622,16 +2620,18 @@ function initSimCallbacks(callbacks) {
 
 // ============================================================
 // グローバル公開（ブラウザ環境用）
-// index.html の onclick / ui.js / wizard.js から直接参照される関数を
-// window に明示登録する。app.js の expose リストの eval() は
-// 他ファイルのスコープを参照できないため、ここで直接登録が必要。
+// ----------------------------------------------------------------
+// app.js の expose リスト内の eval(name) は app.js 自身のスコープしか
+// 参照できないため、他ファイルで定義された関数は window に直接登録する。
 // ============================================================
 window.runSimulation           = runSimulation;
 window.calcTaxPrecise          = calcTaxPrecise;
 window.deathProb               = deathProb;
+window.FinCalc                 = FinCalc;
 window.addOneTimeEvent         = addOneTimeEvent;
 window.removeOneTimeEvent      = removeOneTimeEvent;
 window.renderOneTimeEventList  = renderOneTimeEventList;
 window.samplingFromBivariateT  = samplingFromBivariateT;
 window.getOneTimeEventCashflow = getOneTimeEventCashflow;
-window.FinCalc                 = FinCalc;
+// テスト環境（new Function スコープ）でも参照できるよう globalThis にも登録
+if (typeof globalThis !== 'undefined') globalThis.FinCalc = FinCalc;
