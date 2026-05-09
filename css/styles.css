@@ -1483,6 +1483,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   transform: translateY(0); 
 }
 
+
 /* ===== PRINT STYLES ===== */
 @media print {
   body { background: #fff !important; color: #000 !important; }
