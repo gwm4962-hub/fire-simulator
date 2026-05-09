@@ -1,4 +1,3 @@
-
   .icon-fire {
   display: inline-block;
   width: 1.2em;
@@ -1446,8 +1445,6 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   box-shadow: 0 0 30px rgba(0,212,255,.7) !important;
 }
 
-/* ===== TORNADO RUN BUTTON ===== */
-
 .tornado-run-btn {
   width: 100%;
   padding: 14px;
@@ -1467,7 +1464,6 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
 .tornado-run-btn:hover { box-shadow: 0 6px 24px rgba(124,77,255,.5); transform: translateY(-1px); }
 .tornado-run-btn:active { transform: translateY(0); }
 
-
 /* ===== PRINT STYLES ===== */
 @media print {
   body { background: #fff !important; color: #000 !important; }
@@ -1478,8 +1474,6 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   .panel { border: 1px solid #ddd !important; background: #fafafa !important; }
   canvas { max-width: 100% !important; }
 }
-
-
 html { scroll-behavior: smooth; }
 
 /* ===== IMPROVED PARAM SECTION ANIMATION ===== */
