@@ -244,7 +244,9 @@ function validateOneTimeEvent(event) {
 //   純粋関数層（§1〜§4）の上に DOM 操作を薄くラップする。
 // ============================================================
 
-const UIValidator = (() => {
+// var を使うことでスクリプトトップレベルの関数スコープになり
+// window.UIValidator と同一の参照になる（const/let はブロックスコープのため不可）
+var UIValidator = (() => {
   // エラーメッセージ表示用コンテナを取得 or 生成する
   function getOrCreateErrorBox(id) {
     const inputEl = document.getElementById(id);

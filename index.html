@@ -1745,16 +1745,19 @@
 
 
 <!-- ===== アプリケーションスクリプト =====
-     依存グラフ（一方向のみ・循環依存なし）:
-       validator.js   ─ 依存なし（純粋関数のみ。DOMContentLoaded後にリアルタイム検証を起動）
-       storage.js     ─ 依存なし（app.jsからコールバックを受け取るだけ）
-       simulation.js  → storage.js, validator.js（UIValidator.validateAll を参照）
-       charts.js      → storage.js, simulation.js
-       ui.js          → storage.js, simulation.js, charts.js
-       app.js         → 全モジュール（コールバック注入・HTML onclick公開）
-       wizard.js      → storage.js, simulation.js, charts.js, ui.js, validator.js
-       splash.js      → charts.js
-       pwa.js         → 独立（SW登録・インストールバナー）
+     読み込み順（依存グラフ一方向・循環依存なし）:
+
+       1. validator.js   ─ 最初に読む。純粋関数のみ、依存なし。
+                           window.UIValidator を確立しておくことで
+                           後続の simulation.js が安全に参照できる。
+       2. app.js         ─ グローバルエラーハンドリング + load イベントで
+                           コールバック注入。validator.js の後に置く。
+       3. storage.js     ─ app.js の initStorage() を受け取るだけ。依存なし。
+       4. simulation.js  → storage.js, validator.js（window.UIValidator）
+       5. charts.js      → storage.js, simulation.js
+       6. ui.js          → storage.js, simulation.js, charts.js
+       7. wizard.js      → storage.js, simulation.js, charts.js, ui.js, validator.js
+       8. pwa.js         ─ 独立（SW登録・インストールバナー）
      ===== -->
 <script src="./validator.js"></script>
 <script src="./app.js"></script>

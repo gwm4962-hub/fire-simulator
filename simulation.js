@@ -1839,9 +1839,11 @@ const REGIMES = [
 
 async function runSimulation() {
   // ── 入力バリデーション（validator.js の UIValidator 層に委譲）──────────
-  // UIValidator が未ロードの場合は旧来の簡易チェックにフォールバック
-  if (typeof UIValidator !== 'undefined') {
-    const { valid, errors } = UIValidator.validateAll();
+  // window.UIValidator を明示参照することで、スクリプト読み込み順に依らず
+  // グローバルオブジェクトから確実に取得する。
+  // validator.js が未ロードの場合は旧来の簡易チェックにフォールバック。
+  if (typeof window.UIValidator !== 'undefined' && typeof window.UIValidator.validateAll === 'function') {
+    const { valid } = window.UIValidator.validateAll();
     if (!valid) {
       // バナーはすでに UIValidator.validateAll() 内で表示済み。
       // run-btn を赤くして注目させる。
