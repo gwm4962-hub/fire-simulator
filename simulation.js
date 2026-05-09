@@ -855,8 +855,9 @@ function samplingFromBivariateT({ mu, sigma, corr, df }) {
 //   大規模修繕（-800万円、55歳）
 //   相続（+2,000万円、55歳）
 // ============================================================
-let oneTimeEvents = [];
-let oneTimeEventIdCounter = 0;
+// var を使用し、再宣言エラーを防ぐ
+if (typeof oneTimeEvents === 'undefined') var oneTimeEvents = [];
+if (typeof oneTimeEventIdCounter === 'undefined') var oneTimeEventIdCounter = 0;
 
 /**
  * 指定年齢の一時キャッシュフロー合計を円で返す。
