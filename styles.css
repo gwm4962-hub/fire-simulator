@@ -1360,6 +1360,9 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   animation: slideUpIos .35s cubic-bezier(.22,1,.36,1);
 }
 @keyframes slideUpIos {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 .pwa-ios-box h3 {
   font-size: 15px; font-weight: 700; color: #fff;
   margin: 0 0 16px; text-align: center;
