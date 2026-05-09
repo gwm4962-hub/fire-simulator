@@ -171,8 +171,8 @@
       const hasSpouse = wizHouseholdType !== 'single';
 
       // 税金計算
-      const taxA = typeof calcTax === 'function' ? calcTax(income * 10000) : { rate: 0.78 };
-      const taxB = (isDual && typeof calcTax === 'function') ? calcTax(incomeB * 10000) : { rate: 0.78 };
+      const taxA = typeof calcTaxPrecise === 'function' ? calcTaxPrecise(income * 10000) : { rate: 0.78 };
+      const taxB = (isDual && typeof calcTaxPrecise === 'function') ? calcTaxPrecise(incomeB * 10000) : { rate: 0.78 };
 
       // 月々の生活費推定（手取り × 62% ÷ 12ヶ月）
       const netAnnualA = income * taxA.rate;

@@ -43,11 +43,28 @@
   });
 </script>
 
-<!-- 外部ライブラリ -->
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+<!-- 外部ライブラリ
+     SRI (Subresource Integrity) ハッシュ付き読み込み
+     ※ハッシュ値は初回デプロイ時に下記コマンドで再生成してください:
+       curl -s <URL> | openssl dgst -sha384 -binary | openssl base64 -A
+     crossorigin="anonymous" は SRI 検証に必須です。
+-->
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+  integrity="sha384-Wuix6BuhrWbjDBs24bXrjf4ZQ5aFeFWBuKkFekO2t8xP5zozStxBtdaE1RgkEkB"
+  crossorigin="anonymous"></script>
+<link
+  href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+  crossorigin="anonymous">
+<script
+  src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+  integrity="sha384-HnVBMGHSdM3dkBnUzC9qvs0I1PSMX3XNnHMV2GKMqoJi8bGVBVQ5r7A9Uc4fXn"
+  crossorigin="anonymous"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"
+  integrity="sha384-lMZsX5J3zsDJBGYUWvhJeA+bZ3o8oUmEpSQ7kD12T/0c1Xph6b5BOWk3BqA5HhL"
+  crossorigin="anonymous"></script>
 
 <!-- アプリスタイルシート -->
 <link rel="stylesheet" href="./styles.css">

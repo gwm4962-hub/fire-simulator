@@ -247,10 +247,13 @@ const MODAL_CONTENT = {
 };
 
 function openModal(key) {
+  // 許可リスト検証 — 意図しないキーアクセス（プロトタイプ汚染等）を防止
+  const ALLOWED_KEYS = ['privacy', 'disclaimer', 'contact', 'profile'];
+  if (!ALLOWED_KEYS.includes(key)) return;
   const modal = document.getElementById('site-modal');
   const content = document.getElementById('modal-content');
-  if (!modal || !content || !MODAL_CONTENT[key]) return;
-  content.innerHTML = MODAL_CONTENT[key];
+  if (!modal || !content || !Object.prototype.hasOwnProperty.call(MODAL_CONTENT, key)) return;
+  content.innerHTML = MODAL_CONTENT[key]; // MODAL_CONTENT はハードコード定数のため安全
   modal.style.display = 'block';
   document.body.style.overflow = 'hidden';
 }
@@ -540,8 +543,8 @@ function updateTaxDisplay() {
   const isDual = currentHousehold === 'dual';
   const grossB = isDual ? parseInt(document.getElementById('income-b').value || 300) * 10000 : 0;
 
-  const tA = calcTax(grossA);
-  const tB = isDual ? calcTax(grossB) : null;
+  const tA = calcTaxPrecise(grossA);
+  const tB = isDual ? calcTaxPrecise(grossB) : null;
 
   const fmt = v => (v / 10000).toFixed(0) + '万';
   const totalGross = grossA + grossB;
@@ -869,7 +872,7 @@ function runSingleSimFast(cfg) { return runSafetyMarginSim(cfg); }
 // 現在のUI設定からベースラインcfgを作る
 function buildBaselineCfg() {
   const annualIncome = Math.max(1, parseInt(document.getElementById('income').value)||500) * 10000;
-  const taxResult = calcTax(annualIncome);
+  const taxResult = calcTaxPrecise(annualIncome);
   return {
     startAge:      parseInt(document.getElementById('start-age').value)||30,
     initAssets:    (parseInt(document.getElementById('initial-assets').value)||0)*10000,
@@ -925,8 +928,8 @@ async function runTornadoAnalysis() {
     // 感度対象パラメータ
     const factors = [
       { label:'年間収入',
-        plus:  c=>({...c, annualIncome: c.annualIncome*1.10, takeHome: calcTax(c.annualIncome*1.10).rate }),
-        minus: c=>({...c, annualIncome: c.annualIncome*0.90, takeHome: calcTax(c.annualIncome*0.90).rate }) },
+        plus:  c=>({...c, annualIncome: c.annualIncome*1.10, takeHome: calcTaxPrecise(c.annualIncome*1.10).rate }),
+        minus: c=>({...c, annualIncome: c.annualIncome*0.90, takeHome: calcTaxPrecise(c.annualIncome*0.90).rate }) },
       { label:'年間支出',
         plus:  c=>({...c, expScale: Math.max(0.1, c.expScale*0.90) }), // 支出−10%→有利
         minus: c=>({...c, expScale: c.expScale*1.10 }) },
@@ -1192,7 +1195,7 @@ function calcSafetyAndTradeoff(base, planVal) {
   const boostedCfg = {
     ...base,
     annualIncome: base.annualIncome + incomeDelta,
-    takeHome: calcTax(base.annualIncome + incomeDelta).rate,
+    takeHome: calcTaxPrecise(base.annualIncome + incomeDelta).rate,
   };
   const boostedVal = runSafetyMarginSim(boostedCfg);
   const marginGainPerIncome = boostedVal - planVal;

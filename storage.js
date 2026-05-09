@@ -7,6 +7,40 @@
 // ============================================================
 const STORAGE_KEY = "FIRE_SIM_V4_SETTINGS";
 
+/**
+ * プライバシー保護について
+ * ---------------------------------------------------------------------------
+ * 保存するデータ: 年齢・資産額・収入・支出など本ツール内の設定値のみ。
+ * 保存先: localStorage（お使いのブラウザ内のみ。外部サーバーには送信しない）。
+ * 削除方法: 下記 clearLocalData() 関数を呼び出すか、ブラウザの
+ *   「サイトのデータを消去」からいつでも削除できます。
+ *
+ * localStorage と sessionStorage の選択について
+ *   本ツールはシミュレーターの性質上、複数セッションを跨いで設定を
+ *   復元することをユーザーが期待しているため localStorage を採用しています。
+ *   「セッション終了時に消えてよい」用途には sessionStorage が適切ですが、
+ *   本ツールでは「前回の設定を続きから使いたい」ニーズを優先しています。
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * clearLocalData — ユーザー要求に応じてすべての保存データを削除する。
+ * プライバシーポリシーや設定画面から呼び出してください。
+ */
+function clearLocalData() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('wizard_completed');
+    localStorage.removeItem('fire_sim_mode');
+    localStorage.removeItem('splash_seen');
+    localStorage.removeItem('pwa_banner_dismissed');
+    flashBadge('CLEARED ✓', 'var(--warning)');
+    console.info('[FLOW] ローカルデータを削除しました。');
+  } catch (e) {
+    console.warn('[FLOW] データ削除失敗:', e);
+  }
+}
+
 // 保存対象のスライダー／数値入力ID一覧
 const PARAM_INPUT_IDS = [
   "start-age", "num-initial-assets", "initial-assets", "fire-threshold",
