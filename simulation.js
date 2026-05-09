@@ -2620,7 +2620,7 @@ function initSimCallbacks(callbacks) {
 
 // ============================================================
 // グローバル公開（ブラウザ環境用）
-// ----------------------------------------------------------------
+//
 // app.js の expose リスト内の eval(name) は app.js 自身のスコープしか
 // 参照できないため、他ファイルで定義された関数は window に直接登録する。
 // ============================================================
@@ -2633,5 +2633,5 @@ window.removeOneTimeEvent      = removeOneTimeEvent;
 window.renderOneTimeEventList  = renderOneTimeEventList;
 window.samplingFromBivariateT  = samplingFromBivariateT;
 window.getOneTimeEventCashflow = getOneTimeEventCashflow;
-// テスト環境（new Function スコープ）でも参照できるよう globalThis にも登録
+// テスト環境（new Function スコープ）向けに globalThis にも登録
 if (typeof globalThis !== 'undefined') globalThis.FinCalc = FinCalc;
