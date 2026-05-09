@@ -6437,7 +6437,7 @@ let tornadoChartInstance = null;
 
 async function runTornadoAnalysis() {
   const btn = document.getElementById('btn-tornado');
-  
+  const progBar = document.getElementById('tornado-progress-bar'); // これが必要です
   // 重要：ボタン全体ではなく「label」という名前の袋を探す
   const label = btn.querySelector('.label'); 
 
@@ -6533,8 +6533,11 @@ async function runTornadoAnalysis() {
       </div>`;
     }
   } finally {
+    const progWrap = document.getElementById('tornado-progress-wrap');
     progWrap.style.display = 'none';
-btn.disabled = false;
+    const btn = document.getElementById('btn-tornado');
+    btn.disabled = false;
+    const label = btn.querySelector('.label');
     if (label) {
       label.textContent = 'トルネード分析を実行（シミュレーション要）';
     }
