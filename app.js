@@ -112,9 +112,10 @@ window.addEventListener('load', function initModules() {
     initSimCallbacks({
       setDifficultyEnhanced: (mode) => typeof setDifficultyEnhanced === 'function' && setDifficultyEnhanced(mode),
       updateRegimeCards:     ()     => typeof updateRegimeCards      === 'function' && updateRegimeCards(),
-      // renderRegimeDashboard は ui.js で定義。simulation.js から直接参照できないためここで橋渡し。
+      // renderRegimeDashboard は charts.js で定義（updateRegimeTable のエイリアス）。
+      // simulation.js から直接参照できないためここで橋渡し。
       renderRegimeDashboard: ()     => typeof renderRegimeDashboard  === 'function' && renderRegimeDashboard(),
-      // updateRegimeTable は ui.js で定義（未実装の場合は安全に無視）。
+      // updateRegimeTable は charts.js で定義。
       updateRegimeTable:     ()     => typeof updateRegimeTable       === 'function' && updateRegimeTable(),
     });
   }

@@ -593,10 +593,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ★ 新機能の初期化（DOM確定後に実行）
     updateTaxDisplay();
-    renderRegimeDashboard();
-    updateRegimeTable();
-    renderRegimeDashboard();
-    updateRegimeTable();
+    if (typeof _simCallbacks.renderRegimeDashboard === 'function') _simCallbacks.renderRegimeDashboard();
+    if (typeof _simCallbacks.updateRegimeTable     === 'function') _simCallbacks.updateRegimeTable();
     initVolatilityDragExplorer();
     // Canvasチャートは200ms遅延させてスマホでのDOMサイズ確定を待つ
     setTimeout(() => {
@@ -671,10 +669,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // ★ 遷移行列スライダー変更時に定常分布を更新
     document.addEventListener('input', e => {
       if (e.target.classList.contains('tm-sl')) {
-        renderRegimeDashboard();
-        updateRegimeTable();
-        renderRegimeDashboard();
-        updateRegimeTable();
+        if (typeof _simCallbacks.renderRegimeDashboard === 'function') _simCallbacks.renderRegimeDashboard();
+        if (typeof _simCallbacks.updateRegimeTable     === 'function') _simCallbacks.updateRegimeTable();
       }
     });
 
@@ -1959,11 +1955,8 @@ function setDifficulty(mode) {
   }
 
   // 8. 定常分布の再計算
-  renderRegimeDashboard();
-  updateRegimeTable();
-  // 8. 定常分布の再計算
-  renderRegimeDashboard();
-  updateRegimeTable();
+  if (typeof _simCallbacks.renderRegimeDashboard === 'function') _simCallbacks.renderRegimeDashboard();
+  if (typeof _simCallbacks.updateRegimeTable     === 'function') _simCallbacks.updateRegimeTable();
 
   // 9. 保存（ロード中は除く）
   scheduleSave();
