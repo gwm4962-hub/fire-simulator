@@ -1431,7 +1431,9 @@ function initLongevityExplorer() {
 
         ages.forEach((age, t) => {
             // 現在保持している currentGender を使用
-            const dp = deathProb(age, t, currentGender, medAdv);
+            const _deathProb = (typeof deathProb === 'function') ? deathProb : (typeof window.deathProb === 'function' ? window.deathProb : null);
+            if (!_deathProb) return;
+            const dp = _deathProb(age, t, currentGender, medAdv);
             survivalProb *= (1 - dp);
             
             const displayVal = Math.max(0, survivalProb);
@@ -1463,7 +1465,14 @@ function initLongevityExplorer() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    initLongevityExplorer();
+    // deathProb は simulation.js の末尾で window に公開されるため、
+    // DOMContentLoaded 時点では参照できない場合がある。
+    // window の load イベント後（全スクリプト解析済み）に遅延して実行する。
+    if (typeof deathProb === 'function' || typeof window.deathProb === 'function') {
+        initLongevityExplorer();
+    } else {
+        window.addEventListener('load', () => initLongevityExplorer());
+    }
 });
 
 function toggleGuidePanel() {

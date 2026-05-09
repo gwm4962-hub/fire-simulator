@@ -112,9 +112,10 @@ window.addEventListener('load', function initModules() {
     initSimCallbacks({
       setDifficultyEnhanced: (mode) => typeof setDifficultyEnhanced === 'function' && setDifficultyEnhanced(mode),
       updateRegimeCards:     ()     => typeof updateRegimeCards      === 'function' && updateRegimeCards(),
-      // renderRegimeDashboard は ui.js で定義。simulation.js から直接参照できないためここで橋渡し。
+      // renderRegimeDashboard は charts.js で定義（updateRegimeTable のエイリアス）。
+      // simulation.js から直接参照できないためここで橋渡し。
       renderRegimeDashboard: ()     => typeof renderRegimeDashboard  === 'function' && renderRegimeDashboard(),
-      // updateRegimeTable は ui.js で定義（未実装の場合は安全に無視）。
+      // updateRegimeTable は charts.js で定義。
       updateRegimeTable:     ()     => typeof updateRegimeTable       === 'function' && updateRegimeTable(),
     });
   }
@@ -162,9 +163,13 @@ window.addEventListener('load', function initModules() {
     // simulation.js — 一時イベントタイムライン
     'addOneTimeEvent', 'removeOneTimeEvent', 'renderOneTimeEventList',
   ];
+  // 注: eval() は他スクリプトの let/const を参照できない。
+  // 各モジュールは自身の末尾で window.xxx = xxx を行っているため、
+  // ここでは window に未登録のものだけ警告するだけでよい。
+  // （eval による再公開を廃止し、各モジュール末尾の公開に一本化）
   expose.forEach(name => {
-    if (typeof window[name] === 'undefined' && typeof eval(name) !== 'undefined') {
-      try { window[name] = eval(name); } catch(e) {}
+    if (typeof window[name] === 'undefined') {
+      console.warn('[FLOW] window.' + name + ' が未定義です。該当モジュールの読み込み順を確認してください。');
     }
   });
 });

@@ -685,6 +685,18 @@ function updateRegimeTable() {
   }
 }
 
+/**
+ * renderRegimeDashboard — updateRegimeTable のエイリアス。
+ *
+ * simulation.js は _simCallbacks.renderRegimeDashboard() 経由でこの関数を呼ぶ。
+ * app.js の initSimCallbacks に渡す際、ui.js 側に実装がなかった経緯から
+ * charts.js で updateRegimeTable と同一の処理として定義する。
+ * 将来 ui.js でより高機能な実装に差し替える場合はこの関数を上書きすること。
+ */
+function renderRegimeDashboard() {
+  updateRegimeTable();
+}
+
   // 定常分布を取得（なければ均等分布）
   let stDist = [0.25, 0.25, 0.25, 0.25];
   try {
