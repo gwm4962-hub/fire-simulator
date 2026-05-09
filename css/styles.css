@@ -1,3 +1,7 @@
+/* ============================================================
+   styles.css — FLOW 資産シミュレーター 全スタイルシート
+   ============================================================ */
+
   .icon-fire {
   display: inline-block;
   width: 1.2em;
@@ -1445,6 +1449,7 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   box-shadow: 0 0 30px rgba(0,212,255,.7) !important;
 }
 
+
 .tornado-run-btn {
   width: 100%;
   padding: 14px;
@@ -1474,6 +1479,8 @@ body[data-mode="pro"] .beginner-only { display: none !important; }
   .panel { border: 1px solid #ddd !important; background: #fafafa !important; }
   canvas { max-width: 100% !important; }
 }
+
+
 html { scroll-behavior: smooth; }
 
 /* ===== IMPROVED PARAM SECTION ANIMATION ===== */
