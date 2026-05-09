@@ -110,6 +110,12 @@ const FinCalc = (() => {
            calcProgressiveTaxBigInt, roundToMan };
 })();
 
+// ブラウザ・テスト環境の両方から参照できるよう window / globalThis に登録。
+// validator_test.js の loadScript は new Function スコープで実行するため、
+// const で宣言した FinCalc はそのままではグローバルに露出しない。
+// globalThis への明示登録でこの問題を解決する。
+(typeof globalThis !== 'undefined' ? globalThis : window).FinCalc = FinCalc;
+
 // ============================================================
 // BigInt 精度検証（calcTax 強化）
 // ============================================================
@@ -2737,18 +2743,11 @@ function initSimCallbacks(callbacks) {
 
 // ── 一時イベント・バリデーター関連のグローバル公開 ──────────────
 // app.js の expose リストへの追加も忘れずに（下記は直接登録）
-window.addOneTimeEvent    = addOneTimeEvent;
-window.removeOneTimeEvent = removeOneTimeEvent;
-window.renderOneTimeEventList = renderOneTimeEventList;
+window.addOneTimeEvent         = addOneTimeEvent;
+window.removeOneTimeEvent      = removeOneTimeEvent;
+window.renderOneTimeEventList  = renderOneTimeEventList;
 // samplingFromBivariateT と getOneTimeEventCashflow はテストから参照されるため公開
 window.samplingFromBivariateT  = samplingFromBivariateT;
 window.getOneTimeEventCashflow = getOneTimeEventCashflow;
-
-// ── 一時イベント・バリデーター関連のグローバル公開 ──────────────
-// app.js の expose リストへの追加も忘れずに（下記は直接登録）
-window.addOneTimeEvent    = addOneTimeEvent;
-window.removeOneTimeEvent = removeOneTimeEvent;
-window.renderOneTimeEventList = renderOneTimeEventList;
-// samplingFromBivariateT と getOneTimeEventCashflow はテストから参照されるため公開
-window.samplingFromBivariateT  = samplingFromBivariateT;
-window.getOneTimeEventCashflow = getOneTimeEventCashflow;
+// FinCalc もブラウザ環境向けに window に登録（globalThis 登録と二重保険）
+window.FinCalc                 = FinCalc;
