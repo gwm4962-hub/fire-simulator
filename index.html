@@ -978,23 +978,11 @@
         <div id="chart-container"
              role="figure"
              aria-label="資産推移シミュレーショングラフ（シミュレーション実行後に更新されます）">
-        <div id="chart-container"
-             role="figure"
-             aria-label="資産推移シミュレーショングラフ（シミュレーション実行後に更新されます）">
           <div class="placeholder">
             <div class="placeholder-icon">📊</div>
             <div class="placeholder-text">パラメータを設定して「▶ シミュレーション実行」を押してください</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:8px;">あなたの人生プランを<span style="color:var(--accent);">2,000通り</span>試算します</div>
           </div>
-        </div>
-        <!-- チャートのテキストサマリー（スクリーンリーダー用・WCAG 1.1.1 非テキストコンテンツ対応）
-             updateChartA11ySummary() によってシミュレーション完了後に内容が挿入される。
-             aria-live="polite" でスクリーンリーダーに変更を通知する。-->
-        <div id="chart-a11y-summary"
-             role="region"
-             aria-label="グラフのテキストサマリー"
-             aria-live="polite"
-             style="display:none;">
         </div>
         <!-- チャートのテキストサマリー（スクリーンリーダー用・WCAG 1.1.1 非テキストコンテンツ対応）
              updateChartA11ySummary() によってシミュレーション完了後に内容が挿入される。
@@ -1757,21 +1745,17 @@
 
 
 <!-- ===== アプリケーションスクリプト =====
-     読み込み順（依存グラフ一方向・循環依存なし）:
-
-       1. validator.js   ─ 最初に読む。純粋関数のみ、依存なし。
-                           window.UIValidator を確立しておくことで
-                           後続の simulation.js が安全に参照できる。
-       2. app.js         ─ グローバルエラーハンドリング + load イベントで
-                           コールバック注入。validator.js の後に置く。
-       3. storage.js     ─ app.js の initStorage() を受け取るだけ。依存なし。
-       4. simulation.js  → storage.js, validator.js（window.UIValidator）
-       5. charts.js      → storage.js, simulation.js
-       6. ui.js          → storage.js, simulation.js, charts.js
-       7. wizard.js      → storage.js, simulation.js, charts.js, ui.js, validator.js
-       8. pwa.js         ─ 独立（SW登録・インストールバナー）
+     依存グラフ（一方向のみ・循環依存なし）:
+       validator.js   ─ 依存なし（純粋関数のみ。DOMContentLoaded後にリアルタイム検証を起動）
+       storage.js     ─ 依存なし（app.jsからコールバックを受け取るだけ）
+       simulation.js  → storage.js, validator.js（UIValidator.validateAll を参照）
+       charts.js      → storage.js, simulation.js
+       ui.js          → storage.js, simulation.js, charts.js
+       app.js         → 全モジュール（コールバック注入・HTML onclick公開）
+       wizard.js      → storage.js, simulation.js, charts.js, ui.js, validator.js
+       splash.js      → charts.js
+       pwa.js         → 独立（SW登録・インストールバナー）
      ===== -->
-<script src="./validator.js"></script>
 <script src="./validator.js"></script>
 <script src="./app.js"></script>
 <script src="./storage.js"></script>
