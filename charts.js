@@ -1433,3 +1433,82 @@ let _chartsCallbacks = {};
 function initChartsCallbacks(callbacks) {
   _chartsCallbacks = callbacks || {};
 }
+
+
+// ============================================================
+// updateChartA11ySummary — チャートのアクセシブルテキストサマリー
+//
+// スクリーンリーダー利用者がチャートの内容を音声で把握できるよう、
+// シミュレーション結果をテキストで要約して
+// id="chart-a11y-summary" に挿入する。
+//
+// Chart.js の chart.canvas に aria-label + role="img" を付与し、
+// <figure> の figcaption として詳細を提供するアプローチをとる。
+//
+// 引数:
+//   stats — runSimulation が計算する統計オブジェクト:
+//   {
+//     startAge:       number,   // シミュ開始年齢
+//     successRate:    number,   // 破綻しない確率（0〜1）
+//     bankruptRate:   number,   // 破綻確率（0〜1）
+//     medianFireAge:  string,   // FIRE中央値年齢文字列 or '未達成'
+//     medianFinalAssets: number,// 死亡時資産中央値（億円）
+//     medianDeathAge: string,   // 死亡年齢中央値文字列
+//     pct10At65:      number,   // 65歳時 10パーセンタイル資産（億円）
+//     pct90At65:      number,   // 65歳時 90パーセンタイル資産（億円）
+//     medAt65:        number,   // 65歳時 中央値資産（億円）
+//   }
+// ============================================================
+function updateChartA11ySummary(stats) {
+  const el = document.getElementById('chart-a11y-summary');
+  if (!el) return;
+
+  const {
+    startAge       = '—',
+    successRate    = 0,
+    bankruptRate   = 0,
+    medianFireAge  = '—',
+    medianFinalAssets = 0,
+    medianDeathAge = '—',
+    pct10At65      = 0,
+    pct90At65      = 0,
+    medAt65        = 0,
+  } = stats;
+
+  const pct  = v => (v * 100).toFixed(1) + '%';
+  const oku  = v => {
+    if (Math.abs(v) >= 1) return v.toFixed(2) + '億円';
+    return Math.round(v * 10000).toLocaleString() + '万円';
+  };
+
+  const summaryText = [
+    `シミュレーション開始年齢: ${startAge}歳。`,
+    `老後破綻なしの確率（成功率）: ${pct(successRate)}。`,
+    `破綻リスク: ${pct(bankruptRate)}。`,
+    `FIRE達成年齢の中央値: ${medianFireAge}。`,
+    `65歳時の資産中央値: ${oku(medAt65)}（悲観シナリオ10%: ${oku(pct10At65)}、楽観90%: ${oku(pct90At65)}）。`,
+    `シミュレーション上の死亡年齢中央値: ${medianDeathAge}。`,
+    `死亡時の資産中央値（遺産）: ${oku(medianFinalAssets)}。`,
+  ].join(' ');
+
+  // <details><summary> 形式で折り畳み表示
+  el.innerHTML = `
+    <details>
+      <summary>グラフのテキストサマリー（スクリーンリーダー用）</summary>
+      <p style="margin-top:8px;color:var(--text-mid);font-size:11px;line-height:1.8;">
+        ${summaryText}
+      </p>
+    </details>`;
+  el.style.display = 'block';
+
+  // チャート canvas にも aria-label を付与（role="img" は Chart.js が自動設定）
+  const canvas = document.getElementById('main-chart');
+  if (canvas) {
+    canvas.setAttribute('aria-label',
+      `資産推移チャート。成功率 ${pct(successRate)}、65歳時中央値資産 ${oku(medAt65)}。`
+    );
+  }
+}
+
+// グローバル公開（app.js の expose リストへの追加は任意）
+window.updateChartA11ySummary = updateChartA11ySummary;
