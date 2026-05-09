@@ -1431,7 +1431,9 @@ function initLongevityExplorer() {
 
         ages.forEach((age, t) => {
             // 現在保持している currentGender を使用
-            const dp = (typeof deathProb === 'function' ? deathProb : window.deathProb)(age, t, currentGender, medAdv);
+            const _deathProb = (typeof deathProb === 'function') ? deathProb : (typeof window.deathProb === 'function' ? window.deathProb : null);
+            if (!_deathProb) return;
+            const dp = _deathProb(age, t, currentGender, medAdv);
             survivalProb *= (1 - dp);
             
             const displayVal = Math.max(0, survivalProb);

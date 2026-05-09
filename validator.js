@@ -64,7 +64,7 @@ function validateField(value, schema) {
 //   各フィールドの「正当な範囲」を一か所で管理する。
 //   simulation.js / wizard.js / storage.js が参照する唯一の真実。
 // ============================================================
-// var を使用し、再宣言エラーを防ぐ（スクリプトが複数回評価された場合の安全策）
+// typeof ガードで再宣言エラーを防ぐ（スクリプトが複数回評価された場合の安全策）
 var PARAM_SCHEMA = window.PARAM_SCHEMA || {
   'start-age':       { type: 'integer', min: 18,    max: 70,    label: '開始年齢' },
   'initial-assets':  { type: 'integer', min: 0,     max: 100000,label: '現在の資産（万円）' },
