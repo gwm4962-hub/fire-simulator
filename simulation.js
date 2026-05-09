@@ -2022,9 +2022,6 @@ if(dead[i]) continue; // skip financials if died this step
       // samplingFromBivariateT で相関付き2変量t分布からリターンをサンプリング。
       // 引数の corr はレジームごとに定義された株式・債券間の相関係数。
       // tDof は UI スライダーで制御可能な自由度パラメータ。
-      // samplingFromBivariateT で相関付き2変量t分布からリターンをサンプリング。
-      // 引数の corr はレジームごとに定義された株式・債券間の相関係数。
-      // tDof は UI スライダーで制御可能な自由度パラメータ。
       let stockPart = assets[i] * w;
       let bondPart  = assets[i] * (1 - w);
 
@@ -2062,10 +2059,6 @@ if(dead[i]) continue; // skip financials if died this step
       if(age>=65) income+=(monthlyPension*12)*0.85*Math.pow(1.005,age-65);
       if(age===inheritA[i*2])   income+=inheritAmt;
       if(age===inheritA[i*2+1]) income+=inheritAmt;
-      // ---- 一時イベント（タイムライン）キャッシュフロー ----
-      // oneTimeEvents 配列に登録された特定年のみ発生する収支（住宅購入・退職金・修繕費など）
-      // 全シミュ経路で同一適用（確定イベント）。正=収入、負=費用として income に加算する。
-      income += getOneTimeEventCashflow(age);
       // ---- 一時イベント（タイムライン）キャッシュフロー ----
       // oneTimeEvents 配列に登録された特定年のみ発生する収支（住宅購入・退職金・修繕費など）
       // 全シミュ経路で同一適用（確定イベント）。正=収入、負=費用として income に加算する。
@@ -2555,22 +2548,6 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
     });
   }
 
-  // チャートのアクセシブルテキストサマリーを更新（charts.js）
-  if (typeof updateChartA11ySummary === 'function') {
-    const age65idx = Math.max(0, 65 - startAge);
-    updateChartA11ySummary({
-      startAge,
-      successRate:        nS / N,
-      bankruptRate:       nB / N,
-      medianFireAge:      farr.length > 0 ? farr[Math.floor(farr.length * .5)] + '歳' : '未達成',
-      medianFinalAssets:  mf,
-      medianDeathAge:     mda,
-      medAt65:            age65idx < T ? med[age65idx] : 0,
-      pct10At65:          age65idx < T ? p10[age65idx] : 0,
-      pct90At65:          age65idx < T ? p90[age65idx] : 0,
-    });
-  }
-
   // 結果エリアへスムーズスクロール（スマホで特に有効）
   setTimeout(() => {
     const isBeginner = document.body.getAttribute('data-mode') === 'beginner';
@@ -2631,3 +2608,7 @@ window.samplingFromBivariateT  = samplingFromBivariateT;
 window.getOneTimeEventCashflow = getOneTimeEventCashflow;
 // テスト環境（new Function スコープ）向けに globalThis にも登録
 if (typeof globalThis !== 'undefined') globalThis.FinCalc = FinCalc;
+// テスト環境向け
+if (typeof globalThis !== "undefined") {
+  globalThis.FinCalc = FinCalc;
+}
