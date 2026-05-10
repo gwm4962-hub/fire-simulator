@@ -7,12 +7,13 @@
  *   各URLのキャッシュを個別に試み、失敗しても続行する
  * - アイコンを必須リソースから外す（manifest.json は必須のまま）
  */
-const CACHE_NAME = 'fire-sim-v19-cache';
+const CACHE_NAME = 'fire-sim-v20-cache';
 
 // 必須リソース（失敗するとインストール中断）
 const CORE_URLS = [
   './index.html',
   './manifest.json',
+ './sharecard.js',   // ← 追加
 ];
 
 // オプションリソース（失敗してもインストール継続）
