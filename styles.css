@@ -2450,360 +2450,56 @@ body[data-mode="beginner"] #chart-title-text::before {
 
 /* CSSEOF2 */
 
-/* ============================================================
-   UI/UX IMPROVEMENT PATCH — 初心者モード v2.0
-   ============================================================ */
+/* ═══ 家計タイプ診断パネル 表示制御 ═══ */
+/* 初心者・通常モードで diagnosis-panel を表示 */
+body[data-mode="beginner"] #diagnosis-panel,
+body[data-mode="normal"] #diagnosis-panel { display: block !important; }
+body[data-mode="pro"] #diagnosis-panel    { display: none !important; }
 
-/* ── 世帯タイプ選択ボタン（3列グリッド + diff-btnスタイル） ── */
-#household-btns {
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 8px !important;
-}
-#hh-single, #hh-single-spouse, #hh-dual {
-  flex-direction: column;
-  padding: 12px 6px;
-  min-height: 72px;
-  gap: 4px;
-}
-#hh-single.diff-btn-active   { border-color:rgba(0,212,255,.6); background:rgba(0,212,255,.1); box-shadow:0 0 14px rgba(0,212,255,.2); }
-#hh-single.diff-btn-active .diff-label { color: var(--accent); }
-#hh-single-spouse.diff-btn-active { border-color:rgba(255,110,180,.6); background:rgba(255,110,180,.1); box-shadow:0 0 14px rgba(255,110,180,.2); }
-#hh-single-spouse.diff-btn-active .diff-label { color: var(--pink); }
-#hh-dual.diff-btn-active      { border-color:rgba(168,255,120,.6); background:rgba(168,255,120,.1); box-shadow:0 0 14px rgba(168,255,120,.2); }
-#hh-dual.diff-btn-active .diff-label { color: var(--accent3); }
+/* 通常モードでは旧 beginner-summary は常に非表示 */
+body[data-mode="normal"] #beginner-summary { display: none !important; }
 
-/* ── 初心者モード ライフステージ 3パネル ── */
-.beginner-stage-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.beginner-stage-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  transition: border-color .2s, box-shadow .2s;
-}
-.beginner-stage-card:hover { border-color: var(--border-bright); }
-.beginner-stage-icon {
-  font-size: 28px;
-  flex-shrink: 0;
-  width: 44px;
-  text-align: center;
-}
-.beginner-stage-info { flex: 1; min-width: 0; }
-.beginner-stage-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 2px;
-}
-.beginner-stage-range {
-  font-size: 10px;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  margin-bottom: 6px;
-}
-.beginner-stage-right { flex-shrink: 0; text-align: right; }
-.beginner-stage-amount {
-  font-size: 22px;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  color: var(--accent);
-  line-height: 1.1;
-}
-.beginner-stage-unit {
-  font-size: 10px;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-}
-.beginner-stage-input {
-  width: 80px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 700;
-  text-align: center;
-  padding: 6px 4px;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s;
-  -moz-appearance: textfield;
-}
-.beginner-stage-input::-webkit-inner-spin-button { display: none; }
-.beginner-stage-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(0,212,255,.12);
-}
-.beginner-stage-sub {
-  font-size: 10px;
-  color: var(--text-dim);
-  margin-top: 2px;
-}
-.beg-stage-color-bar {
-  width: 3px;
-  align-self: stretch;
-  border-radius: 2px;
-  flex-shrink: 0;
+/* 通常モードでは kpi-section を表示（プロと同じ詳細指標） */
+body[data-mode="normal"] #kpi-section { display: block; }
+
+/* スプラッシュ: 「かんたんモード」バッジ pulse */
+@keyframes badge-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,212,255,.4); }
+  50%      { box-shadow: 0 0 0 6px rgba(0,212,255,0); }
 }
 
-/* 初心者モードでexpense-stagesとプリセットを隠す */
-body[data-mode="beginner"] #expense-stages,
-body[data-mode="beginner"] #add-stage-btn,
-body[data-mode="beginner"] #expense-timeline-bar,
-body[data-mode="beginner"] #preset-container,
-body[data-mode="beginner"] .hint-text:not(.beginner-show) { display: none !important; }
+/* ═══ 通常モードでの診断パネル表示制御 ═══ */
+/* normal-show: 初心者・通常モード両方で表示 */
+body[data-mode="beginner"] .normal-show,
+body[data-mode="normal"] .normal-show { display: inline !important; }
+body[data-mode="pro"] .normal-show { display: none !important; }
 
-body[data-mode="beginner"] #beginner-stage-panel { display: block !important; }
-body[data-mode="normal"] #beginner-stage-panel,
-body[data-mode="pro"] #beginner-stage-panel { display: none !important; }
+/* 実行ボタン: 診断モードでは強調色 */
+body[data-mode="beginner"] .run-btn,
+body[data-mode="normal"] .run-btn {
+  background: linear-gradient(135deg, #0088ff, #005fa0, #003d80);
+  font-size: 16px;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 28px rgba(0,136,255,.45);
+}
+body[data-mode="beginner"] .run-btn:hover,
+body[data-mode="normal"] .run-btn:hover {
+  box-shadow: 0 6px 36px rgba(0,136,255,.65);
+  transform: translateY(-1px);
+}
 
-/* ── 初心者モード 年金スライダー：中央値バッジ表示 ── */
-.pension-median-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--accent);
-  font-family: var(--font-mono);
-  background: rgba(0,212,255,.08);
-  border: 1px solid rgba(0,212,255,.2);
-  border-radius: 20px;
-  padding: 4px 12px;
-  margin-top: 6px;
-  cursor: pointer;
-  transition: background .2s;
-}
-.pension-median-badge:hover { background: rgba(0,212,255,.15); }
-
-/* ── wiz-choice-btn を diff-btn スタイルに近づける（ウィザードStep0） ── */
-.wiz-choice-btn {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  text-align: center !important;
-  padding: 16px 12px !important;
-  gap: 8px !important;
-  min-height: 80px !important;
-  border-radius: 10px !important;
-}
-.wiz-choice-btn > div { text-align: center; }
-.wiz-choice-btn .wiz-btn-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 2px;
-}
-.wiz-choice-btn .wiz-btn-sub {
-  font-size: 11px;
-  color: var(--text-dim);
-  line-height: 1.5;
-}
-/* Wizard step0: 3列グリッド */
-#wstep-0 .wiz-choice-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 28px;
-}
-.wiz-choice-btn:hover {
-  border-color: rgba(0,212,255,.6) !important;
-  background: rgba(0,212,255,.08) !important;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0,212,255,.15) !important;
-}
-.wiz-choice-btn.selected {
-  border-color: var(--accent) !important;
-  background: rgba(0,212,255,.14) !important;
-  box-shadow: 0 0 0 2px rgba(0,212,255,.25), 0 4px 20px rgba(0,212,255,.2) !important;
-}
-#wiz-type-single.selected   .wiz-btn-title { color: var(--accent); }
-#wiz-type-single-spouse.selected .wiz-btn-title { color: var(--pink); }
-#wiz-type-dual.selected     .wiz-btn-title { color: var(--accent3); }
-#wiz-type-single-spouse.selected { border-color: rgba(255,110,180,.7) !important; background: rgba(255,110,180,.1) !important; box-shadow: 0 0 0 2px rgba(255,110,180,.25) !important; }
-#wiz-type-dual.selected     { border-color: rgba(168,255,120,.7) !important; background: rgba(168,255,120,.1) !important; box-shadow: 0 0 0 2px rgba(168,255,120,.25) !important; }
-
-/* 初心者モード: 世帯タイプラベルの説明テキスト強化 */
-.household-label-wrap { text-align: left; }
-
-/* ── 初心者向け：平易な表現のラベル改善 ── */
-body[data-mode="beginner"] .param-label-technical { display: none; }
-body[data-mode="beginner"] .param-label-simple { display: inline; }
-.param-label-simple { display: none; }
-
-/* ── 初心者モード ガイドバナー ── */
-#beginner-guide-banner {
+/* ヘッダータグライン: モード別 */
+.header-tagline .beginner-only.normal-show {
   display: none;
-  background: linear-gradient(135deg, rgba(0,212,255,.06), rgba(168,255,120,.04));
-  border: 1px solid rgba(0,212,255,.2);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 14px;
-  font-size: 13px;
-  color: var(--text-mid);
-  line-height: 1.8;
 }
-body[data-mode="beginner"] #beginner-guide-banner { display: block; }
+body[data-mode="beginner"] .header-tagline .beginner-only.normal-show,
+body[data-mode="normal"] .header-tagline .normal-show { display: inline !important; }
+body[data-mode="beginner"] .header-tagline .pro-only,
+body[data-mode="normal"] .header-tagline .pro-only { display: none !important; }
+body[data-mode="pro"] .header-tagline .pro-only { display: inline !important; }
 
-/* ── 初心者モード 年金：世帯タイプ連動バッジ ── */
-.pension-type-hint {
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-top: 4px;
-  font-family: var(--font-mono);
-  padding: 4px 8px;
-  background: rgba(0,212,255,.05);
-  border-radius: 4px;
-  border-left: 2px solid var(--accent);
-}
-/* スマホ対応: 世帯タイプボタン3列 */
-@media (max-width: 480px) {
-  #household-btns { grid-template-columns: repeat(3, 1fr) !important; }
-  #hh-single, #hh-single-spouse, #hh-dual { min-height: 64px; padding: 10px 4px; }
-  .diff-label { font-size: 10px !important; }
-  .beginner-stage-amount { font-size: 18px; }
-  .beginner-stage-input { width: 68px; font-size: 16px; }
-  #wstep-0 .wiz-choice-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-}
-
-/* ── 難易度ボタン diff-sub を初心者向けに読みやすく ── */
-.diff-sub {
-  font-size: 10px;
-  color: var(--text-dim);
-  margin-top: 3px;
-  line-height: 1.4;
-}
-/* ── 初心者ガイドバナー ── */
-#beginner-guide-banner {
-  background: linear-gradient(135deg, rgba(0,212,255,.07), rgba(168,255,120,.04));
-  border: 1px solid rgba(0,212,255,.18);
-  border-left: 3px solid var(--accent);
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin-bottom: 14px;
-  font-size: 12px;
-  color: var(--text-mid);
-  line-height: 1.7;
-  overflow: hidden;
-}
-/* ── 初心者モードでのステップフロー改善 ── */
-body[data-mode="beginner"] .step-item.s5 { opacity: 0.4; }
-/* ── 実行ボタン：初心者ではより魅力的な色合いに ── */
-body[data-mode="beginner"] .run-btn {
-  background: linear-gradient(135deg, #00c8f8, #0077bb, #005fa0);
-  font-size: 17px;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 28px rgba(0,200,248,.4);
-}
-body[data-mode="beginner"] .run-btn:hover {
-  box-shadow: 0 6px 36px rgba(0,200,248,.6);
-}
-/* ── 初心者モード: 世帯タイプ diff-btn 説明 ── */
-.diff-btn .diff-sub {
-  white-space: normal;
-  font-size: 9px;
-}
-/* ── ウィザード wiz-btn-title/wiz-btn-sub ── */
-.wiz-btn-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1.3;
-  margin-bottom: 3px;
-}
-.wiz-btn-sub {
-  font-size: 10px;
-  color: var(--text-dim);
-  line-height: 1.4;
-}
-/* ── 初心者モード: param-section-label を太めに ── */
-body[data-mode="beginner"] .param-section-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 12px;
-}
-/* ── ウィザード Step0 選択後のアニメーション ── */
-.wiz-choice-btn {
-  transition: all .2s cubic-bezier(.4,0,.2,1) !important;
-}
-/* ── 世帯タイプ: 選択されたボタンに下線グラデーション ── */
-#hh-single.diff-btn-active::after,
-#hh-single-spouse.diff-btn-active::after,
-#hh-dual.diff-btn-active::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 2px;
-  border-radius: 0 0 6px 6px;
-}
-#hh-single.diff-btn-active::after { background: var(--accent); }
-#hh-single-spouse.diff-btn-active::after { background: var(--pink); }
-#hh-dual.diff-btn-active::after { background: var(--accent3); }
-.diff-btn { position: relative; overflow: hidden; }
-
-/* ── beginner-stage-card の色バー左側 ── */
-.beginner-stage-card:nth-child(1) .beg-stage-color-bar { background: var(--accent); box-shadow: 0 0 8px rgba(0,212,255,.4); }
-.beginner-stage-card:nth-child(2) .beg-stage-color-bar { background: var(--warning); box-shadow: 0 0 8px rgba(255,209,102,.4); }
-.beginner-stage-card:nth-child(3) .beg-stage-color-bar { background: var(--accent3); box-shadow: 0 0 8px rgba(168,255,120,.4); }
-
-/* ── スプラッシュ画面 「かんたんモード」バッジ ── */
-/* ── 初心者モード: ライフステージセクションヘッダ改善 ── */
-body[data-mode="beginner"] #step2-panel .param-section-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-/* ── 初心者ステージカード: hover時の境界線 ── */
-.beginner-stage-card:nth-child(1):hover { border-color: rgba(0,212,255,.4); }
-.beginner-stage-card:nth-child(2):hover { border-color: rgba(255,209,102,.4); }
-.beginner-stage-card:nth-child(3):hover { border-color: rgba(168,255,120,.4); }
-
-/* ── wizard: 質問 Q&A スタイル強化 ── */
-.wiz-question {
-  font-size: 26px !important;
-}
-@media (max-width: 480px) {
-  .wiz-question { font-size: 22px !important; }
-}
-/* ── 実行ボタン subtext ── */
-#run-btn-subtext {
-  font-size: 12px;
-  opacity: 0.75;
-}
-/* ── 初心者: 年金ヒント非表示（非初心者モード） ── */
-body[data-mode="normal"] #pension-type-hint,
-body[data-mode="pro"] #pension-type-hint { display: none !important; }
-body[data-mode="beginner"] .beginner-hide { display: none !important; }
-
-/* ── 初心者ステージ入力: フォーカス時アニメ ── */
-.beginner-stage-input:focus + .beginner-stage-unit {
-  color: var(--accent);
-}
-
-/* ── wiz-choice-btn 選択中の視覚フィードバック強化 ── */
-@keyframes wizSelectPulse {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.04); }
-  100% { transform: scale(1); }
-}
-.wiz-choice-btn.selected {
-  animation: wizSelectPulse 0.3s ease-out;
-}
-
-/* ── 初心者モードでstep3はシンプルに ── */
-body[data-mode="beginner"] #step3-panel > div:first-child {
-  margin-bottom: 10px;
-}
-/* ── 老後の安全度チェックのヘッダー間隔改善 ── */
-#beginner-summary > div:first-child {
-  margin-bottom: 16px;
+/* mode switcher: 診断ボタンのアクティブスタイル */
+#modeBtn-beginner.active {
+  background: rgba(0,212,255,.12);
+  border: 1px solid rgba(0,212,255,.4);
 }

@@ -959,19 +959,16 @@ function renderOneTimeEventList() {
 // P(die this year) = 1 - exp(-h(x))
 // medAdvRate: fractional reduction in hazard per year elapsed (compound)
 function deathProb(age, yearsElapsed, gender, medAdvRate) {
-  const m = MORTALITY[gender] || MORTALITY['male']; // フォールバック: 不正な gender 値をガード
+  const m = MORTALITY[gender] || MORTALITY['male'];
   const safeRate = (typeof medAdvRate === 'number' && isFinite(medAdvRate)) ? medAdvRate : 0;
   const h = (m.alpha * Math.exp(m.beta * age) + m.gamma) * Math.pow(Math.max(0, 1 - safeRate), yearsElapsed);
   return Math.min(1 - Math.exp(-h), 1.0);
 }
 
 function chooseRegime(probs) {
-  if (!probs || probs.length === 0) return 1; // フォールバック: 通常レジーム
-  let r=Math.random(), s=0;
-  for(let i=0;i<probs.length;i++){
-    s+=probs[i];
-    if(r<s) return Math.min(i, REGIMES.length-1); // REGIMES 範囲内に収める
-  }
+  if (!probs || probs.length === 0) return 1;
+  let r=Math.random(),s=0;
+  for(let i=0;i<probs.length;i++){s+=probs[i];if(r<s)return Math.min(i, REGIMES.length-1);}
   return Math.min(probs.length-1, REGIMES.length-1);
 }
 
@@ -982,9 +979,7 @@ let chartInstance=null;
 let lastMedianFireAge=null; // runSimulation完了後にFIRE年齢中央値を保持
 let lastFinalAssets=null;   // runSimulation完了後の死亡時最終資産（昇順ソート済み、円単位）
 function getAgeAtSurvivalRate(targetPercent, params, currentAge, medicalAdv) {
-    if (!params || typeof params.alpha === 'undefined') {
-      params = MORTALITY['male']; // フォールバック
-    }
+    if (!params || typeof params.alpha === 'undefined') params = MORTALITY['male'];
     const { alpha, beta, gamma } = params;
     let low = currentAge;
     let high = 130;
@@ -1890,9 +1885,9 @@ async function runSimulation() {
     }
   }
 
-  // Validate TM — モバイルでは confirm() がブロックされるため、自動正規化する
+  // Validate TM — モバイルでは confirm() がブロックされるため、自動正規化
   if(tmValues.some(row=>row.reduce((a,b)=>a+b,0)!==100)){
-    normalizeAll(); // confirm() なしで即時正規化（スマホ対応）
+    normalizeAll();
   }
 // --- 計算開始と同時に現在の設定を確実に保存 ---
   saveParameters();
@@ -1989,7 +1984,7 @@ async function runSimulation() {
 
 if(dead[i]) continue; // skip financials if died this step
 
-      const rg=REGIMES[regArr[i]] || REGIMES[1]; // フォールバック: 通常レジーム
+      const rg=REGIMES[regArr[i]] || REGIMES[1];
       const w =retired[i]?wRetire:wWork;
 
       // ---- 1. Returns & Rebalancing ----
@@ -2348,8 +2343,7 @@ if(dead[i]) continue; // skip financials if died this step
 
 // --- ここから入れ替え ---
   // 表示する年齢（x軸の右端）までのデータだけを取り出し、その範囲の最大値をy軸の基準にする
-  const _sg1 = (selectedGender === 'male' || selectedGender === 'female') ? selectedGender : 'male';
-  const displayLimit = getAgeAtSurvivalRate(0.1, MORTALITY[_sg1], parseInt(document.getElementById('start-age').value) || 35, parseFloat(document.getElementById('med-adv')?.value || 0.8)) - (parseInt(document.getElementById('start-age').value) || 35);
+  const displayLimit = getAgeAtSurvivalRate(0.1, MORTALITY[selectedGender], parseInt(document.getElementById('start-age').value), parseFloat(document.getElementById('med-adv').value)) - parseInt(document.getElementById('start-age').value);
 
   // yMax: P90ではなく「中央値のピーク × 2.0」を上限にして中央値が潰れないようにする
   // P90が極端に大きい（外れ値パス由来）場合でも中央値が読みやすい縦軸を維持
@@ -2461,7 +2455,7 @@ if(dead[i]) continue; // skip financials if died this step
       },
       scales:{
         x:{
-max: getAgeAtSurvivalRate(0.1, MORTALITY[(selectedGender === 'male' || selectedGender === 'female') ? selectedGender : 'male'], parseInt(document.getElementById('start-age')?.value || 35), parseFloat(document.getElementById('med-adv')?.value || 0.8)),
+max: getAgeAtSurvivalRate(0.1, MORTALITY[selectedGender], parseInt(document.getElementById('start-age').value), parseFloat(document.getElementById('med-adv').value)),
 grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:10},maxTicksLimit:12},
            title:{display:true,text:'年齢',color:'#6b7a99',font:{size:11}}},
         y:{min:0,max:yMaxFinal,grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},

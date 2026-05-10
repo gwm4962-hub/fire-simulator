@@ -98,9 +98,9 @@ function updateBeginnerSummary({ med, assets65, expAt65, pensionAnnual, successR
 // ---- 1. MODE SWITCHER ----
 let currentMode = 'beginner';
 const MODE_DESCS = {
-  beginner: '🌱 初心者モード：難しい設定は自動。老後の安全度だけ確認できます。',
-  normal:   '📊 通常モード：グラフ＋主要指標＋ライフステージを自由に設定できます。',
-  pro:      '🔬 プロモード：感度分析・遷移行列・t分布など全機能が使えます。'
+  beginner: '🌱 かんたんモード：家計タイプ診断＋寿命延長カードで改善策を確認',
+  normal:   '📊 通常モード：家計タイプ診断＋詳細グラフ・指標で深掘り分析',
+  pro:      '🔬 プロモード：感度分析・遷移行列・t分布など全機能を解放'
 };
 
 function setMode(mode) {
@@ -111,6 +111,14 @@ function setMode(mode) {
   });
   document.getElementById('mode-desc').textContent = MODE_DESCS[mode];
   localStorage.setItem('fire_sim_mode', mode);
+
+  // 診断/実行ボタンのテキストをモードに応じて変更
+  const runBtnText = document.getElementById('run-btn-text');
+  if (runBtnText) {
+    runBtnText.textContent = (mode === 'beginner' || mode === 'normal')
+      ? '🔍 家計タイプを診断する'
+      : '▶ シミュレーションを実行する';
+  }
 
   // KPIセクション表示切り替え（シミュレーション済みの場合）
   const kpiSec = document.getElementById('kpi-section');
@@ -124,11 +132,13 @@ function setMode(mode) {
     bSumm.style.display = mode === 'beginner' && hasResult ? 'block' : 'none';
   }
 
-  // 初心者ステージパネルの表示切り替え
-  const bStagePanel = document.getElementById('beginner-stage-panel');
-  if (bStagePanel) {
-    const wizCompleted = localStorage.getItem('wizard_completed') === 'true';
-    bStagePanel.style.display = (mode === 'beginner' && wizCompleted) ? 'block' : 'none';
+  // 家計タイプ診断パネル (初心者・通常モード)
+  const diagPanel = document.getElementById('diagnosis-panel');
+  if (diagPanel) {
+    const hasDiag = diagPanel.querySelector('.diag-wrap');
+    if (hasDiag) {
+      diagPanel.style.display = (mode === 'beginner' || mode === 'normal') ? 'block' : 'none';
+    }
   }
 
   // pro モードに切り替わった時にグラフを初期化／リサイズ

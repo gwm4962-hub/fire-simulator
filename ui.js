@@ -1375,8 +1375,6 @@ function initLongevityExplorer() {
 
     // 性別ボタンを切り替えるための関数をグローバル（window）に定義
     window.setGender = function(gender) {
-        // 不正値ガード: mobile での localStorage 復元時に備える
-        if (gender !== 'male' && gender !== 'female') gender = 'male';
         currentGender = gender;
         // グローバル変数も同期
         selectedGender = gender;

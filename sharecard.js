@@ -1293,13 +1293,23 @@
 
     const startAge = parseInt(document.getElementById('start-age')?.value || '35');
 
-    const result = { successRate, assets65: assets65Man * 10000, assets65Man, surplus65Man, startAge };
+    // monthlyRetire を追加
+    const monthlyRetireEl = document.getElementById('kpi-monthly-retire') || document.getElementById('bsumm-monthly');
+    const monthlyRetireText = monthlyRetireEl ? monthlyRetireEl.textContent.replace(/[^0-9.]/g, '') : '0';
+    const monthlyRetire = parseFloat(monthlyRetireText) || 0;
+
+    const result = { successRate, assets65: assets65Man * 10000, assets65Man, surplus65Man, startAge, monthlyRetire };
     window.setLastSimResult(result);
+
+    // 家計タイプ診断エンジンに結果を通知
+    window.dispatchEvent(new CustomEvent('sim:done', { detail: result }));
 
     const scSec = document.getElementById('share-card-section');
     const ieSec = document.getElementById('improvement-engine-section');
-    if (scSec) scSec.style.display = '';
-    if (ieSec) ieSec.style.display = '';
+    // 初心者・通常モードではシェアカードを非表示（diagnosis-panelに集約）
+    const mode = document.body.getAttribute('data-mode');
+    if (scSec) scSec.style.display = (mode === 'pro') ? '' : 'none';
+    if (ieSec) ieSec.style.display = (mode === 'pro') ? '' : 'none';
   }
 
 })();

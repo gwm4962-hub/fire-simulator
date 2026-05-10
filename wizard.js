@@ -158,11 +158,11 @@
     if (subEl) subEl.textContent = nsimsVal + 'パターンの人生を試算しています';
 
     const msgs = [
-      '👨‍👩‍👧 家族構成から自動設定中...',
-      '💳 税金・手取り額を計算中...',
-      '🏡 老後の生活費を推計中...',
-      '📊 2,000パターンの人生を試算中...',
-      '🔍 老後の安全度を分析中...',
+      '統計データで自動設定中...',
+      '税金・手取り率を計算中...',
+      '老後の支出パターンを推計中...',
+      '2,000パターンの人生を試算中...',
+      '老後の安全度を分析中...',
     ];
     let mi = 0;
     const msgEl = getEl('wiz-loading-msg');
@@ -189,9 +189,9 @@
       const childEduTotal = wizChildren * GOV_DEFAULTS.children.eduCostPublic;
 
       // 年金：世帯タイプ別（厚労省2024年度モデル年金）
-      const pension = isDual ? GOV_DEFAULTS.pension.dual
-        : (wizHouseholdType === 'single-spouse' ? GOV_DEFAULTS.pension.couple
-        : GOV_DEFAULTS.pension.single);
+      const pension = isDual
+        ? GOV_DEFAULTS.pension.dual
+        : (hasSpouse ? GOV_DEFAULTS.pension.couple : GOV_DEFAULTS.pension.single);
 
       // FIRE目標は到達しない大きな値（定年まで働くモード）
       const fireThreshold = 99999;
@@ -218,48 +218,23 @@
       setSlider('w-retired',  Math.round(GOV_DEFAULTS.investRatioPost * 100));
       setSlider('inheritance', GOV_DEFAULTS.inheritance);
 
-      // 共働き設定（世帯タイプに応じて3パターン）
-      if (typeof setHousehold === 'function') {
-        if (isDual) {
-          setHousehold('dual');
-          setSlider('income-b', incomeB);
-          setSlider('raise-b', GOV_DEFAULTS.raiseRate);
-        } else if (wizHouseholdType === 'single-spouse') {
-          setHousehold('single-spouse');
-        } else {
-          setHousehold('single');
-        }
+      // 共働き設定
+      if (isDual && typeof setHousehold === 'function') {
+        setHousehold('dual');
+        setSlider('income-b', incomeB);
+        setSlider('raise-b', GOV_DEFAULTS.raiseRate);
+      } else if (typeof setHousehold === 'function') {
+        setHousehold('single');
       }
 
       // ライフステージ支出（定年まで → 定年後）
-      // expStages に直接書き込む（初心者用3ステージ）
-      const annualExp      = Math.round(monthlyExp * 12 / 10) * 10;       // 現役: 月支出×12
-      const annualExpRetire = Math.round(monthlyRetireExp * 12 / 10) * 10; // 老後: 現役の75%
-
-      // 旧互換: stage-exp-* 入力があれば更新
+      // ステージ0: 現役（現在〜60歳）, ステージ1以降: 定年後
       const stageEls0 = getEl('stage-exp-0');
       const stageEls1 = getEl('stage-exp-1');
       const stageEls2 = getEl('stage-exp-2');
       const stageEls3 = getEl('stage-exp-3');
       [stageEls0, stageEls1].forEach(el => { if (el) { el.value = monthlyExp; el.dispatchEvent(new Event('input',{bubbles:true})); } });
       [stageEls2, stageEls3].forEach(el => { if (el) { el.value = monthlyRetireExp; el.dispatchEvent(new Event('input',{bubbles:true})); } });
-
-      // expStages を3ステージで設定（初心者モード用）
-      if (typeof expStages !== 'undefined' && typeof renderStages === 'function') {
-        // 教育費ステージ以外をクリア
-        expStages = (typeof expStages !== 'undefined') ? expStages.filter(s => s._autoEdu) : [];
-        const startAge = Math.min(Math.max(age, 25), 55);
-        expStages.unshift(
-          { id: 101, label: '現役時代', from: startAge, to: 50, exp: annualExp },
-          { id: 102, label: '定年前後', from: 50,       to: 60, exp: Math.round(annualExp * 0.85 / 10) * 10 },
-          { id: 103, label: '老後',     from: 60,       to: 95, exp: annualExpRetire }
-        );
-        if (typeof stageIdCounter !== 'undefined') stageIdCounter = Math.max(stageIdCounter, 103);
-        renderStages();
-      }
-
-      // 初心者ステージパネルを更新
-      updateBeginnerStagePanel(age, annualExp, annualExpRetire);
 
       // 子供追加
       if (wizChildren > 0 && typeof addChild === 'function') {
@@ -283,10 +258,6 @@
       ov.style.pointerEvents = 'none';
       document.querySelector('.app').style.filter = 'none';
       document.querySelector('.app').style.pointerEvents = 'auto';
-
-      // 初心者ステージパネルを表示
-      const bsp = getEl('beginner-stage-panel');
-      if (bsp) bsp.style.display = 'block';
 
       if (typeof _isLoading !== 'undefined') _isLoading = false;
       localStorage.setItem('wizard_completed', 'true');
@@ -343,57 +314,6 @@
     const firstInp = getEl('wstep-0')?.querySelector('button');
     // No auto-focus for choice buttons
   });
-
-  // ── 初心者ステージパネルを更新 ───────────────────────────────
-  function updateBeginnerStagePanel(startAge, annualExp, annualExpRetire) {
-    const wrap = document.getElementById('beginner-stages-wrap');
-    if (!wrap) return;
-    const ageFrom = Math.min(Math.max(startAge, 25), 55);
-    const stages = [
-      { icon: '💼', label: '現役時代', range: ageFrom + '歳〜50歳', exp: annualExp,       color: 'var(--accent)',   id: 'bstage-0' },
-      { icon: '🌅', label: '定年前後', range: '50歳〜60歳',          exp: Math.round(annualExp * 0.85 / 10) * 10, color: 'var(--warning)', id: 'bstage-1' },
-      { icon: '🏡', label: '老　　後', range: '60歳〜寿命',           exp: annualExpRetire, color: 'var(--accent3)', id: 'bstage-2' },
-    ];
-    wrap.innerHTML = '';
-    stages.forEach(s => {
-      const card = document.createElement('div');
-      card.className = 'beginner-stage-card';
-      card.dataset.bstageId = s.id;
-      card.innerHTML = `
-        <div class="beg-stage-color-bar" style="background:${s.color};box-shadow:0 0 8px ${s.color}55;"></div>
-        <div class="beginner-stage-icon">${s.icon}</div>
-        <div class="beginner-stage-info">
-          <div class="beginner-stage-title">${s.label}</div>
-          <div class="beginner-stage-range">${s.range}</div>
-          <div class="beginner-stage-sub">年間支出の目安</div>
-        </div>
-        <div class="beginner-stage-right">
-          <input class="beginner-stage-input" type="number" min="0" max="5000" step="10"
-                 value="${s.exp}" inputmode="numeric" aria-label="${s.label}の年間支出（万円）">
-          <div class="beginner-stage-unit">万円/年</div>
-        </div>
-      `;
-      // 入力変更 → expStages に反映
-      const stageKeys = ['stage-exp-active', 'stage-exp-pre', 'stage-exp-retire'];
-      const expIds = [101, 102, 103];
-      const inp = card.querySelector('input');
-      inp.addEventListener('input', function() {
-        const val = parseInt(this.value) || 0;
-        const idx = stages.indexOf(s);
-        if (typeof expStages !== 'undefined') {
-          const st = expStages.find(st => st.id === expIds[idx]);
-          if (st) { st.exp = val; }
-        }
-        if (typeof renderTimeline === 'function') renderTimeline();
-        if (typeof scheduleSave === 'function') scheduleSave();
-      });
-      wrap.appendChild(card);
-    });
-    // パネル表示
-    const panel = document.getElementById('beginner-stage-panel');
-    if (panel) panel.style.display = 'block';
-  }
-  window.updateBeginnerStagePanel = updateBeginnerStagePanel;
 
   window.addEventListener('DOMContentLoaded', () => {
     const isCompleted = localStorage.getItem('wizard_completed');
