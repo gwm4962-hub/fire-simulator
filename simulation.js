@@ -482,25 +482,7 @@ function renderStages() {
   }
 
   renderTimeline();
-
-  // 初心者ステージパネルを同期
-  syncBeginnerStagePanel();
 }
-
-// 初心者用ステージパネルと expStages を同期（読み取り）
-function syncBeginnerStagePanel() {
-  const wrap = document.getElementById('beginner-stages-wrap');
-  if (!wrap || !wrap.children.length) return;
-  const normal = expStages.filter(s => !s._autoEdu);
-  const inputs = wrap.querySelectorAll('input[type="number"]');
-  inputs.forEach((inp, i) => {
-    if (normal[i] !== undefined) {
-      inp.value = normal[i].exp;
-    }
-  });
-}
-window.syncBeginnerStagePanel = syncBeginnerStagePanel;
-
 
 function updateStage(id, field, val) {
   const s = expStages.find(s=>s.id===id);
@@ -977,15 +959,20 @@ function renderOneTimeEventList() {
 // P(die this year) = 1 - exp(-h(x))
 // medAdvRate: fractional reduction in hazard per year elapsed (compound)
 function deathProb(age, yearsElapsed, gender, medAdvRate) {
-  const m=MORTALITY[gender];
-  const h=(m.alpha*Math.exp(m.beta*age)+m.gamma)*Math.pow(1-medAdvRate, yearsElapsed);
-  return Math.min(1-Math.exp(-h), 1.0);
+  const m = MORTALITY[gender] || MORTALITY['male']; // フォールバック: 不正な gender 値をガード
+  const safeRate = (typeof medAdvRate === 'number' && isFinite(medAdvRate)) ? medAdvRate : 0;
+  const h = (m.alpha * Math.exp(m.beta * age) + m.gamma) * Math.pow(Math.max(0, 1 - safeRate), yearsElapsed);
+  return Math.min(1 - Math.exp(-h), 1.0);
 }
 
 function chooseRegime(probs) {
-  let r=Math.random(),s=0;
-  for(let i=0;i<probs.length;i++){s+=probs[i];if(r<s)return i;}
-  return probs.length-1;
+  if (!probs || probs.length === 0) return 1; // フォールバック: 通常レジーム
+  let r=Math.random(), s=0;
+  for(let i=0;i<probs.length;i++){
+    s+=probs[i];
+    if(r<s) return Math.min(i, REGIMES.length-1); // REGIMES 範囲内に収める
+  }
+  return Math.min(probs.length-1, REGIMES.length-1);
 }
 
 // ============================================================
@@ -995,6 +982,9 @@ let chartInstance=null;
 let lastMedianFireAge=null; // runSimulation完了後にFIRE年齢中央値を保持
 let lastFinalAssets=null;   // runSimulation完了後の死亡時最終資産（昇順ソート済み、円単位）
 function getAgeAtSurvivalRate(targetPercent, params, currentAge, medicalAdv) {
+    if (!params || typeof params.alpha === 'undefined') {
+      params = MORTALITY['male']; // フォールバック
+    }
     const { alpha, beta, gamma } = params;
     let low = currentAge;
     let high = 130;
@@ -1900,10 +1890,9 @@ async function runSimulation() {
     }
   }
 
-  // Validate TM
+  // Validate TM — モバイルでは confirm() がブロックされるため、自動正規化する
   if(tmValues.some(row=>row.reduce((a,b)=>a+b,0)!==100)){
-    if(!confirm('遷移確率の合計が100%でない行があります。自動正規化してから実行しますか？')) return;
-    normalizeAll();
+    normalizeAll(); // confirm() なしで即時正規化（スマホ対応）
   }
 // --- 計算開始と同時に現在の設定を確実に保存 ---
   saveParameters();
@@ -1919,7 +1908,7 @@ async function runSimulation() {
   pBar.style.display='block'; pFill.style.width='0%';
 
   // --- Read params ---
-  const startAge      =parseInt(document.getElementById('start-age').value);
+  const startAge      = Math.max(20, Math.min(70, parseInt(document.getElementById('start-age')?.value || 35)));
   const initAssets    =parseInt(document.getElementById('initial-assets').value)*10000;
   const fireThr       =parseInt(document.getElementById('fire-threshold').value)*10000;
   const annualIncome  =parseInt(document.getElementById('income').value)*10000;
@@ -1936,14 +1925,14 @@ async function runSimulation() {
   const childBenefitAnnual = calcChildBenefitAnnual() * 10000; // 万→円
   const monthlyPension=parseInt(document.getElementById('pension').value)*10000;
   const inheritAmt    =parseInt(document.getElementById('inheritance').value)*10000;
-  const baseInfl      =parseFloat(document.getElementById('base-infl').value)/100;
+  const baseInfl      = parseFloat(document.getElementById('base-infl')?.value || 1.5) / 100;
   // expActive / expMid は廃止 → getExpenseForAge() を使用
-  const wWork         =parseInt(document.getElementById('w-working').value)/100;
-  const wRetire       =parseInt(document.getElementById('w-retired').value)/100;
-  const tDof          =parseInt(document.getElementById('tdof').value);
-  const medAdv        =parseFloat(document.getElementById('med-adv').value)/100;
-  const N             =parseInt(document.getElementById('nsims').value);
-  const gender        =selectedGender;
+  const wWork         = parseInt(document.getElementById('w-working')?.value || 60) / 100;
+  const wRetire       = parseInt(document.getElementById('w-retired')?.value || 40) / 100;
+  const tDof          = Math.max(2, parseInt(document.getElementById('tdof')?.value || 5));
+  const medAdv        = parseFloat(document.getElementById('med-adv')?.value || 0) / 100;
+  const N             = Math.max(200, parseInt(document.getElementById('nsims')?.value || 2000));
+  const gender        = (selectedGender === 'male' || selectedGender === 'female') ? selectedGender : 'male';
   const T             =80; // up to startAge+80 (max ~135), death via Gompertz
 
   const TM=tmValues.map(row=>{ const s=row.reduce((a,b)=>a+b,0); return row.map(v=>v/s); });
@@ -2000,7 +1989,7 @@ async function runSimulation() {
 
 if(dead[i]) continue; // skip financials if died this step
 
-      const rg=REGIMES[regArr[i]];
+      const rg=REGIMES[regArr[i]] || REGIMES[1]; // フォールバック: 通常レジーム
       const w =retired[i]?wRetire:wWork;
 
       // ---- 1. Returns & Rebalancing ----
@@ -2359,7 +2348,8 @@ if(dead[i]) continue; // skip financials if died this step
 
 // --- ここから入れ替え ---
   // 表示する年齢（x軸の右端）までのデータだけを取り出し、その範囲の最大値をy軸の基準にする
-  const displayLimit = getAgeAtSurvivalRate(0.1, MORTALITY[selectedGender], parseInt(document.getElementById('start-age').value), parseFloat(document.getElementById('med-adv').value)) - parseInt(document.getElementById('start-age').value);
+  const _sg1 = (selectedGender === 'male' || selectedGender === 'female') ? selectedGender : 'male';
+  const displayLimit = getAgeAtSurvivalRate(0.1, MORTALITY[_sg1], parseInt(document.getElementById('start-age').value) || 35, parseFloat(document.getElementById('med-adv')?.value || 0.8)) - (parseInt(document.getElementById('start-age').value) || 35);
 
   // yMax: P90ではなく「中央値のピーク × 2.0」を上限にして中央値が潰れないようにする
   // P90が極端に大きい（外れ値パス由来）場合でも中央値が読みやすい縦軸を維持
@@ -2471,7 +2461,7 @@ if(dead[i]) continue; // skip financials if died this step
       },
       scales:{
         x:{
-max: getAgeAtSurvivalRate(0.1, MORTALITY[selectedGender], parseInt(document.getElementById('start-age').value), parseFloat(document.getElementById('med-adv').value)),
+max: getAgeAtSurvivalRate(0.1, MORTALITY[(selectedGender === 'male' || selectedGender === 'female') ? selectedGender : 'male'], parseInt(document.getElementById('start-age')?.value || 35), parseFloat(document.getElementById('med-adv')?.value || 0.8)),
 grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:10},maxTicksLimit:12},
            title:{display:true,text:'年齢',color:'#6b7a99',font:{size:11}}},
         y:{min:0,max:yMaxFinal,grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},
