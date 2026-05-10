@@ -2450,56 +2450,60 @@ body[data-mode="beginner"] #chart-title-text::before {
 
 /* CSSEOF2 */
 
-/* ═══ 家計タイプ診断パネル 表示制御 ═══ */
-/* 初心者・通常モードで diagnosis-panel を表示 */
+/* ══════════════════════════════════════════════
+   追加スタイル — 診断・比較・アドバイス v2
+   ══════════════════════════════════════════════ */
+
+/* 初心者・通常モードで diagnosis-panel 表示 */
 body[data-mode="beginner"] #diagnosis-panel,
 body[data-mode="normal"] #diagnosis-panel { display: block !important; }
 body[data-mode="pro"] #diagnosis-panel    { display: none !important; }
-
-/* 通常モードでは旧 beginner-summary は常に非表示 */
-body[data-mode="normal"] #beginner-summary { display: none !important; }
-
-/* 通常モードでは kpi-section を表示（プロと同じ詳細指標） */
 body[data-mode="normal"] #kpi-section { display: block; }
 
-/* スプラッシュ: 「かんたんモード」バッジ pulse */
-@keyframes badge-pulse {
-  0%,100% { box-shadow: 0 0 0 0 rgba(0,212,255,.4); }
-  50%      { box-shadow: 0 0 0 6px rgba(0,212,255,0); }
-}
-
-/* ═══ 通常モードでの診断パネル表示制御 ═══ */
-/* normal-show: 初心者・通常モード両方で表示 */
-body[data-mode="beginner"] .normal-show,
-body[data-mode="normal"] .normal-show { display: inline !important; }
-body[data-mode="pro"] .normal-show { display: none !important; }
-
-/* 実行ボタン: 診断モードでは強調色 */
+/* 実行ボタン: 診断モードカラー */
 body[data-mode="beginner"] .run-btn,
 body[data-mode="normal"] .run-btn {
-  background: linear-gradient(135deg, #0088ff, #005fa0, #003d80);
-  font-size: 16px;
-  letter-spacing: 1px;
-  box-shadow: 0 4px 28px rgba(0,136,255,.45);
+  background: linear-gradient(135deg, #0066dd, #004499, #002f77);
+  font-size: 16px; letter-spacing: .5px;
+  box-shadow: 0 4px 24px rgba(0,102,221,.45);
+  transition: all .2s;
 }
 body[data-mode="beginner"] .run-btn:hover,
 body[data-mode="normal"] .run-btn:hover {
-  box-shadow: 0 6px 36px rgba(0,136,255,.65);
+  box-shadow: 0 6px 32px rgba(0,102,221,.65);
   transform: translateY(-1px);
 }
 
-/* ヘッダータグライン: モード別 */
-.header-tagline .beginner-only.normal-show {
-  display: none;
+/* compare trigger btn in param-label */
+.compare-trigger-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-left: 6px; padding: 2px 8px;
+  background: rgba(0,212,255,.1); border: 1px solid rgba(0,212,255,.3);
+  border-radius: 6px; color: var(--accent); font-size: 10px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+  font-family: 'Noto Sans JP', sans-serif; vertical-align: middle;
 }
-body[data-mode="beginner"] .header-tagline .beginner-only.normal-show,
-body[data-mode="normal"] .header-tagline .normal-show { display: inline !important; }
-body[data-mode="beginner"] .header-tagline .pro-only,
-body[data-mode="normal"] .header-tagline .pro-only { display: none !important; }
-body[data-mode="pro"] .header-tagline .pro-only { display: inline !important; }
+.compare-trigger-btn:hover { background: rgba(0,212,255,.2); }
 
-/* mode switcher: 診断ボタンのアクティブスタイル */
-#modeBtn-beginner.active {
-  background: rgba(0,212,255,.12);
-  border: 1px solid rgba(0,212,255,.4);
+/* シェア画像モーダル flex */
+#share-image-modal { display: none; }
+#share-image-modal.open { display: flex !important; }
+
+/* プライバシーバッジ */
+#privacy-badge { display: none; }
+body[data-mode="beginner"] #privacy-badge { display: block !important; }
+
+/* アドバイスパネル */
+#advice-engine-panel { display: none; }
+body[data-mode="beginner"] #advice-engine-panel,
+body[data-mode="normal"] #advice-engine-panel { display: block !important; }
+
+/* ライフカタログボタン */
+#life-catalog-btn { transition: all .2s; }
+#life-catalog-btn:hover { background: rgba(255,255,255,.09) !important; border-color: rgba(255,255,255,.2) !important; }
+
+/* モバイル対応 */
+@media (max-width: 480px) {
+  #share-image-modal { padding: 12px !important; }
+  #share-image-card-wrap { max-width: 100% !important; }
 }

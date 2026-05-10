@@ -13,8 +13,8 @@
     inflation:        1.5,   // インフレ率 %（2024年実績ベース・総務省CPI）
     raiseRate:        2.0,   // 昇給率 %/年（2024年春闘平均5.1%→定昇込み実態2%）
     savingsRateRatio: 0.15,  // 手取りの15%を貯蓄
-    expenseRatio:     0.62,  // 手取りの62%を生活費（総務省家計調査）
-    postRetireRatio:  0.75,  // 定年後の支出は現役比75%
+    expenseRatio:     0.70,  // 手取りの70%を生活費（額面年収換算で約50%）
+    postRetireRatio:  0.80,  // 定年後の支出は現役比80%
     pension: {
       // 厚労省モデル年金（2024年度）
       // 夫婦（片方専業）= 23.0万/月、単身 = 約16.4万（男性平均）
@@ -24,8 +24,8 @@
     },
     retireAge:        60,    // 定年年齢（固定）
     inheritance:      500,   // 相続想定額（国税庁：相続財産中央値は1,000〜2,000万、受け取り確率考慮）
-    investRatio:      0.6,   // 現役中の株式比率
-    investRatioPost:  0.4,   // 退職後の株式比率
+    investRatio:      0.0,   // 現役中の株式比率（初期値0%・比較機能で変更）
+    investRatioPost:  0.0,   // 退職後の株式比率（初期値0%）
     fireThreshold:    99999, // 初心者モードではFIREしない（大きな値にして到達しないようにする）
     children: {
       // 文部科学省「子供の学習費調査」+ 日本政策金融公庫「教育費負担の実態調査」
@@ -189,9 +189,9 @@
       const childEduTotal = wizChildren * GOV_DEFAULTS.children.eduCostPublic;
 
       // 年金：世帯タイプ別（厚労省2024年度モデル年金）
-      const pension = isDual
-        ? GOV_DEFAULTS.pension.dual
-        : (hasSpouse ? GOV_DEFAULTS.pension.couple : GOV_DEFAULTS.pension.single);
+      const pension = isDual ? GOV_DEFAULTS.pension.dual
+        : (wizHouseholdType === 'single-spouse' ? GOV_DEFAULTS.pension.couple
+        : GOV_DEFAULTS.pension.single);
 
       // FIRE目標は到達しない大きな値（定年まで働くモード）
       const fireThreshold = 99999;
@@ -218,13 +218,15 @@
       setSlider('w-retired',  Math.round(GOV_DEFAULTS.investRatioPost * 100));
       setSlider('inheritance', GOV_DEFAULTS.inheritance);
 
-      // 共働き設定
-      if (isDual && typeof setHousehold === 'function') {
-        setHousehold('dual');
-        setSlider('income-b', incomeB);
-        setSlider('raise-b', GOV_DEFAULTS.raiseRate);
-      } else if (typeof setHousehold === 'function') {
-        setHousehold('single');
+      // 共働き設定（世帯タイプ別）
+      if (typeof setHousehold === 'function') {
+        if (isDual) {
+          setHousehold('dual');
+          setSlider('income-b', incomeB);
+          setSlider('raise-b', GOV_DEFAULTS.raiseRate);
+        } else {
+          setHousehold(wizHouseholdType === 'single-spouse' ? 'single-spouse' : 'single');
+        }
       }
 
       // ライフステージ支出（定年まで → 定年後）

@@ -125,13 +125,10 @@
     <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:#00d4ff;letter-spacing:1px;margin-bottom:4px;">FLOW</div>
     <div style="font-size:12px;color:rgba(255,255,255,.45);letter-spacing:2px;margin-bottom:24px;">資産シミュレーター</div>
 
-    <div style="font-size:14px;font-weight:700;color:#e2eef8;margin-bottom:4px;">
+    <div style="font-size:15px;font-weight:700;color:#e2eef8;margin-bottom:18px;">
       あなたのお金は何歳まで生きる？
     </div>
-    <div style="font-size:11px;color:rgba(255,255,255,.45);margin-bottom:16px;line-height:1.7;">
-      家計タイプを診断して老後資金の「寿命」を可視化<br>
-      <span style="opacity:.6;">あとでいつでもモードを切り替えられます</span>
-    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;">家計タイプ診断で老後資金の「寿命」を可視化します</div>
 
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button onclick="startWithMode('beginner')" style="
@@ -143,8 +140,8 @@
          onmouseout="this.style.borderColor='rgba(0,212,255,.35)';this.style.background='rgba(0,212,255,.08)';">
         <span style="font-size:26px;">🌱</span>
         <div>
-          <div style="font-size:14px;font-weight:700;color:#00d4ff;margin-bottom:4px;">🔍 家計タイプ診断 <span style="font-size:10px;background:rgba(0,212,255,.2);border:1px solid rgba(0,212,255,.4);padding:2px 7px;border-radius:10px;vertical-align:middle;margin-left:4px;">おすすめ</span></div>
-          <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.7;">3問に答えるだけで「あなたの家計タイプ」を診断。<br>寿命延長カードで改善策もシミュレーション！</div>
+          <div style="font-size:14px;font-weight:700;color:#00d4ff;margin-bottom:2px;">初心者モード（おすすめ）</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.6;">ウィザードが年齢・収入・貯蓄を質問します。シミュレーターが初めての方に。</div>
         </div>
       </button>
 
@@ -157,8 +154,8 @@
          onmouseout="this.style.borderColor='rgba(168,255,120,.25)';this.style.background='rgba(168,255,120,.05)';">
         <span style="font-size:26px;">📊</span>
         <div>
-          <div style="font-size:14px;font-weight:700;color:#a8ff78;margin-bottom:3px;">📊 通常モード</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.6;">家計タイプ診断＋詳細グラフ・FIRE計画を自分で細かく設定したい方に。</div>
+          <div style="font-size:14px;font-weight:700;color:#a8ff78;margin-bottom:2px;">通常モード</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.6;">全ての項目を自分で設定。投資・FIRE計画を詳しく分析したい方に。</div>
         </div>
       </button>
 
@@ -171,8 +168,8 @@
          onmouseout="this.style.borderColor='rgba(255,110,180,.2)';this.style.background='rgba(255,110,180,.04)';">
         <span style="font-size:26px;">🔬</span>
         <div>
-          <div style="font-size:14px;font-weight:700;color:#ff6eb4;margin-bottom:3px;">🔬 プロモード</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.6;">感度分析・ヒートマップ・マルコフ連鎖など全機能。上級者・研究向け。</div>
+          <div style="font-size:14px;font-weight:700;color:#ff6eb4;margin-bottom:2px;">プロモード</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.6;">感度分析・ヒートマップ等の高度な機能も全て使用可能。上級者向け。</div>
         </div>
       </button>
     </div>
@@ -333,10 +330,7 @@
     <div class="header-text">
       <div class="header-sub">あしたの資産予報</div>
       <div class="header-title">FLOW</div>
-      <div class="header-tagline">
-      <span class="beginner-only normal-show" style="color:var(--accent)">🔍 家計タイプ診断 × 寿命延長カード</span>
-      <span class="pro-only" style="color:var(--text-dim)">モンテカルロ法 × マルコフ連鎖 × t分布</span>
-    </div>
+      <div class="header-tagline">モンテカルロ法 × マルコフ連鎖で将来の資産を多パターン試算</div>
     </div>
     <div class="header-right">
       <div class="header-badge" id="status-badge">READY</div>
@@ -399,7 +393,7 @@
       <span class="mode-icon">🔬</span><span class="mode-label">プロ</span>
     </button>
     <div style="flex:2;font-size:10px;color:var(--text-dim);padding:4px 8px;line-height:1.5;" id="mode-desc">
-      🔍 診断モード：3問で家計タイプを診断。寿命延長カードで改善策を確認。
+      🌱 初心者：ウィザードで簡単設定、主要グラフのみ表示
     </div>
   </div>
 
@@ -740,13 +734,20 @@
               <div class="adv-body-inner">
           <div class="param-section" style="margin-bottom:0;">
             <div class="param-control">
-              <div class="param-row"><span class="param-label">株式比率（現役中）</span><span class="param-value" id="val-w-working">70%</span></div>
-              <input type="range" id="w-working" min="0" max="100" step="5" value="70">
+              <div class="param-row">
+                <span class="param-label">株式比率（現役中）
+                  <button class="compare-trigger-btn" onclick="openStockCompare()" title="株式比率別の将来比較">
+                    📊 比較
+                  </button>
+                </span>
+                <span class="param-value" id="val-w-working">0%</span>
+              </div>
+              <input type="range" id="w-working" min="0" max="100" step="5" value="0">
               <div class="range-labels"><span>0%</span><span>100%</span></div>
             </div>
             <div class="param-control">
-              <div class="param-row"><span class="param-label">株式比率（FIRE後）</span><span class="param-value" id="val-w-retired">40%</span></div>
-              <input type="range" id="w-retired" min="0" max="100" step="5" value="40">
+              <div class="param-row"><span class="param-label">株式比率（FIRE後）</span><span class="param-value" id="val-w-retired">0%</span></div>
+              <input type="range" id="w-retired" min="0" max="100" step="5" value="0">
               <div class="range-labels"><span>0%</span><span>100%</span></div>
             </div>
             <div class="param-control">
@@ -896,6 +897,17 @@
       <button class="run-btn" id="run-btn" onclick="runSimulation()">
         <span id="run-btn-text">🔍 家計タイプを診断する</span>
       </button>
+      <!-- ライフイベントカタログボタン -->
+      <button onclick="openLifeCatalog()" style="
+        width:100%;margin-top:8px;padding:10px;
+        background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+        border-radius:8px;color:var(--text-mid);font-size:12px;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;gap:6px;
+        font-family:'Noto Sans JP',sans-serif;transition:all .2s;
+      " class="beginner-hide">
+        📅 ライフイベントを追加（住宅・教育費など）
+      </button>
+
       <div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:8px;" id="run-btn-subtext">
         <span id="run-nsims-display">2,000</span>パターンの人生を試算します
       </div>
@@ -931,12 +943,13 @@
         </div>
       </div>
 
-      <!-- ② 家計タイプ診断パネル (初心者・通常モード) -->
-      <div id="diagnosis-panel" style="display:none;" class="beginner-only normal-show">
-        <!-- diagnosis.js が描画 -->
-      </div>
+      <!-- ② 家計タイプ診断パネル (初心者・通常) -->
+      <div id="diagnosis-panel" style="display:none;margin-bottom:16px;"></div>
 
-      <!-- ② 初心者サマリー (beginner mode only) - 旧UI (非表示) -->
+      <!-- ② 家計タイプ診断パネル -->
+      <div id="diagnosis-panel" style="display:none;margin-bottom:16px;"></div>
+
+      <!-- ② 初心者サマリー (legacy, hidden) -->
       <div id="beginner-summary" style="display:none;" class="beginner-only">
         <!-- 老後の安全度ヘッダー -->
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:14px 16px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:10px;">
@@ -996,6 +1009,12 @@
       </div>
 
       <!-- ② KPI 2段構成 -->
+      <!-- アドバイスエンジンパネル -->
+      <div id="advice-engine-panel" style="display:none;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;"></div>
+
+      <!-- プライバシーバッジ -->
+      <div id="privacy-badge" style="display:none;margin-bottom:16px;background:var(--surface);border:1px solid rgba(168,255,120,.15);border-radius:12px;padding:14px;"></div>
+
       <div id="kpi-section" style="display:none;" class="normal-only pro-only">
         <!-- 上段: FIRE -->
         <div style="font-size:9px;color:var(--text-dim);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
@@ -1097,14 +1116,11 @@
              aria-label="資産推移シミュレーショングラフ（シミュレーション実行後に更新されます）">
           <div id="first-run-guide">
             <div class="frg-emoji">📊</div>
-            <div class="frg-title">
-              <span class="beginner-only normal-show">家計タイプ診断の準備ができています</span>
-              <span class="pro-only">シミュレーションの準備ができています</span>
-            </div>
+            <div class="frg-title">シミュレーションの準備ができています</div>
             <div class="frg-desc">
               左パネルで設定を確認したら、<br>
               下の<b style="color:var(--accent);">「▶ シミュレーション実行」</b>ボタンを押してください。<br><br>
-              あなたの家計タイプを診断し、<b style="color:var(--accent);">2,000通り</b>の未来を試算。<br>
+              あなたの人生プランを<b style="color:var(--accent);">2,000通り</b>試算し、<br>
               <b>FIRE達成確率・老後資金・破綻リスク</b>を可視化します。
             </div>
             <div class="frg-arrow">←</div>
@@ -1898,6 +1914,8 @@
 <script src="./pwa.js"></script>
 <script src="sharecard.js"></script>
 <script src="./diagnosis.js"></script>
+<script src="./advisor.js"></script>
+<script src="./compare.js"></script>
 <script>
 // ── 初回ユーザー向けウェルカムUI表示制御 ──────────────────────────
 (function() {
@@ -1973,5 +1991,29 @@
   });
 })();
 </script>
+<!-- 株式比率比較モーダル -->
+<div id="stock-compare-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);overflow-y:auto;">
+  <div style="max-width:460px;margin:40px auto 80px;padding:0 16px;">
+    <div id="stock-compare-content"></div>
+  </div>
+</div>
+
+<!-- ライフイベントカタログモーダル -->
+<div id="life-catalog-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);overflow-y:auto;">
+  <div style="max-width:460px;margin:40px auto 80px;padding:0 16px;">
+    <div id="life-catalog-content"></div>
+  </div>
+</div>
+
+<!-- シェア画像プレビューモーダル -->
+<div id="share-image-modal" style="display:none;position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.9);backdrop-filter:blur(8px);align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <div id="share-image-card-wrap" style="width:100%;max-width:400px;padding:0 16px;"></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+    <button onclick="downloadShareImage()" style="padding:12px 24px;background:#000;border:1px solid rgba(255,255,255,.3);border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">📥 画像を保存</button>
+    <button onclick="shareImageToX()" style="padding:12px 24px;background:#000;border:1px solid rgba(255,255,255,.3);border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">𝕏 Xにシェア</button>
+    <button onclick="document.getElementById('share-image-modal').style.display='none'" style="padding:12px 24px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">✕ 閉じる</button>
+  </div>
+</div>
+
 </body>
 </html>

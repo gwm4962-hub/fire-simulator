@@ -98,9 +98,9 @@ function updateBeginnerSummary({ med, assets65, expAt65, pensionAnnual, successR
 // ---- 1. MODE SWITCHER ----
 let currentMode = 'beginner';
 const MODE_DESCS = {
-  beginner: '🌱 かんたんモード：家計タイプ診断＋寿命延長カードで改善策を確認',
-  normal:   '📊 通常モード：家計タイプ診断＋詳細グラフ・指標で深掘り分析',
-  pro:      '🔬 プロモード：感度分析・遷移行列・t分布など全機能を解放'
+  beginner: '🔍 かんたん：3問で家計タイプ診断。寿命延長カードで改善策も確認',
+  normal:   '📊 通常：家計タイプ診断＋詳細グラフ・KPIで深掘り分析できます',
+  pro:      '🔬 プロ：感度分析・遷移行列・t分布など全機能を解放'
 };
 
 function setMode(mode) {
@@ -112,13 +112,16 @@ function setMode(mode) {
   document.getElementById('mode-desc').textContent = MODE_DESCS[mode];
   localStorage.setItem('fire_sim_mode', mode);
 
-  // 診断/実行ボタンのテキストをモードに応じて変更
-  const runBtnText = document.getElementById('run-btn-text');
-  if (runBtnText) {
-    runBtnText.textContent = (mode === 'beginner' || mode === 'normal')
-      ? '🔍 家計タイプを診断する'
-      : '▶ シミュレーションを実行する';
+  // 診断パネル表示制御
+  const diagPanelEl = document.getElementById('diagnosis-panel');
+  if (diagPanelEl) {
+    const hasDiag = diagPanelEl.querySelector('.diag-wrap');
+    diagPanelEl.style.display = (mode !== 'pro' && hasDiag) ? 'block' : 'none';
   }
+
+  // 実行ボタンテキスト
+  const rbtEl = document.getElementById('run-btn-text');
+  if (rbtEl) rbtEl.textContent = (mode === 'pro') ? '▶ シミュレーションを実行する' : '🔍 家計タイプを診断する';
 
   // KPIセクション表示切り替え（シミュレーション済みの場合）
   const kpiSec = document.getElementById('kpi-section');
@@ -129,16 +132,12 @@ function setMode(mode) {
     kpiSec.style.display = (mode === 'normal' || mode === 'pro') && hasResult ? 'block' : 'none';
   }
   if (bSumm) {
-    bSumm.style.display = mode === 'beginner' && hasResult ? 'block' : 'none';
+    bSumm.style.display = 'none'; // 診断パネルに統一
   }
 
-  // 家計タイプ診断パネル (初心者・通常モード)
-  const diagPanel = document.getElementById('diagnosis-panel');
-  if (diagPanel) {
-    const hasDiag = diagPanel.querySelector('.diag-wrap');
-    if (hasDiag) {
-      diagPanel.style.display = (mode === 'beginner' || mode === 'normal') ? 'block' : 'none';
-    }
+  // 通常モードでは kpi-section も表示
+  if (kpiSec) {
+    kpiSec.style.display = (mode === 'normal' || mode === 'pro') && hasResult ? 'block' : 'none';
   }
 
   // pro モードに切り替わった時にグラフを初期化／リサイズ
