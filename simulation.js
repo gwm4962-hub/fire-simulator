@@ -2561,6 +2561,80 @@ function initSimCallbacks(callbacks) {
 
 
 // ============================================================
+// updateBeginnerSummary — 初心者モード専用サマリー更新
+// charts.js 等に定義がない場合のフォールバック実装
+// ============================================================
+if (typeof updateBeginnerSummary === 'undefined') {
+  window.updateBeginnerSummary = function({ med, assets65, expAt65, pensionAnnual, successRate, startAge, T, baseInfl, monthlyRetire }) {
+    const fmt万 = v => {
+      const m = Math.round(v / 1e4);
+      return m >= 10000 ? (m/10000).toFixed(1) + '億円' : m.toLocaleString() + '万円';
+    };
+    const fmtPct = v => (v * 100).toFixed(1) + '%';
+
+    // 60歳時資産（中央値）
+    const age60idx = Math.max(0, 60 - startAge);
+    const asset60  = (age60idx < med.length) ? med[age60idx] : assets65;
+    const el60 = document.getElementById('bsumm-asset60');
+    if (el60) el60.textContent = fmt万(asset60);
+
+    // 老後に必要な資産（60歳〜寿命の年金補填後純負担）
+    const need = document.getElementById('bsumm-need');
+    if (need) need.textContent = fmt万(Math.max(0, expAt65 - pensionAnnual) * Math.max(1, 88 - 65));
+
+    // 生存確率（資産が持つ割合）
+    const surv = document.getElementById('bsumm-survival');
+    if (surv) {
+      surv.textContent = fmtPct(successRate);
+      surv.style.color = successRate >= 0.85 ? '#a8ff78'
+                       : successRate >= 0.60 ? '#ffd166'
+                       : '#ff4757';
+    }
+
+    // 月々のゆとり
+    const mon = document.getElementById('bsumm-monthly');
+    if (mon) mon.textContent = Math.round(monthlyRetire).toLocaleString() + '万/月';
+
+    // OK/NG バッジ
+    const okEl = document.getElementById('bsumm-ok');
+    const ngEl = document.getElementById('bsumm-ng');
+    const okTxt = document.getElementById('bsumm-ok-text');
+    const ngTxt = document.getElementById('bsumm-ng-text');
+    if (successRate >= 0.75) {
+      if (okEl) okEl.style.display = 'block';
+      if (ngEl) ngEl.style.display = 'none';
+      if (okTxt) okTxt.textContent = `${fmtPct(successRate)}の確率で老後も安心。このまま継続を。`;
+    } else {
+      if (okEl) okEl.style.display = 'none';
+      if (ngEl) ngEl.style.display = 'block';
+      if (ngTxt) ngTxt.textContent = `資産が不足するシナリオが${fmtPct(1-successRate)}あります。貯蓄ペースを見直しましょう。`;
+    }
+
+    // アドバイス文
+    const advEl = document.getElementById('bsumm-advice');
+    if (advEl) {
+      let msg = '';
+      if (successRate >= 0.90) {
+        msg = '✅ <b>とても良い状況です！</b>現在のペースを続ければ、老後資金は十分確保できる見通しです。あとは急な支出への備え（生活費6ヶ月分の現金）と、iDeCo・NISAの活用を検討しましょう。';
+      } else if (successRate >= 0.75) {
+        msg = '📈 <b>概ね良好です。</b>月々の貯蓄を少し増やすか、生活費を見直すことで安全度がさらに上がります。iDeCoやNISAなど税制優遇口座の活用も効果的です。';
+      } else if (successRate >= 0.50) {
+        msg = '⚠️ <b>やや注意が必要です。</b>現状のままでは老後に資産が不足するリスクがあります。月1〜2万円の貯蓄増加、または収入アップ（副業・昇給）を検討してみましょう。';
+      } else {
+        msg = '🚨 <b>早めの対策が必要です。</b>このままでは老後資金が不足する可能性が高いです。支出の見直し・収入増・貯蓄率アップを組み合わせて、できるだけ早く改善しましょう。';
+      }
+      advEl.innerHTML = msg;
+    }
+
+    // beginner-summary を表示
+    const bsEl = document.getElementById('beginner-summary');
+    if (bsEl && document.body.getAttribute('data-mode') === 'beginner') {
+      bsEl.style.display = 'block';
+    }
+  };
+}
+
+// ============================================================
 // グローバル公開（ブラウザ環境用）
 //
 // app.js の expose リスト内の eval(name) は app.js 自身のスコープしか

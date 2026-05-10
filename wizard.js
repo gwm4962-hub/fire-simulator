@@ -9,24 +9,28 @@
 
   // ── 政府統計データによるデフォルト値 ──────────────────
   const GOV_DEFAULTS = {
-    // 国税庁2023年・厚労省・金融広報中央委員会データ
-    inflation:        1.0,   // インフレ率 %
-    raiseRate:        1.5,   // 昇給率 %/年
+    // 国税庁2023年・厚労省・金融広報中央委員会・総務省家計調査データ
+    inflation:        1.5,   // インフレ率 %（2024年実績ベース・総務省CPI）
+    raiseRate:        2.0,   // 昇給率 %/年（2024年春闘平均5.1%→定昇込み実態2%）
     savingsRateRatio: 0.15,  // 手取りの15%を貯蓄
-    expenseRatio:     0.62,  // 手取りの62%を生活費
+    expenseRatio:     0.62,  // 手取りの62%を生活費（総務省家計調査）
     postRetireRatio:  0.75,  // 定年後の支出は現役比75%
     pension: {
-      // 厚労省モデル年金（夫婦）= 22.1万/月、単身は約15万
-      single: 15,
-      couple: 22,
+      // 厚労省モデル年金（2024年度）
+      // 夫婦（片方専業）= 23.0万/月、単身 = 約16.4万（男性平均）
+      single: 16,
+      couple: 23,
+      dual:   28,  // 共働き（二人合算の厚生年金）目安
     },
     retireAge:        60,    // 定年年齢（固定）
-    inheritance:      500,   // 相続想定額
+    inheritance:      500,   // 相続想定額（国税庁：相続財産中央値は1,000〜2,000万、受け取り確率考慮）
     investRatio:      0.6,   // 現役中の株式比率
     investRatioPost:  0.4,   // 退職後の株式比率
     fireThreshold:    99999, // 初心者モードではFIREしない（大きな値にして到達しないようにする）
     children: {
-      eduCostPublic: 900,  // 公立ルート1人あたり幼〜大学 万円
+      // 文部科学省「子供の学習費調査」+ 日本政策金融公庫「教育費負担の実態調査」
+      eduCostPublic:  900,  // 公立ルート1人あたり幼〜大学 万円（約900万円）
+      eduCostPrivate: 1800, // 私立ルート 約1,800万円
     },
   };
 
@@ -158,7 +162,7 @@
       '税金・手取り率を計算中...',
       '老後の支出パターンを推計中...',
       '2,000パターンの人生を試算中...',
-      '結果を分析しています...',
+      '老後の安全度を分析中...',
     ];
     let mi = 0;
     const msgEl = getEl('wiz-loading-msg');
@@ -184,8 +188,10 @@
       // 子供の教育費をステージに追加（子供は今年生まれたと仮定）
       const childEduTotal = wizChildren * GOV_DEFAULTS.children.eduCostPublic;
 
-      // 年金：世帯タイプ別
-      const pension = hasSpouse ? GOV_DEFAULTS.pension.couple : GOV_DEFAULTS.pension.single;
+      // 年金：世帯タイプ別（厚労省2024年度モデル年金）
+      const pension = isDual
+        ? GOV_DEFAULTS.pension.dual
+        : (hasSpouse ? GOV_DEFAULTS.pension.couple : GOV_DEFAULTS.pension.single);
 
       // FIRE目標は到達しない大きな値（定年まで働くモード）
       const fireThreshold = 99999;

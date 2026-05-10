@@ -24,7 +24,7 @@
 <!-- Favicon -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e3a5f'/%3E%3Crect x='8' y='18' width='4' height='6' rx='1' fill='%2300d4ff'/%3E%3Crect x='14' y='12' width='4' height='12' rx='1' fill='%2300d4ff'/%3E%3Crect x='20' y='6' width='4' height='18' rx='1' fill='%23a8ff78'/%3E%3C/svg%3E">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>FLOW | 資産シミュレーター</title>
 
 <!-- MathJax設定（最速キャプチャのためインライン維持） -->
@@ -68,6 +68,36 @@
 
 <!-- アプリスタイルシート -->
 <link rel="stylesheet" href="./styles.css">
+
+<!-- 初心者モード補助スクリプト: setMode フックと FIRE 値固定 -->
+<script>
+(function() {
+  'use strict';
+  // setMode が splash.js で定義された後にラップする
+  window.addEventListener('DOMContentLoaded', function() {
+    var _origSetMode = window.setMode;
+    window.setMode = function(mode) {
+      if (typeof _origSetMode === 'function') _origSetMode(mode);
+      // beginner モード時は FIRE threshold を 99999 に固定
+      if (mode === 'beginner') {
+        var ft = document.getElementById('fire-threshold');
+        if (ft) { ft.value = 99999; ft.dispatchEvent(new Event('input', {bubbles:true})); }
+      }
+    };
+
+    // スマホ：入力フォーカス時にズームを防ぐ（iOS Safari対策）
+    // font-size 16px 以上なら自動ズームしない
+    document.querySelectorAll('input[type="number"], input[type="range"]').forEach(function(el) {
+      el.style.fontSize = el.style.fontSize || '';
+    });
+  });
+
+  // スワイプでページが拡大しないようにtouch-actionを設定
+  document.addEventListener('touchmove', function(e) {
+    if (e.touches.length > 1) return; // ピンチズームは許可
+  }, { passive: true });
+})();
+</script>
 
 <!-- スプラッシュ画面ロジック（DOMContentLoaded前に実行が必要） -->
 <script src="./splash.js"></script>
@@ -238,7 +268,7 @@
           <input class="wiz-input" id="w-income-b" type="number" min="0" max="5000" step="10" placeholder="350" inputmode="numeric">
           <span class="wiz-unit">万円/年</span>
         </div>
-        <div class="wiz-hint">女性の給与中央値は約 <strong style="color:var(--accent)">280万円</strong>（2023年・国税庁）</div>
+        <div class="wiz-hint">共働き女性の給与中央値は約 <strong style="color:var(--accent)">300万円</strong>（2023年・国税庁）。<br>結果は<strong style="color:var(--accent)">世帯合算</strong>で計算されます。</div>
         <div class="wiz-enter-hint">入力後 <kbd>Enter</kbd> で次へ</div>
         <button onclick="validateCurrentInput()" style="margin-top:16px;width:100%;padding:14px;background:linear-gradient(135deg,var(--pink),#cc3399);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:15px;cursor:pointer;font-family:var(--font-body);">次へ →</button>
       </div>
@@ -525,7 +555,7 @@
             <!-- ここまで -->
 
           </div> <!-- 基本設定セクションの終わり -->
-<div class="param-control">
+<div class="param-control" id="fire-threshold-block">
   <div class="param-row">
     <span class="param-label">FIRE達成目標資産 (万円)</span>
     <span class="param-value" id="val-fire-threshold">10,000万円</span>
@@ -575,7 +605,7 @@
                   <span>全国平均: <b>約443万円</b>（2023年・国税庁）　中央値: <b>約350万円</b>。税込み額面でOK。</span>
                 </div>
               </div>
-              <div class="param-control">
+              <div class="param-control beginner-hide">
                 <div class="param-row"><span class="param-label">昇給率（年）</span><span class="param-value" id="val-raise">1.5%</span></div>
                 <input type="range" id="raise" min="0" max="8" step="0.5" value="1.5">
                 <div class="range-labels"><span>0%</span><span>8%</span></div>
@@ -590,7 +620,7 @@
                 <input type="range" id="income-b" min="0" max="3000" step="10" value="300">
                 <div class="range-labels"><span>0万</span><span>3,000万</span></div>
               </div>
-              <div class="param-control">
+              <div class="param-control beginner-hide">
                 <div class="param-row"><span class="param-label">パートナー昇給率（年）</span><span class="param-value" id="val-raise-b" style="color:var(--pink);">1.0%</span></div>
                 <input type="range" id="raise-b" min="0" max="8" step="0.5" value="1.0">
                 <div class="range-labels"><span>0%</span><span>8%</span></div>
@@ -627,7 +657,7 @@
                 <span>単身: <b>約15万円</b> / 夫婦: <b>約22万円</b>（厚労省モデル年金）。年金定期便で確認可能です。</span>
               </div>
             </div>
-            <div class="param-control">
+            <div class="param-control beginner-hide">
               <div class="param-row"><span class="param-label">相続額（計2回）</span><span class="param-value" id="val-inheritance">500万円</span></div>
               <input type="range" id="inheritance" min="0" max="10000" step="100" value="500">
               <div class="range-labels"><span>0万</span><span>1億</span></div>
@@ -635,7 +665,7 @@
           </div>
 
           <!-- インフレ率 -->
-          <div class="param-section">
+          <div class="param-section beginner-hide">
             <div class="param-section-label">インフレ</div>
             <div class="param-control">
               <div class="param-row"><span class="param-label">ベースインフレ率（年）</span><span class="param-value" id="val-base-infl">1.0%</span></div>
@@ -894,24 +924,38 @@
 
       <!-- ② 初心者サマリー (beginner mode only) -->
       <div id="beginner-summary" style="display:none;" class="beginner-only">
+        <!-- 老後の安全度ヘッダー -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:14px 16px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:10px;">
+          <div style="font-size:32px;">🏦</div>
+          <div>
+            <div style="font-size:16px;font-weight:700;color:var(--text);letter-spacing:.5px;">老後の安全度チェック</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">老後資金が持つかどうかを2,000パターンで診断</div>
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
           <div id="bsumm-ok" style="
             background:linear-gradient(135deg,rgba(168,255,120,.12),rgba(10,26,18,.9));
             border:1px solid rgba(168,255,120,.35); border-radius:10px;
-            padding:16px 14px; text-align:center; display:none;
+            padding:18px 14px; text-align:center; display:none;
           ">
-            <div style="font-size:28px;margin-bottom:6px;">✅</div>
-            <div style="font-size:13px;font-weight:700;color:#a8ff78;margin-bottom:4px;">老後資金　OK</div>
-            <div style="font-size:11px;color:var(--text-mid);line-height:1.7;" id="bsumm-ok-text">—</div>
+            <div style="font-size:34px;margin-bottom:8px;">✅</div>
+            <div style="font-size:14px;font-weight:700;color:#a8ff78;margin-bottom:6px;">老後資金　安心</div>
+            <div style="font-size:12px;color:var(--text-mid);line-height:1.8;" id="bsumm-ok-text">—</div>
           </div>
           <div id="bsumm-ng" style="
             background:linear-gradient(135deg,rgba(255,71,87,.1),rgba(32,10,13,.9));
             border:1px solid rgba(255,71,87,.35); border-radius:10px;
-            padding:16px 14px; text-align:center; display:none;
+            padding:18px 14px; text-align:center; display:none;
           ">
-            <div style="font-size:28px;margin-bottom:6px;">⚠️</div>
-            <div style="font-size:13px;font-weight:700;color:#ff4757;margin-bottom:4px;">資金不足の可能性</div>
-            <div style="font-size:11px;color:var(--text-mid);line-height:1.7;" id="bsumm-ng-text">—</div>
+            <div style="font-size:34px;margin-bottom:8px;">⚠️</div>
+            <div style="font-size:14px;font-weight:700;color:#ff4757;margin-bottom:6px;">資金不足の可能性</div>
+            <div style="font-size:12px;color:var(--text-mid);line-height:1.8;" id="bsumm-ng-text">—</div>
+          </div>
+          <div class="kpi-card success" style="grid-column:span 2;">
+            <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px;">🔑 最重要指標</div>
+            <div class="kpi-label">老後まで資産が持つ確率</div>
+            <div class="kpi-value" id="bsumm-survival" style="font-size:38px;">—</div>
+            <div class="kpi-sub">2,000パターンのうち資産が尽きなかった割合</div>
           </div>
           <div class="kpi-card info">
             <div class="kpi-label">60歳時の推定資産</div>
@@ -920,25 +964,20 @@
           </div>
           <div class="kpi-card" style="border-color:rgba(179,136,255,.25);">
             <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#b388ff,transparent);"></div>
-            <div class="kpi-label">老後に必要な資産</div>
+            <div class="kpi-label">老後に必要な資産額</div>
             <div class="kpi-value" id="bsumm-need" style="color:#b388ff;">—</div>
-            <div class="kpi-sub">60歳〜寿命まで（年金補填後）</div>
+            <div class="kpi-sub">60歳〜寿命（年金補填後）</div>
           </div>
-          <div class="kpi-card success">
-            <div class="kpi-label">資産が尽きない確率</div>
-            <div class="kpi-value" id="bsumm-survival">—</div>
-            <div class="kpi-sub">寿命まで資産が持つ割合</div>
-          </div>
-          <div class="kpi-card warning">
-            <div class="kpi-label">月々のゆとり額（老後）</div>
+          <div class="kpi-card warning" style="grid-column:span 2;">
+            <div class="kpi-label">老後の月々の余裕額（目安）</div>
             <div class="kpi-value" id="bsumm-monthly">—</div>
-            <div class="kpi-sub">年金込み・インフレ後の目安</div>
+            <div class="kpi-sub">年金込み・インフレ反映後の使えるお金</div>
           </div>
         </div>
         <div id="bsumm-advice" style="
-          padding:12px 14px; border-radius:8px;
+          padding:14px 16px; border-radius:10px;
           background:rgba(0,212,255,.05); border:1px solid rgba(0,212,255,.2);
-          font-size:12px; color:var(--text-mid); line-height:1.8;
+          font-size:13px; color:var(--text-mid); line-height:2;
         "></div>
       </div>
 
@@ -1078,7 +1117,7 @@
             <div class="dist-segment" id="dist-bankrupt" style="background:linear-gradient(90deg,#ff4757,#cc2233);color:#fff;width:0%;"></div>
           </div>
           <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">
-            <div class="dist-legend-item"><div class="dist-legend-dot" style="background:#a8ff78;"></div><span id="dist-fire-pct">—</span> FIRE達成・資産を残して天寿</div>
+            <div class="dist-legend-item beginner-hide"><div class="dist-legend-dot" style="background:#a8ff78;"></div><span id="dist-fire-pct">—</span> FIRE達成・資産を残して天寿</div>
             <div class="dist-legend-item"><div class="dist-legend-dot" style="background:#ffd166;"></div><span id="dist-early-pct">—</span> 未FIRE・資産は保全</div>
             <div class="dist-legend-item"><div class="dist-legend-dot" style="background:#ff4757;"></div><span id="dist-bankrupt-pct">—</span> 破綻（生前に資産ゼロ）</div>
           </div>
@@ -1088,7 +1127,7 @@
       <!-- ⑤ 下段2カラム: 分布テーブル + 老後資金チェックリスト -->
       <div class="bottom-grid">
         <!-- FIRE年齢分布 -->
-        <div class="panel">
+        <div class="panel beginner-hide">
           <div class="panel-header">🗓️ FIRE 達成年齢 分布</div>
           <div class="panel-body">
             <table class="fire-table">

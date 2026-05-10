@@ -2140,3 +2140,312 @@ button, [role="button"], input[type="submit"] {
   display: inline-block;
 }
 
+
+/* ================================================================
+   初心者モード専用スタイル (v21)
+   ① FIRE関連要素を完全非表示
+   ② 詳細スライダー（昇給率/インフレ/相続/株式比率等）を非表示
+   ③ スマホ操作性向上（タッチターゲット・フォント・間隔拡大）
+   ================================================================ */
+
+/* ──────────────────────────────────────────────────────────────
+   ① 初心者モード: FIRE関連を非表示
+   ────────────────────────────────────────────────────────────── */
+body[data-mode="beginner"] .fire-only,
+body[data-mode="beginner"] #fire-goal-explainer,
+body[data-mode="beginner"] #kpi-section,
+body[data-mode="beginner"] #goal-panel,
+body[data-mode="beginner"] .fire-table-wrap,
+body[data-mode="beginner"] #dist-fire-row,
+body[data-mode="beginner"] [data-fire-only],
+/* FIRE達成目標資産スライダーブロック全体 */
+body[data-mode="beginner"] #fire-threshold-block { display: none !important; }
+
+/* ──────────────────────────────────────────────────────────────
+   ② 初心者モード: 詳細スライダーを非表示
+   表示するのは: 開始年齢 / 現在の資産 / 収入 / 世帯タイプ / 子ども / 年金
+   隠す: 昇給率/インフレ率/相続額/株式比率/各種adv-section/長寿リスク
+   ────────────────────────────────────────────────────────────── */
+body[data-mode="beginner"] .beginner-hide,
+body[data-mode="beginner"] #adv-portfolio-section,
+body[data-mode="beginner"] #adv-longevity-section,
+body[data-mode="beginner"] .adv-section,
+body[data-mode="beginner"] #step3-panel .param-section:not(.beginner-visible),
+body[data-mode="beginner"] #setup-progress-wrap { display: none !important; }
+
+/* 初心者モードで「税金計算エンジン」は表示（理解の助けになる） */
+body[data-mode="beginner"] .tax-engine-block { display: block !important; }
+
+/* ──────────────────────────────────────────────────────────────
+   ③ スマホ: タッチターゲット・余白・フォントのさらなる強化
+   ────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* スライダーのタッチ操作しやすさ */
+  input[type="range"] {
+    height: 8px;
+    cursor: pointer;
+    touch-action: pan-y;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+
+  /* param-rowの行間を広げてタップしやすく */
+  .param-row {
+    padding: 4px 0;
+    min-height: 36px;
+    align-items: center;
+  }
+  .param-control {
+    margin-bottom: 22px;
+    gap: 10px;
+  }
+
+  /* ボタンのタッチターゲット */
+  .diff-btn {
+    min-height: 64px;
+    padding: 14px 8px;
+  }
+  .diff-btn .diff-label { font-size: 15px; }
+  .diff-btn .diff-sub   { font-size: 12px; }
+
+  /* 実行ボタン */
+  .run-btn {
+    font-size: 18px;
+    padding: 22px;
+    border-radius: 12px;
+  }
+
+  /* プリセットボタン */
+  .preset-btn {
+    padding: 12px 10px;
+    font-size: 13px;
+    min-height: 52px;
+  }
+
+  /* mode switcher */
+  #mode-switcher {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .mode-btn {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  /* step-flow ナビ */
+  .step-flow {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .step-item {
+    min-height: 48px;
+    padding: 8px 10px;
+  }
+
+  /* 数値入力フィールド */
+  .param-input-num {
+    font-size: 18px !important;
+    padding: 8px 10px !important;
+    min-height: 44px;
+  }
+
+  /* 子供行 */
+  .child-row input[type="number"] {
+    font-size: 16px !important;
+    min-height: 44px;
+  }
+
+  /* KPIカード（初心者サマリー）のフォントを大きく */
+  #beginner-summary .kpi-value { font-size: 30px; }
+  #beginner-summary .kpi-label { font-size: 13px; letter-spacing: 0; }
+  #beginner-summary .kpi-sub   { font-size: 12px; }
+
+  /* bsumm ステータスカード */
+  #bsumm-ok, #bsumm-ng {
+    font-size: 14px;
+    padding: 18px 12px;
+  }
+  #bsumm-ok div:first-child,
+  #bsumm-ng div:first-child { font-size: 34px; }
+
+  /* アドバイステキスト */
+  #bsumm-advice {
+    font-size: 14px !important;
+    line-height: 2 !important;
+    padding: 16px !important;
+  }
+
+  /* ウィザードカード */
+  .wiz-question { font-size: 24px; line-height: 1.4; }
+  .wiz-input    { font-size: 28px !important; padding: 14px 16px !important; }
+  .wiz-unit     { font-size: 16px; }
+  .wiz-hint     { font-size: 14px; line-height: 1.8; }
+  .wiz-sub      { font-size: 14px; }
+  .wiz-choice-btn { padding: 18px 14px; font-size: 15px; min-height: 68px; }
+  .wiz-num-btn    { min-height: 60px; font-size: 16px; font-weight: 700; }
+
+  /* フローティングシミュレートボタン */
+  #floating-simulate {
+    font-size: 16px;
+    padding: 16px 24px;
+    border-radius: 50px;
+    bottom: 20px;
+    right: 16px;
+  }
+
+  /* ヘルプヒント */
+  .input-context {
+    font-size: 13px !important;
+    line-height: 1.8 !important;
+    padding: 10px 12px !important;
+  }
+  .ic-icon { font-size: 16px !important; }
+
+  /* チャートラッパー */
+  .chart-wrapper { height: 320px; }
+
+  /* シェアバー */
+  #url-share-bar { flex-wrap: wrap; gap: 6px; }
+  #share-url-display { font-size: 12px; }
+}
+
+/* さらに小さい画面 (380px以下) */
+@media (max-width: 380px) {
+  .wiz-question { font-size: 20px; }
+  .wiz-input    { font-size: 24px !important; }
+  #beginner-summary { grid-template-columns: 1fr !important; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   ④ 初心者モード: 入力パネルのシンプル化ラベル
+   ────────────────────────────────────────────────────────────── */
+body[data-mode="beginner"] #step3-panel { display: none !important; }
+body[data-mode="beginner"] .step-flow   { display: none !important; }
+body[data-mode="beginner"] #guide-panel { display: none !important; }
+body[data-mode="beginner"] #quickstart-card { display: none !important; }
+body[data-mode="beginner"] #url-share-bar { display: none !important; }
+body[data-mode="beginner"] #welcome-banner { display: none !important; }
+
+/* FIRE分布グラフの凡例のFIRE行 */
+body[data-mode="beginner"] .dist-legend-item:first-child { display: none !important; }
+
+/* CSSEOF */
+
+/* ================================================================
+   スマホ用ウィザード最適化 (v21追加)
+   ================================================================ */
+@media (max-width: 600px) {
+  #wizard-overlay {
+    align-items: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-top: env(safe-area-inset-top, 16px);
+  }
+  .wizard-wrap {
+    padding: 20px 16px 40px;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .wiz-dots { margin-bottom: 24px; }
+  .wiz-dot  { width: 10px; height: 10px; }
+
+  .wiz-question {
+    font-size: 26px;
+    margin-bottom: 10px;
+  }
+  .wiz-sub {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  /* 入力フィールドを横幅いっぱいに */
+  .wiz-input-wrap {
+    max-width: 100%;
+  }
+  .wiz-input {
+    font-size: 34px !important;
+    padding: 18px 56px 18px 20px !important;
+    border-radius: 12px;
+    /* iOS zoom 防止: 16px以上を保証 */
+    min-height: 72px;
+  }
+  .wiz-unit { font-size: 17px; right: 14px; }
+
+  .wiz-hint { font-size: 13px; line-height: 1.8; }
+  .wiz-enter-hint { display: none; } /* スマホではEnterキー案内不要 */
+
+  /* 選択ボタン */
+  .wiz-choice-btn {
+    padding: 18px 16px;
+    min-height: 72px;
+    font-size: 15px;
+    gap: 16px;
+    border-radius: 12px;
+  }
+  .wiz-choice-btn span:first-child { font-size: 28px; }
+
+  /* 数字ボタン（子供の数）*/
+  .wiz-num-btn {
+    min-height: 64px;
+    font-size: 20px !important;
+    font-weight: 700;
+    padding: 10px 4px;
+    border-radius: 10px;
+  }
+
+  /* スキップボタン */
+  .wiz-skip {
+    margin-top: 24px;
+    font-size: 13px;
+    padding: 12px;
+    min-height: 44px;
+  }
+
+  /* ローディング */
+  .wiz-loading-text { font-size: 18px; }
+  .wiz-loading-sub  { font-size: 14px; }
+  .wiz-spinner { width: 64px; height: 64px; }
+
+  /* 次へボタン */
+  .wiz-card button[onclick="validateCurrentInput()"] {
+    min-height: 56px !important;
+    font-size: 17px !important;
+    border-radius: 12px !important;
+    touch-action: manipulation;
+  }
+}
+
+/* ================================================================
+   初心者モード: パネルをシンプル表示
+   ================================================================ */
+/* 初心者モードでは左パネルヘッダーに「詳細設定はこちら」リンクを表示 */
+body[data-mode="beginner"] #step1-panel .panel-header::after {
+  content: '　▸ 詳細は通常モードへ';
+  font-size: 10px;
+  color: var(--text-dim);
+  font-weight: 400;
+  font-family: var(--font-body);
+  letter-spacing: 0;
+}
+
+/* 初心者モードの入力パネル: ライフステージ支出とポートフォリオはhide */
+body[data-mode="beginner"] #step2-panel .preset-btns-wrap { display: block !important; }
+
+/* 初心者モード: チャートタイトルを「老後の安全度グラフ」に変更 */
+body[data-mode="beginner"] #chart-title-text::before {
+  content: '老後資産シミュレーション';
+}
+
+/* CSSEOF2 */
