@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sharecard.js — デモプレビュー</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-main: 'Noto Sans JP', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+    --text: #e8edf5;
+    --text-dim: #6b7a99;
+    --bg: #050810;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-main);
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+  .demo-header {
+    max-width: 600px;
+    margin: 0 auto 32px;
+    text-align: center;
+  }
+  .demo-title {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .demo-subtitle {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .demo-note {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .panel {
+    max-width: 600px;
+    margin: 0 auto 24px;
+    background: rgba(255,255,255,.025);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 18px;
+    padding: 24px;
+  }
+  /* コントロール */
+  .demo-controls {
+    max-width: 600px;
+    margin: 0 auto 28px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .demo-ctrl-title {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .demo-ctrl-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .demo-ctrl-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.04);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: var(--font-mono);
+  }
+  .demo-ctrl-btn:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.25); }
+  .demo-ctrl-btn.active { background: rgba(0,212,255,.12); border-color: rgba(0,212,255,.4); color: #00d4ff; }
+  .demo-run-btn {
+    padding: 12px 28px;
+    border-radius: 10px;
+    border: 2px solid rgba(0,212,255,.35);
+    background: rgba(0,212,255,.1);
+    color: #00d4ff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    width: 100%;
+    font-family: var(--font-main);
+  }
+  .demo-run-btn:hover { background: rgba(0,212,255,.2); transform: translateY(-1px); }
+</style>
+</head>
+<body>
+
+<div class="demo-header">
+  <div class="demo-title">sharecard.js — UI Preview</div>
+  <div class="demo-subtitle">シェアカード + 改善エンジン デモ</div>
+  <div class="demo-note">成功率を選んでシミュレーションを実行してください</div>
+</div>
+
+<!-- デモ操作パネル -->
+<div class="demo-controls">
+  <div class="demo-ctrl-title">🎮 テスト用 成功率を選択</div>
+  <div class="demo-ctrl-row" id="rank-btns">
+    <button class="demo-ctrl-btn" onclick="setDemo(0.95)">S ランク (95%)</button>
+    <button class="demo-ctrl-btn" onclick="setDemo(0.80)">A ランク (80%)</button>
+    <button class="demo-ctrl-btn active" onclick="setDemo(0.65)">B ランク (65%)</button>
+    <button class="demo-ctrl-btn" onclick="setDemo(0.52)">C ランク (52%)</button>
+    <button class="demo-ctrl-btn" onclick="setDemo(0.30)">D ランク (30%)</button>
+  </div>
+  <button class="demo-run-btn" id="run-btn" onclick="fireSimDemo()">▶ シミュレーション実行（デモ）</button>
+</div>
+
+<!-- sharecard.js がここに自動挿入 -->
+<section id="share-card-section" class="panel"></section>
+<section id="improvement-engine-section" class="panel"></section>
+
+<script>
+  // ── デモ用グローバル変数（simulation.js の代替） ──
+  window._lastSimData = {};
+  window._demoRate = 0.65;
+  window._demoAge  = 38;
+
+  function setDemo(rate) {
+    window._demoRate = rate;
+    document.querySelectorAll('.demo-ctrl-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+  }
+
+  function fireSimDemo() {
+    // KPI要素を仮生成（sharecard.js が参照する）
+    let kpiSuccess = document.getElementById('kpi-success');
+    if (!kpiSuccess) {
+      kpiSuccess = document.createElement('span');
+      kpiSuccess.id = 'kpi-success';
+      kpiSuccess.style.display = 'none';
+      document.body.appendChild(kpiSuccess);
+    }
+    kpiSuccess.textContent = Math.round(window._demoRate * 100) + '%';
+
+    // デモ用データを直接 setLastSimResult へ
+    const result = {
+      successRate:  window._demoRate,
+      assets65:     28000000, // 2800万円
+      assets65Man:  2800,
+      surplus65Man: window._demoRate > 0.6 ? 500 : -200,
+      startAge:     window._demoAge,
+    };
+
+    // セクション表示
+    const scSec = document.getElementById('share-card-section');
+    const ieSec = document.getElementById('improvement-engine-section');
+    if (scSec) scSec.style.display = '';
+    if (ieSec) ieSec.style.display = '';
+
+    window.setLastSimResult(result);
+
+    // スクロール
+    setTimeout(() => scSec?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }
+
+  // shareCardToX / downloadShareCard をデモ用に上書き（実際には openする）
+  const _origX = window.shareCardToX;
+  window.shareCardToX = function() {
+    const result = window._lastSimResult;
+    if (!result) return;
+    const pct = Math.round((result.successRate ?? 0) * 100);
+    alert(`✅ Xシェア機能デモ\n\n投稿内容プレビューは下部に表示されています。\n実際の投稿URLが開きます。\n\n成功率: ${pct}%`);
+  };
+</script>
+
+<!-- sharecard.js 本体 -->
+<script src="sharecard.js"></script>
+
+</body>
+</html>

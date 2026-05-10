@@ -1,63 +1,52 @@
 /**
- * sharecard.js — シェアカード生成 + 改善提案エンジン
+ * sharecard.js — シェアカード生成 + 改善提案エンジン（改善版）
  * FLOW | 資産シミュレーター
  *
- * 追加機能:
- *  1. 老後安心ランク（S〜D）+ 偏差値表示カード
- *  2. 未来の肩書きキャラクター化
- *  3. html2canvas でPNG化 → Twitter/Xシェア
- *  4. 改善提案エンジン（NISA・支出削減・退職延長シナリオ比較）
+ * 改善点:
+ *  1. Xシェアボタンを大型・目立つデザインに
+ *  2. ドーナツグラフ（SVG）でスコアを視覚化
+ *  3. 改善シナリオを横棒グラフで比較表示
+ *  4. ランクゲージ・パルスアニメーション
+ *  5. 改善前→後のアニメーション付きカード
  *
  * 依存: simulation.js (window._lastSimData, window._lastSimParams)
  *       html2canvas (CDN経由、なければ非表示)
- * 読み込み: index.html で simulation.js の後に読み込む
  */
 (function () {
   'use strict';
 
-  // ── 1. ランク定義（老後安心度） ─────────────────────────────────────
+  // ── 1. ランク定義 ──────────────────────────────────────────────────────
   const RANKS = [
-    { min: 0.90, rank: 'S', label: '悠々自適な逃げ切り世代',   color: '#a8ff78', glow: 'rgba(168,255,120,.35)', emoji: '🏆' },
-    { min: 0.75, rank: 'A', label: '盤石な資産防衛族',          color: '#00d4ff', glow: 'rgba(0,212,255,.35)',   emoji: '✨' },
-    { min: 0.60, rank: 'B', label: '着実な老後設計者',          color: '#b388ff', glow: 'rgba(179,136,255,.35)', emoji: '📈' },
-    { min: 0.45, rank: 'C', label: '綱渡りの現役続行おじさん', color: '#ffd166', glow: 'rgba(255,209,102,.35)', emoji: '⚡' },
-    { min: 0.00, rank: 'D', label: '労働の果てなき旅人',        color: '#ff4757', glow: 'rgba(255,71,87,.35)',   emoji: '💪' },
+    { min: 0.90, rank: 'S', label: '悠々自適な逃げ切り世代',   color: '#a8ff78', glow: 'rgba(168,255,120,.35)', emoji: '🏆', pct: 100 },
+    { min: 0.75, rank: 'A', label: '盤石な資産防衛族',          color: '#00d4ff', glow: 'rgba(0,212,255,.35)',   emoji: '✨', pct: 80  },
+    { min: 0.60, rank: 'B', label: '着実な老後設計者',          color: '#b388ff', glow: 'rgba(179,136,255,.35)', emoji: '📈', pct: 60  },
+    { min: 0.45, rank: 'C', label: '綱渡りの現役続行おじさん', color: '#ffd166', glow: 'rgba(255,209,102,.35)', emoji: '⚡', pct: 40  },
+    { min: 0.00, rank: 'D', label: '労働の果てなき旅人',        color: '#ff4757', glow: 'rgba(255,71,87,.35)',   emoji: '💪', pct: 20  },
   ];
 
   function getRank(successRate) {
     return RANKS.find(r => successRate >= r.min) || RANKS[RANKS.length - 1];
   }
 
-  // 擬似偏差値（成功率を正規分布に近似してスコア化）
   function toDevScore(successRate) {
-    // 平均50%を偏差値50とし、線形マッピング（0%→25、100%→75）
     const raw = 25 + successRate * 50;
     return Math.min(75, Math.max(25, Math.round(raw)));
   }
 
-  // ── 2. 最新シミュレーション結果を取得 ──────────────────────────────
-  function getLastResult() {
-    return window._lastSimResult || null;
-  }
-
-  // simulation.js の runSimulation 完了後にここへ書き込んでもらう
-  // (simulation.js 末尾の window._lastSimData とは別に結果サマリーを保持)
+  // ── 2. 最新シミュレーション結果 ────────────────────────────────────────
   window._lastSimResult = window._lastSimResult || null;
 
-  // simulation.js 側から呼ばれることを想定したセッター
   window.setLastSimResult = function (result) {
     window._lastSimResult = result;
     _onResultReady(result);
   };
 
-  // ── 3. 結果反映時フック ─────────────────────────────────────────────
   function _onResultReady(result) {
     if (!result) return;
     renderShareCard(result);
     renderImprovementEngine(result);
   }
 
-  // simulation.js が発火するカスタムイベントを購読（非侵襲）
   window.addEventListener('sim:done', function (e) {
     if (e.detail) {
       window._lastSimResult = e.detail;
@@ -65,7 +54,40 @@
     }
   });
 
-  // ── 4. シェアカード描画 ─────────────────────────────────────────────
+  // ── 3. SVGドーナツグラフ生成 ────────────────────────────────────────────
+  function buildDonutSVG(pct, color, glow, size) {
+    const r = size / 2;
+    const cx = r, cy = r;
+    const trackR = r - 10;
+    const circumference = 2 * Math.PI * trackR;
+    const fillLen = circumference * (pct / 100);
+    const dashArray = `${fillLen} ${circumference - fillLen}`;
+    const startAngle = -90; // top
+    const startX = cx + trackR * Math.cos(startAngle * Math.PI / 180);
+    const startY = cy + trackR * Math.sin(startAngle * Math.PI / 180);
+
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="glow-${pct}">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- トラック -->
+      <circle cx="${cx}" cy="${cy}" r="${trackR}" fill="none"
+        stroke="rgba(255,255,255,0.07)" stroke-width="10"/>
+      <!-- 塗り -->
+      <circle cx="${cx}" cy="${cy}" r="${trackR}" fill="none"
+        stroke="${color}" stroke-width="10"
+        stroke-dasharray="${dashArray}"
+        stroke-dashoffset="${circumference * 0.25}"
+        stroke-linecap="round"
+        filter="url(#glow-${pct})"
+        style="transition: stroke-dasharray 1s ease"/>
+    </svg>`;
+  }
+
+  // ── 4. シェアカード描画 ─────────────────────────────────────────────────
   function renderShareCard(result) {
     const container = document.getElementById('share-card-section');
     if (!container) return;
@@ -74,11 +96,9 @@
     const rank = getRank(sr);
     const dev  = toDevScore(sr);
     const age  = result.startAge ?? '—';
-    const a65  = result.assets65Man != null ? result.assets65Man : '—';
     const pct  = Math.round(sr * 100);
-
-    // 寿命カバー率ラベル
     const lifeLabel = sr >= 0.9 ? '100歳超対応' : sr >= 0.6 ? '90歳まで安心' : '要プランニング';
+    const donut = buildDonutSVG(pct, rank.color, rank.glow, 120);
 
     container.innerHTML = `
       <div class="sc-wrap">
@@ -87,7 +107,7 @@
           <span class="sc-hint">金額非表示・安心してシェアできます</span>
         </div>
 
-        <!-- カード本体（html2canvas でキャプチャする対象） -->
+        <!-- カード本体 -->
         <div id="share-card" class="sc-card" style="--rank-color:${rank.color};--rank-glow:${rank.glow}">
           <div class="sc-card-inner">
             <div class="sc-top">
@@ -95,35 +115,67 @@
               <div class="sc-age-badge">現在 ${age}歳</div>
             </div>
 
-            <div class="sc-rank-block">
-              <div class="sc-rank-letter">${rank.rank}</div>
-              <div class="sc-rank-meta">
-                <div class="sc-rank-title">${rank.emoji} ${rank.label}</div>
-                <div class="sc-rank-sub">老後安心ランク</div>
+            <!-- メインビジュアルエリア -->
+            <div class="sc-main-vis">
+              <!-- ドーナツグラフ -->
+              <div class="sc-donut-wrap">
+                ${donut}
+                <div class="sc-donut-center">
+                  <div class="sc-donut-pct">${pct}</div>
+                  <div class="sc-donut-label">%</div>
+                </div>
+              </div>
+
+              <!-- ランクブロック -->
+              <div class="sc-rank-block">
+                <div class="sc-rank-letter">${rank.rank}</div>
+                <div class="sc-rank-meta">
+                  <div class="sc-rank-badge-row">
+                    <span class="sc-rank-badge">老後安心ランク</span>
+                  </div>
+                  <div class="sc-rank-title">${rank.emoji} ${rank.label}</div>
+                  <div class="sc-dev-score-row">
+                    <span class="sc-dev-label">老後偏差値</span>
+                    <span class="sc-dev-val" style="color:${rank.color}">${dev}点</span>
+                  </div>
+                </div>
               </div>
             </div>
 
+            <!-- ランクゲージバー -->
+            <div class="sc-gauge-wrap">
+              <div class="sc-gauge-track">
+                ${RANKS.slice().reverse().map((r, i) => `
+                  <div class="sc-gauge-seg" style="background:${r.color};opacity:${rank.rank === r.rank ? '1' : '0.25'}">
+                    <span class="sc-gauge-seg-label">${r.rank}</span>
+                  </div>
+                `).join('')}
+                <div class="sc-gauge-needle" style="left:${Math.min(98, Math.max(2, pct))}%">
+                  <div class="sc-gauge-needle-line"></div>
+                  <div class="sc-gauge-needle-dot" style="background:${rank.color}"></div>
+                </div>
+              </div>
+              <div class="sc-gauge-sublabels">
+                <span>0%</span><span>50%</span><span>100%</span>
+              </div>
+            </div>
+
+            <!-- サブメトリクス -->
             <div class="sc-metrics">
               <div class="sc-metric">
-                <div class="sc-metric-val">${pct}<span class="sc-unit">%</span></div>
+                <div class="sc-metric-icon">🎯</div>
+                <div class="sc-metric-val" style="color:${rank.color}">${pct}<span class="sc-unit">%</span></div>
                 <div class="sc-metric-key">資産寿命スコア</div>
               </div>
               <div class="sc-metric">
-                <div class="sc-metric-val">${dev}<span class="sc-unit">点</span></div>
+                <div class="sc-metric-icon">📐</div>
+                <div class="sc-metric-val" style="color:${rank.color}">${dev}<span class="sc-unit">点</span></div>
                 <div class="sc-metric-key">老後偏差値</div>
               </div>
               <div class="sc-metric">
+                <div class="sc-metric-icon">🕰️</div>
                 <div class="sc-metric-val sc-life">${lifeLabel}</div>
                 <div class="sc-metric-key">カバー寿命</div>
-              </div>
-            </div>
-
-            <div class="sc-bar-wrap">
-              <div class="sc-bar-bg">
-                <div class="sc-bar-fill" style="width:${pct}%"></div>
-              </div>
-              <div class="sc-bar-labels">
-                <span>0%</span><span>50%</span><span>100%</span>
               </div>
             </div>
 
@@ -134,53 +186,85 @@
           </div>
         </div>
 
+        <!-- ── アクションボタン群 ── -->
         <div class="sc-actions">
-          <button class="sc-btn sc-btn-dl"  onclick="downloadShareCard()">📥 画像を保存</button>
-          <button class="sc-btn sc-btn-x"   onclick="shareCardToX()">𝕏 Xにシェア</button>
+          <!-- Xシェアボタン（メイン・大型） -->
+          <button class="sc-btn-x-main" onclick="shareCardToX()">
+            <span class="sc-btn-x-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.261 5.632L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/>
+              </svg>
+            </span>
+            <span class="sc-btn-x-text">
+              <span class="sc-btn-x-main-text">Xにシェアする</span>
+              <span class="sc-btn-x-sub">診断結果を投稿しよう！</span>
+            </span>
+            <span class="sc-btn-x-arrow">→</span>
+          </button>
+
+          <!-- 画像保存ボタン（サブ） -->
+          <button class="sc-btn-dl" onclick="downloadShareCard()">
+            <span>📥</span> 画像を保存
+          </button>
         </div>
+
+        <!-- シェアプレビュー文 -->
+        <div class="sc-tweet-preview" id="sc-tweet-preview"></div>
 
         <div id="sc-gen-msg" class="sc-gen-msg" style="display:none"></div>
       </div>
     `;
+
+    // ツイートプレビュー生成
+    _renderTweetPreview(result);
   }
 
-  // ── 5. カードPNGダウンロード ────────────────────────────────────────
-  window.downloadShareCard = function () {
-    const card = document.getElementById('share-card');
-    if (!card) return;
-
-    _ensureHtml2Canvas(function (h2c) {
-      const msg = document.getElementById('sc-gen-msg');
-      if (msg) { msg.style.display = 'block'; msg.textContent = '🎨 画像を生成しています…'; }
-
-      h2c(card, {
-        backgroundColor: '#050810',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      }).then(function (canvas) {
-        const link = document.createElement('a');
-        link.download = 'flow_rougo_shindan.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        if (msg) { msg.textContent = '✅ 保存しました！'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
-      }).catch(function (err) {
-        console.warn('[ShareCard] html2canvas error:', err);
-        if (msg) { msg.textContent = '⚠️ 画像生成に失敗しました'; setTimeout(() => { msg.style.display = 'none'; }, 3000); }
-      });
-    });
-  };
-
-  // ── 6. X（Twitter）シェア ────────────────────────────────────────────
-  window.shareCardToX = function () {
-    const result = getLastResult();
-    if (!result) return;
-
+  function _renderTweetPreview(result) {
+    const el = document.getElementById('sc-tweet-preview');
+    if (!el) return;
     const rank = getRank(result.successRate ?? 0);
     const dev  = toDevScore(result.successRate ?? 0);
     const pct  = Math.round((result.successRate ?? 0) * 100);
     const age  = result.startAge ?? '—';
+    el.innerHTML = `
+      <div class="sc-tweet-title">📋 投稿プレビュー</div>
+      <div class="sc-tweet-body">【FLOW老後診断】<br>
+      現在${age}歳 / 老後安心ランク【${rank.rank}】<br>
+      ${rank.emoji} ${rank.label}<br>
+      資産寿命スコア: ${pct}% / 老後偏差値: ${dev}点<br>
+      <span style="opacity:.6;">#老後資産診断 #FLOW家計シミュレーター</span></div>
+    `;
+  }
 
+  // ── 5. カードPNGダウンロード ────────────────────────────────────────────
+  window.downloadShareCard = function () {
+    const card = document.getElementById('share-card');
+    if (!card) return;
+    _ensureHtml2Canvas(function (h2c) {
+      const msg = document.getElementById('sc-gen-msg');
+      if (msg) { msg.style.display = 'block'; msg.textContent = '🎨 画像を生成しています…'; }
+      h2c(card, { backgroundColor: '#050810', scale: 2, useCORS: true, logging: false })
+        .then(function (canvas) {
+          const link = document.createElement('a');
+          link.download = 'flow_rougo_shindan.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          if (msg) { msg.textContent = '✅ 保存しました！'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
+        }).catch(function (err) {
+          console.warn('[ShareCard] html2canvas error:', err);
+          if (msg) { msg.textContent = '⚠️ 画像生成に失敗しました'; setTimeout(() => { msg.style.display = 'none'; }, 3000); }
+        });
+    });
+  };
+
+  // ── 6. X（Twitter）シェア ────────────────────────────────────────────────
+  window.shareCardToX = function () {
+    const result = window._lastSimResult;
+    if (!result) return;
+    const rank = getRank(result.successRate ?? 0);
+    const dev  = toDevScore(result.successRate ?? 0);
+    const pct  = Math.round((result.successRate ?? 0) * 100);
+    const age  = result.startAge ?? '—';
     const text = [
       `【FLOW老後診断】`,
       `現在${age}歳 / 老後安心ランク【${rank.rank}】`,
@@ -188,13 +272,18 @@
       `資産寿命スコア: ${pct}% / 老後偏差値: ${dev}点`,
       `#老後資産診断 #FLOW家計シミュレーター`,
     ].join('\n');
-
     const url = encodeURIComponent(location.href.split('?')[0]);
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${url}`;
-    window.open(twitterUrl, '_blank', 'noopener,width=600,height=400');
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${url}`, '_blank', 'noopener,width=600,height=400');
+
+    // ボタンにフィードバック
+    const btn = document.querySelector('.sc-btn-x-main');
+    if (btn) {
+      btn.classList.add('sc-btn-x-sent');
+      setTimeout(() => btn.classList.remove('sc-btn-x-sent'), 2000);
+    }
   };
 
-  // ── 7. html2canvas 遅延ロード ────────────────────────────────────────
+  // ── 7. html2canvas 遅延ロード ────────────────────────────────────────────
   function _ensureHtml2Canvas(cb) {
     if (window.html2canvas) { cb(window.html2canvas); return; }
     const s = document.createElement('script');
@@ -207,43 +296,63 @@
     document.head.appendChild(s);
   }
 
-  // ── 8. 改善提案エンジン ─────────────────────────────────────────────
-  /**
-   * 簡易モデル: 成功率を「変数を動かしたとき」に近似推計する。
-   * 本シミュレーションを再実行せず、感度係数から高速に差分を計算。
-   *
-   * 感度係数（実験的推定値）:
-   *   - NISA満額（+年24万円の追加投資）      → 成功率 +0.04〜+0.12 / 万円
-   *   - 支出削減（月 -1万円）               → 成功率 +0.015〜+0.04 / 万円
-   *   - 退職延長（+1年）                    → 成功率 +0.015〜+0.025
-   * ※係数は surplus65 と現在資産残高から動的に調整する
-   */
+  // ── 8. 改善提案エンジン ──────────────────────────────────────────────────
   function estimateImprovedRate(base, params) {
-    const {
-      successRate, surplus65, assets65, startAge,
-      nisaBoostMan = 0,      // 年間NISA追加投資（万円）
-      expCutMan = 0,         // 月支出削減（万円）
-      retireDelayYears = 0,  // 退職延長（年）
-    } = params;
-
-    // 現状の余剰度（正なら余裕あり）
-    const surplusRatio = surplus65 > 0
-      ? Math.min(1, surplus65 / Math.max(1, assets65))
-      : -0.3;
-
-    // NISA: 年24万円投資で何年か複利。残り年数≒65-startAge
+    const { successRate, surplus65, assets65, startAge,
+      nisaBoostMan = 0, expCutMan = 0, retireDelayYears = 0 } = params;
+    const surplusRatio = surplus65 > 0 ? Math.min(1, surplus65 / Math.max(1, assets65)) : -0.3;
     const remainYears = Math.max(5, 65 - startAge);
-    const nisaFutureVal = nisaBoostMan * Math.pow(1.05, remainYears); // 年利5%仮定
-    const nisaEffect    = Math.min(0.30, nisaFutureVal / 3000 * 0.18); // 3000万を基準
+    const nisaFutureVal = nisaBoostMan * Math.pow(1.05, remainYears);
+    const nisaEffect    = Math.min(0.30, nisaFutureVal / 3000 * 0.18);
+    const expEffect     = Math.min(0.25, expCutMan * 12 * 20 / 3000 * 0.18);
+    const retireEffect  = Math.min(0.20, retireDelayYears * 0.025 * (1 + Math.max(0, -surplusRatio)));
+    return Math.min(0.98, Math.round((successRate + nisaEffect + expEffect + retireEffect) * 100) / 100);
+  }
 
-    // 支出削減: 月削減額 × 12ヶ月 × 残余命（仮20年）
-    const expEffect = Math.min(0.25, expCutMan * 12 * 20 / 3000 * 0.18);
+  // ── 9. 横棒グラフSVG生成 ────────────────────────────────────────────────
+  function buildBarChartSVG(scenarios, basePct, allPct) {
+    const W = 340, barH = 28, gap = 14, padL = 0, padTop = 8;
+    const items = [
+      ...scenarios.map(s => ({ label: s.title, icon: s.icon, pct: s.impPct, color: s.newRank.color, delta: s.delta })),
+      { label: '全部実践！', icon: '🚀', pct: allPct, color: '#a8ff78', delta: allPct - basePct },
+    ];
+    const totalH = padTop + items.length * (barH + gap) + 20;
 
-    // 退職延長: 1年延ばすごとに収入+支出の両面改善
-    const retireEffect = Math.min(0.20, retireDelayYears * 0.025 * (1 + Math.max(0, -surplusRatio)));
+    const bars = items.map((item, i) => {
+      const y = padTop + i * (barH + gap);
+      const baseW = Math.round((basePct / 100) * (W - 80));
+      const fillW = Math.round((item.pct / 100) * (W - 80));
+      return `
+        <g transform="translate(0,${y})">
+          <text x="0" y="${barH / 2 + 5}" font-size="15" dominant-baseline="middle">${item.icon}</text>
+          <!-- ベースバー -->
+          <rect x="22" y="4" width="${baseW}" height="${barH - 8}" rx="4"
+            fill="rgba(255,255,255,0.07)"/>
+          <!-- 改善バー -->
+          <rect x="22" y="4" width="${fillW}" height="${barH - 8}" rx="4"
+            fill="${item.color}" opacity="0.85"
+            style="transition: width 1s ease"/>
+          <!-- ベースマーカー -->
+          <line x1="${22 + baseW}" y1="2" x2="${22 + baseW}" y2="${barH - 2}"
+            stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="3,2"/>
+          <!-- パーセント表示 -->
+          <text x="${22 + fillW + 6}" y="${barH / 2 + 1}" font-size="12" fill="${item.color}"
+            dominant-baseline="middle" font-weight="700">${item.pct}%</text>
+          <text x="${22 + fillW + 6 + 30}" y="${barH / 2 + 1}" font-size="11"
+            fill="#a8ff78" dominant-baseline="middle">+${item.delta}pt</text>
+        </g>
+      `;
+    }).join('');
 
-    const improved = Math.min(0.98, successRate + nisaEffect + expEffect + retireEffect);
-    return Math.round(improved * 100) / 100;
+    // ラベル列（左）
+    const labels = items.map((item, i) => {
+      const y = padTop + i * (barH + gap) + barH / 2;
+      return `<text x="${W + 10}" y="${y}" font-size="10" fill="rgba(255,255,255,0.45)"
+        dominant-baseline="middle">${item.label}</text>`;
+    }).join('');
+
+    return `<svg width="100%" viewBox="0 0 ${W + 10} ${totalH}" xmlns="http://www.w3.org/2000/svg"
+      style="overflow:visible">${bars}</svg>`;
   }
 
   function renderImprovementEngine(result) {
@@ -252,47 +361,34 @@
 
     const sr      = result.successRate ?? 0;
     const pct     = Math.round(sr * 100);
-    const surplus = result.surplus65Man ?? 0; // 万円
-    const assets  = result.assets65 ?? 0;     // 円
+    const surplus = result.surplus65Man ?? 0;
+    const assets  = result.assets65 ?? 0;
     const age     = result.startAge ?? 35;
     const rank    = getRank(sr);
 
-    // 3つのシナリオを計算
     const scenarios = [
       {
-        id:    'nisa',
-        icon:  '💹',
-        title: 'NISA満額活用',
-        desc:  '年間360万円（新NISA上限）を積立',
+        id: 'nisa', icon: '💹', title: 'NISA満額活用',
+        desc: '年間360万円を5%複利で運用',
         params: { successRate: sr, surplus65: surplus * 10000, assets65: assets, startAge: age, nisaBoostMan: 360 },
         detail: 'つみたてNISA・成長投資枠の年間上限360万円を5%複利で運用',
-        cta: null,
       },
       {
-        id:    'expense',
-        icon:  '✂️',
-        title: '月2万円の支出削減',
-        desc:  'サブスク・外食費など見直し',
+        id: 'expense', icon: '✂️', title: '月2万円の支出削減',
+        desc: 'サブスク・外食費など固定費見直し',
         params: { successRate: sr, surplus65: surplus * 10000, assets65: assets, startAge: age, expCutMan: 2 },
         detail: '通信費・サブスク・外食費など固定費を月2万円カット',
-        cta: null,
       },
       {
-        id:    'retire',
-        icon:  '🕐',
-        title: '退職を3年延ばす',
-        desc:  '65歳まで現役で収入を確保',
+        id: 'retire', icon: '🕐', title: '退職を3年延ばす',
+        desc: '65歳まで現役で収入+年金増額',
         params: { successRate: sr, surplus65: surplus * 10000, assets65: assets, startAge: age, retireDelayYears: 3 },
         detail: '65歳定年まで働くことで収入延長・年金増額のダブル効果',
-        cta: null,
       },
     ];
 
-    // 複合シナリオ（全部合わせると）
-    const allParams = {
-      successRate: sr, surplus65: surplus * 10000, assets65: assets, startAge: age,
-      nisaBoostMan: 360, expCutMan: 2, retireDelayYears: 3,
-    };
+    const allParams = { successRate: sr, surplus65: surplus * 10000, assets65: assets, startAge: age,
+      nisaBoostMan: 360, expCutMan: 2, retireDelayYears: 3 };
     const allRate = estimateImprovedRate(sr, allParams);
     const allPct  = Math.round(allRate * 100);
 
@@ -305,30 +401,74 @@
       return { ...sc, improved, impPct, delta, newRank, rankUp };
     });
 
-    // ランクアップする最大シナリオを強調
     const best = rows.reduce((a, b) => b.delta > a.delta ? b : a, rows[0]);
+    const barChart = buildBarChartSVG(rows, pct, allPct);
+    const allRank = getRank(allRate);
+    const donutAll = buildDonutSVG(allPct, allRank.color, allRank.glow, 90);
 
     container.innerHTML = `
       <div class="ie-wrap">
         <div class="ie-header">
           <div class="ie-title">💡 老後安心度 改善シミュレーター</div>
-          <div class="ie-subtitle">どうすれば、もっと安心できる？ — 3つのシナリオ比較</div>
+          <div class="ie-subtitle">どうすれば、もっと安心できる？ — 3つのシナリオを比較</div>
         </div>
 
-        <!-- 現状 -->
-        <div class="ie-current">
-          <div class="ie-current-label">現在の老後安心スコア</div>
-          <div class="ie-current-val">
-            <div class="ie-current-pct" style="color:${rank.color}">${pct}<span style="font-size:18px;opacity:.7;">%</span></div>
-            <div class="ie-current-rank" style="color:${rank.color}">ランク ${rank.rank}</div>
+        <!-- 現状 vs 目標ビジュアル -->
+        <div class="ie-compare-row">
+          <!-- 現状 -->
+          <div class="ie-compare-card ie-compare-now">
+            <div class="ie-compare-card-label">現在のスコア</div>
+            <div class="ie-compare-donut-wrap">
+              ${buildDonutSVG(pct, rank.color, rank.glow, 90)}
+              <div class="ie-compare-donut-center">
+                <div class="ie-compare-pct" style="color:${rank.color}">${pct}</div>
+                <div class="ie-compare-unit">%</div>
+              </div>
+            </div>
+            <div class="ie-compare-rank" style="color:${rank.color}">${rank.emoji} ランク${rank.rank}</div>
+            <div class="ie-compare-char">${rank.label}</div>
           </div>
-          <div class="ie-current-char">${rank.emoji} ${rank.label}</div>
+
+          <!-- 矢印 -->
+          <div class="ie-compare-arrow">
+            <div class="ie-arrow-pulse">→</div>
+            <div class="ie-arrow-sub">全部実践</div>
+          </div>
+
+          <!-- 全部実践後 -->
+          <div class="ie-compare-card ie-compare-goal">
+            <div class="ie-compare-card-label">全部実践後</div>
+            <div class="ie-compare-donut-wrap">
+              ${donutAll}
+              <div class="ie-compare-donut-center">
+                <div class="ie-compare-pct" style="color:${allRank.color}">${allPct}</div>
+                <div class="ie-compare-unit">%</div>
+              </div>
+            </div>
+            <div class="ie-compare-rank" style="color:${allRank.color}">${allRank.emoji} ランク${allRank.rank}</div>
+            <div class="ie-compare-char">${allRank.label}</div>
+          </div>
         </div>
 
-        <!-- 矢印 -->
-        <div class="ie-arrow">↓ こうすれば改善できます</div>
+        <!-- 変化量バッジ -->
+        <div class="ie-delta-banner">
+          <span class="ie-delta-val">+${allPct - pct}<span style="font-size:16px;">pt</span></span>
+          <span class="ie-delta-desc">3つすべて実践すると老後安心スコアが大幅アップ！</span>
+        </div>
 
-        <!-- シナリオカード群 -->
+        <!-- 棒グラフ比較 -->
+        <div class="ie-chart-section">
+          <div class="ie-chart-title">📊 シナリオ別 改善効果グラフ</div>
+          <div class="ie-chart-legend">
+            <span class="ie-legend-base">▏現在 ${pct}%</span>
+            <span class="ie-legend-imp">■ 改善後</span>
+          </div>
+          <div class="ie-bar-chart-wrap">
+            ${barChart}
+          </div>
+        </div>
+
+        <!-- シナリオ詳細カード -->
         <div class="ie-cards">
           ${rows.map(sc => `
             <div class="ie-card ${sc.id === best.id ? 'ie-card-best' : ''}">
@@ -338,34 +478,40 @@
                 ${sc.id === best.id ? '<span class="ie-card-badge">最大効果</span>' : ''}
               </div>
               <div class="ie-card-desc">${sc.desc}</div>
+
+              <!-- ミニプログレス -->
+              <div class="ie-card-progress-wrap">
+                <div class="ie-card-progress-track">
+                  <div class="ie-card-progress-base" style="width:${pct}%"></div>
+                  <div class="ie-card-progress-fill" style="width:${sc.impPct}%;background:${sc.newRank.color}"></div>
+                </div>
+              </div>
+
               <div class="ie-card-nums">
                 <div class="ie-card-before">${pct}%</div>
                 <div class="ie-card-arrow-sm">→</div>
                 <div class="ie-card-after" style="color:${sc.newRank.color}">${sc.impPct}%</div>
                 <div class="ie-card-delta">+${sc.delta}pt</div>
               </div>
-              ${sc.rankUp ? `<div class="ie-card-rankup" style="color:${sc.newRank.color}">ランク ${rank.rank} → ${sc.newRank.rank} にアップ！</div>` : ''}
+              ${sc.rankUp ? `<div class="ie-card-rankup" style="color:${sc.newRank.color}">
+                ランク ${rank.rank} → ${sc.newRank.rank} にアップ！🎉</div>` : ''}
               <div class="ie-card-detail">${sc.detail}</div>
             </div>
           `).join('')}
         </div>
 
-        <!-- 全部合わせると -->
-        <div class="ie-combo">
-          <div class="ie-combo-label">🚀 3つすべて実践したら…</div>
-          <div class="ie-combo-val">
-            <span class="ie-combo-before">${pct}%</span>
-            <span class="ie-combo-arrow"> ➔ </span>
-            <span class="ie-combo-after" style="color:${getRank(allRate).color}">${allPct}%</span>
-            <span class="ie-combo-delta">+${allPct - pct}pt</span>
-          </div>
-          <div class="ie-combo-rank" style="color:${getRank(allRate).color}">
-            ${getRank(allRate).emoji} ${getRank(allRate).label}
-          </div>
-          <div class="ie-combo-note">※改善効果は統計的な推計値です。実際の効果はシミュレーションを再実行してご確認ください。</div>
+        <!-- 改善後のXシェアボタン -->
+        <div class="ie-share-cta">
+          <div class="ie-share-cta-label">改善シナリオをシェアして、仲間に教えよう</div>
+          <button class="ie-share-x-btn" onclick="shareImprovementToX()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.261 5.632L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/>
+            </svg>
+            改善結果をXにシェア
+          </button>
         </div>
 
-        <!-- パラメータを実際に変えて再シミュレーション促進 -->
+        <!-- 再シミュレーション -->
         <div class="ie-cta">
           <div class="ie-cta-text">シナリオの数値を変えて、より詳細に試算できます</div>
           <button class="ie-cta-btn" onclick="document.getElementById('run-btn')?.scrollIntoView({behavior:'smooth'})">
@@ -376,14 +522,42 @@
     `;
   }
 
-  // ── 9. スタイル注入 ─────────────────────────────────────────────────
+  // ── 10. 改善結果のXシェア ───────────────────────────────────────────────
+  window.shareImprovementToX = function () {
+    const result = window._lastSimResult;
+    if (!result) return;
+    const sr  = result.successRate ?? 0;
+    const pct = Math.round(sr * 100);
+    const age = result.startAge ?? '—';
+    const allParams = {
+      successRate: sr,
+      surplus65: (result.surplus65Man ?? 0) * 10000,
+      assets65: result.assets65 ?? 0,
+      startAge: age,
+      nisaBoostMan: 360, expCutMan: 2, retireDelayYears: 3,
+    };
+    const allRate = estimateImprovedRate(sr, allParams);
+    const allPct  = Math.round(allRate * 100);
+    const allRank = getRank(allRate);
+    const text = [
+      `【FLOWで家計を見直した結果】`,
+      `FIRE成功率が +${allPct - pct}% 向上しました！`,
+      `[ ${pct}% ] ➔ [ ${allPct}% ] ${allRank.emoji}`,
+      `老後安心ランク: ${allRank.rank}「${allRank.label}」`,
+      `#家計改善 #老後資産診断 #FLOW家計シミュレーター`,
+    ].join('\n');
+    const url = encodeURIComponent(location.href.split('?')[0]);
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${url}`, '_blank', 'noopener,width=600,height=400');
+  };
+
+  // ── 11. スタイル注入 ────────────────────────────────────────────────────
   function injectStyles() {
     if (document.getElementById('sharecard-styles')) return;
     const style = document.createElement('style');
     style.id = 'sharecard-styles';
     style.textContent = `
 /* ═══════════════════════════════════════════════
-   SHARE CARD
+   SHARE CARD（改善版）
 ═══════════════════════════════════════════════ */
 .sc-wrap {
   font-family: var(--font-main, 'Inter', sans-serif);
@@ -438,7 +612,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 .sc-app-name {
   font-size: 11px;
@@ -457,14 +631,57 @@
   padding: 3px 10px;
 }
 
-.sc-rank-block {
+/* メインビジュアル（ドーナツ + ランク） */
+.sc-main-vis {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   margin-bottom: 20px;
 }
+.sc-donut-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  width: 120px;
+  height: 120px;
+}
+.sc-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.sc-donut-pct {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--rank-color, #00d4ff);
+  font-family: var(--font-mono, monospace);
+  line-height: 1;
+}
+.sc-donut-label {
+  font-size: 12px;
+  color: var(--text-dim, #6b7a99);
+}
+.sc-rank-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sc-rank-badge-row { display: flex; gap: 6px; }
+.sc-rank-badge {
+  font-size: 10px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 4px;
+  padding: 2px 8px;
+  color: var(--text-dim, #6b7a99);
+  letter-spacing: .5px;
+}
 .sc-rank-letter {
-  font-size: 72px;
+  font-size: 64px;
   font-weight: 900;
   color: var(--rank-color, #00d4ff);
   line-height: 1;
@@ -474,21 +691,87 @@
 }
 .sc-rank-meta { display: flex; flex-direction: column; gap: 4px; }
 .sc-rank-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text, #e8edf5);
   line-height: 1.3;
 }
-.sc-rank-sub {
-  font-size: 11px;
+.sc-dev-score-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.sc-dev-label {
+  font-size: 10px;
   color: var(--text-dim, #6b7a99);
-  letter-spacing: .5px;
+}
+.sc-dev-val {
+  font-size: 18px;
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
 }
 
+/* ランクゲージ */
+.sc-gauge-wrap { margin-bottom: 16px; }
+.sc-gauge-track {
+  position: relative;
+  display: flex;
+  height: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.sc-gauge-seg {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .3s;
+}
+.sc-gauge-seg-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: rgba(0,0,0,.6);
+  letter-spacing: .5px;
+}
+.sc-gauge-needle {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.sc-gauge-needle-line {
+  width: 2px;
+  flex: 1;
+  background: #fff;
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(255,255,255,.8);
+}
+.sc-gauge-needle-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 10px currentColor;
+  margin-top: 2px;
+}
+.sc-gauge-sublabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-dim, #6b7a99);
+}
+
+/* メトリクス */
 .sc-metrics {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 16px;
 }
 .sc-metric {
@@ -498,42 +781,17 @@
   padding: 10px 8px;
   text-align: center;
 }
+.sc-metric-icon { font-size: 14px; margin-bottom: 4px; }
 .sc-metric-val {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
-  color: var(--rank-color, #00d4ff);
   font-family: var(--font-mono, monospace);
   line-height: 1;
   margin-bottom: 4px;
 }
-.sc-unit { font-size: 12px; opacity: .7; }
-.sc-life { font-size: 11px; line-height: 1.3; }
-.sc-metric-key {
-  font-size: 10px;
-  color: var(--text-dim, #6b7a99);
-  letter-spacing: .3px;
-}
-
-.sc-bar-wrap { margin-bottom: 16px; }
-.sc-bar-bg {
-  height: 8px;
-  background: rgba(255,255,255,.07);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 4px;
-}
-.sc-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--rank-color, #00d4ff), rgba(255,255,255,.5));
-  border-radius: 4px;
-  transition: width .6s ease;
-}
-.sc-bar-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: var(--text-dim, #6b7a99);
-}
+.sc-unit { font-size: 11px; opacity: .7; }
+.sc-life { font-size: 10px; line-height: 1.3; }
+.sc-metric-key { font-size: 10px; color: var(--text-dim, #6b7a99); }
 
 .sc-footer {
   display: flex;
@@ -544,36 +802,122 @@
   border-top: 1px solid rgba(255,255,255,.06);
 }
 
-/* ボタン */
+/* ═══ Xシェアボタン（大型メイン） ═══ */
 .sc-actions {
-  display: flex;
-  gap: 10px;
   margin-top: 14px;
-  flex-wrap: wrap;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-.sc-btn {
+
+/* メインXボタン */
+.sc-btn-x-main {
+  width: 100%;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #000 0%, #111 100%);
+  border: 2px solid rgba(255,255,255,0.25);
+  border-radius: 14px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: all .2s;
+  box-shadow: 0 4px 20px rgba(0,0,0,.5), 0 0 0 0 rgba(255,255,255,.1);
+  position: relative;
+  overflow: hidden;
+}
+.sc-btn-x-main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+.sc-btn-x-main:hover {
+  background: linear-gradient(135deg, #111 0%, #222 100%);
+  border-color: rgba(255,255,255,.45);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 0 0 3px rgba(255,255,255,.08);
+}
+.sc-btn-x-main:active { transform: translateY(0); }
+.sc-btn-x-main.sc-btn-x-sent {
+  background: linear-gradient(135deg, #0a3 0%, #051 100%);
+  border-color: rgba(168,255,120,.4);
+}
+.sc-btn-x-icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sc-btn-x-text {
   flex: 1;
-  padding: 11px 16px;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.sc-btn-x-main-text {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: .3px;
+}
+.sc-btn-x-sub {
+  font-size: 11px;
+  opacity: .55;
+  font-weight: 400;
+}
+.sc-btn-x-arrow {
+  font-size: 20px;
+  opacity: .5;
+  font-weight: 300;
+  transition: transform .2s;
+}
+.sc-btn-x-main:hover .sc-btn-x-arrow { transform: translateX(4px); opacity: .9; }
+
+/* サブ保存ボタン */
+.sc-btn-dl {
+  width: 100%;
+  padding: 12px 20px;
+  background: rgba(168,255,120,.08);
+  border: 1.5px solid rgba(168,255,120,.25);
+  border-radius: 10px;
+  color: #a8ff78;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all .2s;
-  min-width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
-.sc-btn-dl {
-  background: rgba(168,255,120,.1);
-  border: 1.5px solid rgba(168,255,120,.35);
-  color: #a8ff78;
+.sc-btn-dl:hover { background: rgba(168,255,120,.16); }
+
+/* ツイートプレビュー */
+.sc-tweet-preview {
+  margin-top: 10px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  padding: 12px 16px;
 }
-.sc-btn-dl:hover { background: rgba(168,255,120,.18); }
-.sc-btn-x {
-  background: rgba(0,0,0,.3);
-  border: 1.5px solid rgba(255,255,255,.15);
+.sc-tweet-title {
+  font-size: 11px;
+  color: var(--text-dim, #6b7a99);
+  margin-bottom: 6px;
+  letter-spacing: .5px;
+}
+.sc-tweet-body {
+  font-size: 13px;
   color: var(--text, #e8edf5);
+  line-height: 1.7;
 }
-.sc-btn-x:hover { background: rgba(255,255,255,.08); }
 .sc-gen-msg {
   margin-top: 8px;
   font-size: 12px;
@@ -582,59 +926,135 @@
 }
 
 /* ═══════════════════════════════════════════════
-   IMPROVEMENT ENGINE
+   IMPROVEMENT ENGINE（改善版）
 ═══════════════════════════════════════════════ */
-.ie-wrap {
-  font-family: var(--font-main, 'Inter', sans-serif);
-}
+.ie-wrap { font-family: var(--font-main, 'Inter', sans-serif); }
 .ie-header { margin-bottom: 20px; }
-.ie-title {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--text, #e8edf5);
-  margin-bottom: 4px;
-}
-.ie-subtitle {
-  font-size: 12px;
-  color: var(--text-dim, #6b7a99);
-}
+.ie-title { font-size: 16px; font-weight: 800; color: var(--text, #e8edf5); margin-bottom: 4px; }
+.ie-subtitle { font-size: 12px; color: var(--text-dim, #6b7a99); }
 
-.ie-current {
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 10px;
-  padding: 16px 20px;
+/* 現在 vs 目標 比較ビジュアル */
+.ie-compare-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px;
+  padding: 16px;
 }
-.ie-current-label {
-  font-size: 11px;
+.ie-compare-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.ie-compare-card-label {
+  font-size: 10px;
   color: var(--text-dim, #6b7a99);
   letter-spacing: .5px;
-  flex: 0 0 auto;
-  min-width: 120px;
+  text-transform: uppercase;
 }
-.ie-current-val { display: flex; align-items: baseline; gap: 10px; flex: 0 0 auto; }
-.ie-current-pct {
-  font-size: 40px;
+.ie-compare-donut-wrap {
+  position: relative;
+  width: 90px;
+  height: 90px;
+}
+.ie-compare-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ie-compare-pct {
+  font-size: 22px;
   font-weight: 900;
   font-family: var(--font-mono, monospace);
   line-height: 1;
 }
-.ie-current-rank { font-size: 15px; font-weight: 700; }
-.ie-current-char { font-size: 12px; color: var(--text-mid, #a0adc0); flex: 1; }
+.ie-compare-unit { font-size: 10px; color: var(--text-dim, #6b7a99); }
+.ie-compare-rank { font-size: 13px; font-weight: 700; }
+.ie-compare-char { font-size: 10px; color: var(--text-dim, #6b7a99); line-height: 1.4; }
+.ie-compare-goal { background: rgba(168,255,120,.03); border-radius: 10px; }
 
-.ie-arrow {
+/* 矢印アニメーション */
+.ie-compare-arrow {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.ie-arrow-pulse {
+  font-size: 28px;
+  animation: ie-pulse 1.5s ease-in-out infinite;
+  color: #a8ff78;
+}
+@keyframes ie-pulse {
+  0%, 100% { opacity: .5; transform: translateX(0); }
+  50% { opacity: 1; transform: translateX(5px); }
+}
+.ie-arrow-sub { font-size: 9px; color: var(--text-dim, #6b7a99); }
+
+/* 変化量バナー */
+.ie-delta-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: linear-gradient(135deg, rgba(168,255,120,.08) 0%, rgba(0,212,255,.06) 100%);
+  border: 1px solid rgba(168,255,120,.2);
+  border-radius: 10px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
   text-align: center;
+}
+.ie-delta-val {
+  font-size: 36px;
+  font-weight: 900;
+  color: #a8ff78;
+  font-family: var(--font-mono, monospace);
+  line-height: 1;
+}
+.ie-delta-desc {
   font-size: 13px;
-  color: var(--text-dim, #6b7a99);
-  margin: 10px 0;
-  letter-spacing: .3px;
+  color: var(--text, #e8edf5);
+  line-height: 1.5;
+  flex: 1;
+  min-width: 160px;
 }
 
+/* 棒グラフ */
+.ie-chart-section {
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+.ie-chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #e8edf5);
+  margin-bottom: 8px;
+}
+.ie-chart-legend {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+.ie-legend-base { color: var(--text-dim, #6b7a99); }
+.ie-legend-imp { color: #00d4ff; }
+.ie-bar-chart-wrap { width: 100%; overflow: hidden; }
+
+/* シナリオ詳細カード */
 .ie-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -673,7 +1093,6 @@
   border: 1px solid rgba(0,212,255,.3);
   border-radius: 20px;
   padding: 2px 7px;
-  letter-spacing: .5px;
 }
 .ie-card-desc {
   font-size: 11px;
@@ -681,6 +1100,30 @@
   margin-bottom: 10px;
   line-height: 1.5;
 }
+
+/* ミニプログレスバー */
+.ie-card-progress-wrap { margin-bottom: 8px; }
+.ie-card-progress-track {
+  position: relative;
+  height: 6px;
+  background: rgba(255,255,255,.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ie-card-progress-base {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  background: rgba(255,255,255,.15);
+  border-radius: 3px;
+}
+.ie-card-progress-fill {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  border-radius: 3px;
+  opacity: .8;
+  transition: width .8s ease;
+}
+
 .ie-card-nums {
   display: flex;
   align-items: baseline;
@@ -716,55 +1159,45 @@
   margin-top: 6px;
 }
 
-.ie-combo {
-  background: linear-gradient(135deg, rgba(0,212,255,.06) 0%, rgba(179,136,255,.06) 100%);
-  border: 1px solid rgba(0,212,255,.2);
+/* 改善結果シェアボタン */
+.ie-share-cta {
+  background: rgba(0,0,0,.25);
+  border: 1.5px solid rgba(255,255,255,.12);
   border-radius: 12px;
-  padding: 18px 20px;
-  margin-bottom: 16px;
+  padding: 16px 20px;
   text-align: center;
+  margin-bottom: 14px;
 }
-.ie-combo-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text, #e8edf5);
-  margin-bottom: 10px;
-}
-.ie-combo-val {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.ie-combo-before { font-size: 22px; color: var(--text-dim, #6b7a99); font-family: var(--font-mono, monospace); }
-.ie-combo-arrow { font-size: 20px; color: var(--text-dim, #6b7a99); }
-.ie-combo-after { font-size: 42px; font-weight: 900; font-family: var(--font-mono, monospace); }
-.ie-combo-delta {
-  font-size: 14px;
-  font-weight: 700;
-  color: #a8ff78;
-  background: rgba(168,255,120,.12);
-  border-radius: 6px;
-  padding: 2px 8px;
-}
-.ie-combo-rank { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
-.ie-combo-note {
-  font-size: 10px;
-  color: var(--text-dim, #6b7a99);
-  line-height: 1.6;
-  opacity: .7;
-}
-
-.ie-cta {
-  text-align: center;
-  padding: 12px 0 4px;
-}
-.ie-cta-text {
+.ie-share-cta-label {
   font-size: 12px;
   color: var(--text-dim, #6b7a99);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
+.ie-share-x-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: #000;
+  border: 2px solid rgba(255,255,255,.2);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: .3px;
+}
+.ie-share-x-btn:hover {
+  background: #111;
+  border-color: rgba(255,255,255,.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0,0,0,.5);
+}
+
+/* CTA */
+.ie-cta { text-align: center; padding: 12px 0 4px; }
+.ie-cta-text { font-size: 12px; color: var(--text-dim, #6b7a99); margin-bottom: 10px; }
 .ie-cta-btn {
   background: rgba(0,212,255,.1);
   border: 1.5px solid rgba(0,212,255,.3);
@@ -780,62 +1213,46 @@
   background: rgba(0,212,255,.18);
   box-shadow: 0 0 16px rgba(0,212,255,.15);
 }
+
+@media (max-width: 480px) {
+  .sc-main-vis { flex-direction: column; align-items: flex-start; }
+  .ie-compare-row { flex-direction: column; }
+  .ie-delta-banner { flex-direction: column; gap: 6px; }
+}
     `;
     document.head.appendChild(style);
   }
 
-  // ── 10. 初期化 ──────────────────────────────────────────────────────
+  // ── 12. 初期化 ──────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
     injectStyles();
-
-    // share-card-section と improvement-engine-section がなければ自動生成
     _ensureSections();
-
-    // 既存結果があれば即レンダリング
-    if (window._lastSimResult) {
-      _onResultReady(window._lastSimResult);
-    }
+    if (window._lastSimResult) _onResultReady(window._lastSimResult);
   });
 
   function _ensureSections() {
-    // シェアカードセクション
     if (!document.getElementById('share-card-section')) {
       const sec = document.createElement('section');
       sec.id = 'share-card-section';
       sec.className = 'panel';
-      sec.style.cssText = 'display:none;'; // シム完了まで非表示
+      sec.style.cssText = 'display:none;';
       sec.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:20px;">シミュレーション完了後に表示されます</div>';
-
-      // kpi-section か chart-container の後ろに挿入
       const anchor = document.getElementById('kpi-section') || document.getElementById('chart-container');
-      if (anchor && anchor.parentNode) {
-        anchor.parentNode.insertBefore(sec, anchor.nextSibling);
-      } else {
-        document.body.appendChild(sec);
-      }
+      if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(sec, anchor.nextSibling);
+      else document.body.appendChild(sec);
     }
-
-    // 改善提案エンジンセクション
     if (!document.getElementById('improvement-engine-section')) {
       const sec = document.createElement('section');
       sec.id = 'improvement-engine-section';
       sec.className = 'panel';
       sec.style.cssText = 'display:none;';
-      sec.innerHTML = '';
-
       const scSec = document.getElementById('share-card-section');
-      if (scSec && scSec.parentNode) {
-        scSec.parentNode.insertBefore(sec, scSec.nextSibling);
-      } else {
-        document.body.appendChild(sec);
-      }
+      if (scSec && scSec.parentNode) scSec.parentNode.insertBefore(sec, scSec.nextSibling);
+      else document.body.appendChild(sec);
     }
   }
 
-  // ── 11. simulation.js 完了後フック（非侵襲パッチ） ──────────────────
-  // simulation.js の runSimulation が終わった後、
-  // window._lastSimData はすでに書き込まれている。
-  // そこから必要な値を取り出して setLastSimResult を呼ぶ。
+  // ── 13. simulation.js 完了後フック（非侵襲パッチ） ─────────────────────
   const _origSim = window.runSimulation;
   if (typeof _origSim === 'function') {
     window.runSimulation = async function (...args) {
@@ -844,7 +1261,6 @@
       return ret;
     };
   } else {
-    // runSimulation がまだロードされていない場合: MutationObserver で待機
     const _mo = new MutationObserver(function () {
       if (typeof window.runSimulation === 'function' && window.runSimulation !== window._scPatched) {
         window._scPatched = window.runSimulation;
@@ -860,39 +1276,26 @@
   }
 
   function _tryHarvestResult() {
-    // window._lastSimData は simulation.js が書き込む
     const d = window._lastSimData;
     if (!d) return;
-
-    // KPI DOMから成功率を取得（最も信頼性が高い）
-    const successEl = document.getElementById('kpi-success');
-    const srText = successEl ? successEl.textContent.replace('%', '').trim() : null;
+    const successEl  = document.getElementById('kpi-success');
+    const srText     = successEl ? successEl.textContent.replace('%', '').trim() : null;
     const successRate = srText && !isNaN(parseFloat(srText)) ? parseFloat(srText) / 100 : null;
     if (successRate === null) return;
 
-    // 65歳時資産（kpi-assets65 or 計算）
-    const assets65El = document.getElementById('kpi-assets65');
-    const a65Text = assets65El ? assets65El.textContent.replace(/[^0-9.]/g, '') : '0';
-    const assets65Man = parseFloat(a65Text) * 100 || 0; // 億→万
+    const assets65El  = document.getElementById('kpi-assets65');
+    const a65Text     = assets65El ? assets65El.textContent.replace(/[^0-9.]/g, '') : '0';
+    const assets65Man = parseFloat(a65Text) * 100 || 0;
 
-    // 余剰/不足（kpi-retire-surplus）
-    const surplusEl = document.getElementById('kpi-retire-surplus');
+    const surplusEl   = document.getElementById('kpi-retire-surplus');
     const surplusText = surplusEl ? surplusEl.textContent.replace(/[^0-9.\-+]/g, '') : '0';
     const surplus65Man = parseFloat(surplusText) || 0;
 
     const startAge = parseInt(document.getElementById('start-age')?.value || '35');
 
-    const result = {
-      successRate,
-      assets65: assets65Man * 10000, // 円
-      assets65Man,
-      surplus65Man,
-      startAge,
-    };
-
+    const result = { successRate, assets65: assets65Man * 10000, assets65Man, surplus65Man, startAge };
     window.setLastSimResult(result);
 
-    // セクションを表示
     const scSec = document.getElementById('share-card-section');
     const ieSec = document.getElementById('improvement-engine-section');
     if (scSec) scSec.style.display = '';
