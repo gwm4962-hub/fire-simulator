@@ -123,6 +123,17 @@ function setMode(mode) {
   if (bSumm) {
     bSumm.style.display = mode === 'beginner' && hasResult ? 'block' : 'none';
   }
+
+  // pro モードに切り替わった時にグラフを初期化／リサイズ
+  // （pro-only パネルが display:none → block になるため、
+  //   canvas の offsetWidth が 0 から正常値に変わるのを待って描画する）
+  if (mode === 'pro') {
+    // requestAnimationFrame で DOM レイアウト確定後に実行
+    requestAnimationFrame(() => {
+      initFatTailAnalyzer();
+      initVolatilityDragExplorer();
+    });
+  }
 }
 
 // Initialize mode from storage
@@ -1237,8 +1248,12 @@ function initFatTailAnalyzer() {
   if (ftChart) { ftChart.destroy(); ftChart = null; }
 
   // canvasにサイズを明示指定（スマホでoffsetWidth=0になる問題を防ぐ）
-  canvas.width  = 600;
+  // parentの実際の幅を使い、0なら600pxにフォールバック
+  const ftParentW = canvas.parentElement?.offsetWidth || 600;
+  canvas.width  = ftParentW > 0 ? ftParentW : 600;
   canvas.height = 280;
+  canvas.style.width  = '100%';
+  canvas.style.height = '240px';
 
   function lngamma(z) {
     return (z-0.5)*Math.log(z) - z + 0.5*Math.log(2*Math.PI);
@@ -1327,6 +1342,9 @@ function initFatTailAnalyzer() {
     }
   }
 
+  // 重複登録を防ぐため一度解除してから再登録
+  slider.removeEventListener('input', slider._ftHandler);
+  slider._ftHandler = updateFT;
   slider.addEventListener('input', updateFT);
   updateFT();
 }
@@ -1346,8 +1364,11 @@ function initVolatilityDragExplorer() {
   if (vdChart) { vdChart.destroy(); vdChart = null; }
 
   // canvasにサイズを明示指定
-  canvas.width  = 600;
-  canvas.height = 280;
+  const vdParentW = canvas.parentElement?.offsetWidth || 600;
+  canvas.width  = vdParentW > 0 ? vdParentW : 600;
+  canvas.height = 200;
+  canvas.style.width  = '100%';
+  canvas.style.height = '200px';
 
   const years = Array.from({length:21}, (_,i) => i);
 
@@ -1431,6 +1452,11 @@ function initVolatilityDragExplorer() {
     vdChart.update();
   }
 
+  // 重複登録を防ぐため一度解除してから再登録
+  muEl.removeEventListener('input', muEl._vdHandler);
+  sigmaEl.removeEventListener('input', sigmaEl._vdHandler);
+  muEl._vdHandler    = updateVD;
+  sigmaEl._vdHandler = updateVD;
   muEl.addEventListener('input', updateVD);
   sigmaEl.addEventListener('input', updateVD);
   updateVD();
@@ -1524,3 +1550,82 @@ function updateChartA11ySummary(stats) {
 
 // グローバル公開（app.js の expose リストへの追加は任意）
 window.updateChartA11ySummary = updateChartA11ySummary;
+
+// ============================================================
+// ★ Fat-tail / Volatility-drag グラフ 初期化エントリーポイント
+//
+// 呼び出しタイミングが 3 つある:
+//   1. DOMContentLoaded 時に保存モードが pro なら即時初期化
+//   2. setMode('pro') が呼ばれた時（上記 setMode 内）
+//   3. IntersectionObserver でキャンバスが画面内に入った時（遅延表示対策）
+// ============================================================
+(function setupFatTailAndVDInit() {
+  // ── 初期化済みフラグ（二重初期化防止）──────────────────────
+  // initFatTailAnalyzer / initVolatilityDragExplorer 内部で既に
+  // ftChart / vdChart を null に destroy してから作り直すため、
+  // 呼び出し回数が多くても問題ないが、不要な再生成を抑制する。
+
+  // ── 1. DOMContentLoaded 時 ──────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    const savedMode = localStorage.getItem('fire_sim_mode') || 'beginner';
+    if (savedMode === 'pro') {
+      // setMode が同タイミングで呼ばれるため、1フレーム後に実行
+      requestAnimationFrame(() => {
+        initFatTailAnalyzer();
+        initVolatilityDragExplorer();
+      });
+    }
+  });
+
+  // ── 2. window.load 後（スクリプト全読み込み完了後の保険）──
+  window.addEventListener('load', () => {
+    const savedMode = localStorage.getItem('fire_sim_mode') || 'beginner';
+    if (savedMode === 'pro') {
+      requestAnimationFrame(() => {
+        initFatTailAnalyzer();
+        initVolatilityDragExplorer();
+      });
+    }
+  });
+
+  // ── 3. IntersectionObserver（スクロールで表示された瞬間に描画）
+  // pro-only パネルが画面外にある間は offsetWidth=0 になる場合があるため、
+  // 実際に viewport に入ったタイミングで（再）初期化する。
+  if (typeof IntersectionObserver !== 'undefined') {
+    const targets = [
+      { id: 'ft-chart',  fn: () => initFatTailAnalyzer() },
+      { id: 'vd-chart',  fn: () => initVolatilityDragExplorer() },
+    ];
+    targets.forEach(({ id, fn }) => {
+      const el = document.getElementById(id);
+      if (!el) {
+        // DOMContentLoaded 後に要素が存在しない場合は load 後に再試行
+        window.addEventListener('load', () => {
+          const el2 = document.getElementById(id);
+          if (el2) observe(el2, fn);
+        });
+        return;
+      }
+      observe(el, fn);
+    });
+
+    function observe(el, fn) {
+      let initialized = false;
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            // 初回表示時に初期化（以降は setMode 内の呼び出しに任せる）
+            fn();
+            initialized = true;
+            // 初回後も監視を続け、再表示時にリサイズ対応
+          }
+        });
+      }, { threshold: 0.1 });
+      obs.observe(el);
+    }
+  }
+})();
+
+// グローバル公開（index.html onclick や app.js expose から直接呼べるように）
+window.initFatTailAnalyzer      = initFatTailAnalyzer;
+window.initVolatilityDragExplorer = initVolatilityDragExplorer;
