@@ -64,7 +64,7 @@ function validateField(value, schema) {
 //   各フィールドの「正当な範囲」を一か所で管理する。
 //   simulation.js / wizard.js / storage.js が参照する唯一の真実。
 // ============================================================
-// typeof ガードで再宣言エラーを防ぐ（スクリプトが複数回評価された場合の安全策）
+// var を使用し、再宣言エラーを防ぐ（スクリプトが複数回評価された場合の安全策）
 var PARAM_SCHEMA = window.PARAM_SCHEMA || {
   'start-age':       { type: 'integer', min: 18,    max: 70,    label: '開始年齢' },
   'initial-assets':  { type: 'integer', min: 0,     max: 100000,label: '現在の資産（万円）' },
@@ -502,3 +502,36 @@ window.UIValidator          = UIValidator;
 document.addEventListener('DOMContentLoaded', () => {
   UIValidator.attachRealtimeValidation();
 });
+
+// ============================================================
+// § 8. ES Modules 移行準備
+//
+// 現在はグローバルスクリプトとして動作しているが、将来的に
+// <script type="module"> へ移行する際に使う export 宣言を
+// 条件付きで提供する。
+//
+// 移行ステップ:
+//   1. index.html の <script src="./validator.js"> を
+//      <script type="module" src="./validator.js"> に変更
+//   2. simulation.js 等で:
+//      import { validateField, validateSimParams, UIValidator } from './validator.js';
+//   3. 下記の window.xxx = xxx 行（§7）は削除できる
+//
+// 現時点では type="module" ではないため、typeof exports でガードして
+// グローバル動作を維持しつつ export も宣言する。
+// ============================================================
+
+// Node.js / Jest 環境向け CommonJS export（ブラウザでは無視）
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    PARAM_SCHEMA,
+    validateField,
+    validateSimParams,
+    validateOneTimeEvent,
+    validateWizardInput,
+    UIValidator,
+  };
+}
+
+// ESM 環境向け（将来: type="module" 時に有効化）
+// export { PARAM_SCHEMA, validateField, validateSimParams, validateOneTimeEvent, validateWizardInput, UIValidator };

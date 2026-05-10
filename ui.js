@@ -1431,9 +1431,7 @@ function initLongevityExplorer() {
 
         ages.forEach((age, t) => {
             // 現在保持している currentGender を使用
-            const _deathProb = (typeof deathProb === 'function') ? deathProb : (typeof window.deathProb === 'function' ? window.deathProb : null);
-            if (!_deathProb) return;
-            const dp = _deathProb(age, t, currentGender, medAdv);
+            const dp = (typeof deathProb === 'function' ? deathProb : window.deathProb)(age, t, currentGender, medAdv);
             survivalProb *= (1 - dp);
             
             const displayVal = Math.max(0, survivalProb);
@@ -1574,3 +1572,57 @@ let _uiCallbacks = {};
 function initUiCallbacks(callbacks) {
   _uiCallbacks = callbacks || {};
 }
+
+// ============================================================
+// ★ CustomEvent 受信層 — simulation.js / pwa.js からの通知を処理
+//
+// simulation.js が alert() を廃止して CustomEvent に切り替えたため、
+// DOM 操作の責務を ui.js に集約する。
+// ============================================================
+
+/**
+ * showSimNotification — トーストまたはバナーでメッセージを表示。
+ * DOM 操作はここのみ。呼び出し元は CustomEvent を発火するだけでよい。
+ */
+function showSimNotification(message, type = 'error') {
+  // 既存のエラーバナー要素を再利用（なければ動的生成）
+  let toast = document.getElementById('sim-notification-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'sim-notification-toast';
+    toast.style.cssText = [
+      'position:fixed', 'bottom:80px', 'left:50%', 'transform:translateX(-50%)',
+      'max-width:90vw', 'padding:14px 20px', 'border-radius:10px',
+      'font-size:13px', 'line-height:1.7', 'z-index:9999',
+      'box-shadow:0 8px 32px rgba(0,0,0,.5)', 'white-space:pre-wrap',
+      'text-align:center', 'pointer-events:none',
+      'transition:opacity .3s', 'opacity:0',
+    ].join(';');
+    document.body.appendChild(toast);
+  }
+
+  const isError = type === 'error';
+  toast.style.background = isError ? 'rgba(255,71,87,.95)' : 'rgba(0,212,255,.15)';
+  toast.style.border      = isError ? '1px solid #ff4757' : '1px solid rgba(0,212,255,.4)';
+  toast.style.color       = isError ? '#fff' : 'var(--accent)';
+  toast.textContent       = message;
+  toast.style.opacity     = '1';
+
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, isError ? 5000 : 3000);
+}
+
+// simulation.js からのバリデーションエラー通知
+window.addEventListener('sim:validationError', e => {
+  showSimNotification(e.detail?.message || '入力エラーが発生しました。', 'error');
+});
+
+// simulation.js からのシミュレーションエラー通知
+window.addEventListener('sim:error', e => {
+  showSimNotification(e.detail?.message || 'シミュレーションエラーが発生しました。', 'error');
+});
+
+// pwa.js からのインストール案内通知
+window.addEventListener('pwa:notify', e => {
+  showSimNotification(e.detail?.message || '', 'info');
+});

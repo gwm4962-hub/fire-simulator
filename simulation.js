@@ -954,42 +954,6 @@ function renderOneTimeEventList() {
     .join('');
 }
 
-// ============================================================
-// 多変量t分布サンプラー（2変数 Cholesky 分解ベース）
-//
-// 既存コードの「zBondCorr = corr * zStock + sqrt(1-corr²) * zBond」は
-// 2×2 Cholesky 分解と等価だが、以下の関数で明示的に実装することで
-// ① テスト可能な純粋関数として切り出す
-// ② 将来的に N 変数への拡張が容易になる
-// ③ zStock / zBond の自由度を個別制御できる
-//
-// 引数:
-//   { mu: [μ₁, μ₂], sigma: [σ₁, σ₂], corr: ρ, df: 自由度 }
-//   すべて変量は「単位分散 t(df) に正規化済み」を仮定。
-//   corr は [-1, 1] の相関係数。
-//
-// 戻り値: [r₁, r₂]  各資産クラスの年間リターン（小数）
-// ============================================================
-function samplingFromBivariateT({ mu, sigma, corr, df }) {
-  // --- Step 1: 独立した t(df) ショック 2 本を生成 ---
-  const z1 = tRandom(df);
-  const z2 = tRandom(df);
-
-  // --- Step 2: Cholesky 分解で相関を注入 ---
-  // 2×2 相関行列 [[1, ρ], [ρ, 1]] の Cholesky 因子:
-  //   L = [[1, 0], [ρ, sqrt(1-ρ²)]]
-  // → z_corr = L × [z1, z2]ᵀ
-  const rho   = Math.max(-0.999, Math.min(0.999, corr ?? 0));
-  const z1c   = z1;                                             // 1列目はそのまま
-  const z2c   = rho * z1 + Math.sqrt(Math.max(0, 1 - rho * rho)) * z2;
-
-  // --- Step 3: μ + σ × z でリターンを生成 ---
-  const r1 = mu[0] + sigma[0] * z1c;
-  const r2 = mu[1] + sigma[1] * z2c;
-
-  return [r1, r2];
-}
-
 // Gompertz-Makeham annual death probability at given age
 // h(x) = alpha * exp(beta * x) + gamma   (continuous hazard)
 // P(die this year) = 1 - exp(-h(x))
@@ -1741,9 +1705,9 @@ function renderCashBuffer({ assets65, expAt65, surplus65, successRate, bankruptR
   `;
 }
 
-// ページ読み込み完了後、またはグラフ作成後に実行
-// 見た目と中身を強制的に同期させる
-toggleRealValue(); // 1回目は !_realValueOn で false になるので、直前に _realValueOn = false; にしておくか、関数を微調整してください
+// toggleRealValue() の初期状態は _realValueOn=false（トグルOFF）が正しい。
+// DOMContentLoaded 前に呼ぶと chartInstance が null のため何もしない。
+// 実際の初期化は runSimulation() 完了後に UI が制御する。
 // ============================================================
 // 難易度モード定義
 // ============================================================
@@ -1910,7 +1874,10 @@ async function runSimulation() {
         btn2.style.boxShadow = '0 4px 20px rgba(255,71,87,.5)';
         setTimeout(() => { btn2.style.background = ''; btn2.style.boxShadow = ''; }, 1500);
       }
-      alert('⚠️ 入力エラー\n\n' + legacyErrors.join('\n'));
+      // alert() を廃止: CustomEvent で ui.js に通知し、DOM 操作を分離
+      window.dispatchEvent(new CustomEvent('sim:validationError', {
+        detail: { message: '⚠️ 入力エラー\n\n' + legacyErrors.join('\n') }
+      }));
       return;
     }
   }
@@ -2024,7 +1991,6 @@ if(dead[i]) continue; // skip financials if died this step
       // tDof は UI スライダーで制御可能な自由度パラメータ。
       let stockPart = assets[i] * w;
       let bondPart  = assets[i] * (1 - w);
-
 
       const [retS, retB] = samplingFromBivariateT({
         mu:    rg.mu,
@@ -2574,7 +2540,10 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
       badge.textContent = 'READY';
       badge.style.cssText = '';
     }, 4000);
-    alert('⚠️ シミュレーション中にエラーが発生しました。\nページを再読み込みしてもう一度お試しください。\n\n' + (err?.message || err));
+    // alert() を廃止: CustomEvent で ui.js に通知し、DOM 操作を分離
+    window.dispatchEvent(new CustomEvent('sim:error', {
+      detail: { message: '⚠️ シミュレーション中にエラーが発生しました。\nページを再読み込みしてもう一度お試しください。\n\n' + (err?.message || err) }
+    }));
   }
 }
 
@@ -2608,7 +2577,3 @@ window.samplingFromBivariateT  = samplingFromBivariateT;
 window.getOneTimeEventCashflow = getOneTimeEventCashflow;
 // テスト環境（new Function スコープ）向けに globalThis にも登録
 if (typeof globalThis !== 'undefined') globalThis.FinCalc = FinCalc;
-// テスト環境向け
-if (typeof globalThis !== "undefined") {
-  globalThis.FinCalc = FinCalc;
-}
