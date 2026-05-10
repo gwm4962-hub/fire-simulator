@@ -310,6 +310,18 @@
     </div>
   </div>
 
+  <!-- ★ ウェルカムバナー（初回ユーザー向け） -->
+  <div id="welcome-banner" style="display:none;">
+    <span class="wb-icon">🌟</span>
+    <div class="wb-body">
+      <div class="wb-title">FLOWへようこそ！ — まず3分で基本設定をしましょう</div>
+      <div class="wb-desc">
+        左パネルで「年齢・資産・収入」を入力 → <b style="color:var(--accent);">▶ シミュレーション実行</b> を押すだけで、あなたの資産の将来予測が表示されます。
+      </div>
+    </div>
+    <button class="wb-close" onclick="document.getElementById('welcome-banner').style.display='none';localStorage.setItem('wb_dismissed','1');" aria-label="閉じる">×</button>
+  </div>
+
   <!-- ステップフロー -->
   <nav class="step-flow" aria-label="設定ステップ">
     <a class="step-item s1" href="#step1-panel" aria-label="ステップ1: 基本設定">
@@ -351,6 +363,29 @@
     </button>
     <div style="flex:2;font-size:10px;color:var(--text-dim);padding:4px 8px;line-height:1.5;" id="mode-desc">
       🌱 初心者：ウィザードで簡単設定、主要グラフのみ表示
+    </div>
+  </div>
+
+  <!-- ★ クイックスタートカード（初回のみ表示） -->
+  <div id="quickstart-card" style="display:none;">
+    <div class="qs-title">🚀 3ステップで診断できます</div>
+    <div class="qs-steps">
+      <a class="qs-step" href="#step1-panel" onclick="document.getElementById('step1-panel').scrollIntoView({behavior:'smooth'})">
+        <div class="qs-num">1</div>
+        <div class="qs-text"><b>基本設定</b><br>年齢・資産・年収を入力</div>
+      </a>
+      <a class="qs-step" href="#step2-panel" onclick="document.getElementById('step2-panel').scrollIntoView({behavior:'smooth'})">
+        <div class="qs-num">2</div>
+        <div class="qs-text"><b>支出設定</b><br>生活費のプリセットを選択</div>
+      </a>
+      <a class="qs-step" href="#step3-panel" onclick="document.getElementById('step3-panel').scrollIntoView({behavior:'smooth'})">
+        <div class="qs-num">3</div>
+        <div class="qs-text"><b>難易度を選んで実行</b><br>「普通」がおすすめです</div>
+      </a>
+      <a class="qs-step" onclick="runSimulation()" style="border-color:rgba(0,212,255,.3);background:rgba(0,212,255,.05);">
+        <div class="qs-num" style="background:rgba(0,212,255,.25);border-color:rgba(0,212,255,.6);">▶</div>
+        <div class="qs-text" style="color:var(--accent);"><b>実行！</b><br>約2秒で結果が出ます</div>
+      </a>
     </div>
   </div>
 
@@ -482,6 +517,10 @@
   </div>
   <input type="range" id="initial-assets" min="0" max="10000" step="10" value="300">
   <div class="range-labels"><span>0円</span><span>1億</span></div>
+  <div class="input-context" style="margin-top:4px;">
+    <span class="ic-icon">📊</span>
+    <span>30代の中央値: <b>約150万円</b>、40代: <b>約300万円</b>（金融広報中央委員会）。預金・株・iDeCoを合算してください。</span>
+  </div>
 </div>
             <!-- ここまで -->
 
@@ -493,7 +532,16 @@
   </div>
   <input type="range" id="fire-threshold" min="1000" max="50000" step="500" value="10000">
   <div class="range-labels"><span>1,000万</span><span>5億円</span></div>
-  <div class="hint-text">この金額に達すると「FIRE達成」と判定し、働き方を切り替えます。<br>目安：年間支出の25倍（4%ルール）。月25万円なら <b style="color:var(--accent);">7,500万円</b>。</div>
+  <div id="fire-goal-explainer">
+    この金額に達すると「FIRE達成」として計算が切り替わります。<b>FIREを目指さない方は老後の目標貯蓄額</b>として設定してください。
+    <div class="fge-calc">
+      <span>💡 月<input type="number" id="fire-monthly-exp" value="25" min="5" max="100" step="1"
+        style="width:50px;background:transparent;border:none;border-bottom:1px solid rgba(255,209,102,.4);color:var(--warning);font-family:var(--font-mono);font-size:13px;font-weight:700;text-align:center;outline:none;padding:0 2px;"
+        oninput="(function(v){var r=Math.round(v*12*25/100)*100;document.getElementById('fire-calc-result').textContent=r>=10000?(r/10000).toFixed(1)+'億円':r.toLocaleString()+'万円';})(this.value)">万円/月の生活費</span>
+      <span style="color:var(--text-dim);">× 25年分 =</span>
+      <span class="fge-result" id="fire-calc-result">7,500万円</span>
+    </div>
+  </div>
 </div>
 
           <!-- 収入 -->
@@ -522,6 +570,10 @@
                 <div class="param-row"><span class="param-label">額面年収（現役中）</span><span class="param-value" id="val-income">500万円</span></div>
                 <input type="range" id="income" min="200" max="5000" step="10" value="500">
                 <div class="range-labels"><span>200万</span><span>5,000万</span></div>
+                <div class="input-context">
+                  <span class="ic-icon">📊</span>
+                  <span>全国平均: <b>約443万円</b>（2023年・国税庁）　中央値: <b>約350万円</b>。税込み額面でOK。</span>
+                </div>
               </div>
               <div class="param-control">
                 <div class="param-row"><span class="param-label">昇給率（年）</span><span class="param-value" id="val-raise">1.5%</span></div>
@@ -570,6 +622,10 @@
               <div class="param-row"><span class="param-label">月額年金（65歳〜）</span><span class="param-value" id="val-pension">15万円</span></div>
               <input type="range" id="pension" min="0" max="40" step="1" value="15">
               <div class="range-labels"><span>0万</span><span>40万</span></div>
+              <div class="input-context">
+                <span class="ic-icon">💡</span>
+                <span>単身: <b>約15万円</b> / 夫婦: <b>約22万円</b>（厚労省モデル年金）。年金定期便で確認可能です。</span>
+              </div>
             </div>
             <div class="param-control">
               <div class="param-row"><span class="param-label">相続額（計2回）</span><span class="param-value" id="val-inheritance">500万円</span></div>
@@ -762,11 +818,15 @@
                   <div class="diff-label">ハード</div>
                   <div class="diff-sub">暴落多発</div>
                 </button>
-                <button class="diff-btn diff-btn-active" id="diff-normal" onclick="setDifficulty('normal')">
-                  <div class="diff-icon">📊</div>
-                  <div class="diff-label">普通</div>
-                  <div class="diff-sub">歴史的平均</div>
-                </button>
+                <div class="diff-btn-wrap">
+                  <span class="diff-recommended-badge">おすすめ</span>
+                  <button class="diff-btn diff-btn-active" id="diff-normal" onclick="setDifficulty('normal')">
+                    <div class="diff-icon">📊</div>
+                    <div class="diff-label">普通</div>
+                    <div class="diff-sub">歴史的平均</div>
+                    <div class="diff-effect-hint">長期実績ベースの<br>標準的な相場想定</div>
+                  </button>
+                </div>
                 <button class="diff-btn" id="diff-easy"  onclick="setDifficulty('easy')">
                   <div class="diff-icon">🌈</div>
                   <div class="diff-label">楽観</div>
@@ -821,9 +881,13 @@
       <div class="panel" id="goal-panel">
         <div class="panel-header">🎯 あなたのFIREロードマップ</div>
         <div class="panel-body" id="goal-body">
-          <div class="placeholder" style="height:120px;border:none;border-radius:8px;background:rgba(0,212,255,.03);">
-            <div class="placeholder-icon" style="font-size:28px;opacity:.3;">📊</div>
-            <div class="placeholder-text" style="font-size:13px;font-family:var(--font-body);">▶ シミュレーション実行後に結果が表示されます</div>
+          <div class="placeholder-enhanced" style="height:auto;padding:20px;">
+            <div style="font-size:28px;opacity:.35;">🎯</div>
+            <div style="font-size:13px;color:var(--text-dim);line-height:1.8;text-align:center;">
+              シミュレーション実行後に<br>
+              <b style="color:var(--text);">FIRE達成までのロードマップ</b>が表示されます
+            </div>
+            <div class="pe-cta">▶ シミュレーションを実行してください</div>
           </div>
         </div>
       </div>
@@ -978,10 +1042,19 @@
         <div id="chart-container"
              role="figure"
              aria-label="資産推移シミュレーショングラフ（シミュレーション実行後に更新されます）">
-          <div class="placeholder">
-            <div class="placeholder-icon">📊</div>
-            <div class="placeholder-text">パラメータを設定して「▶ シミュレーション実行」を押してください</div>
-            <div style="font-size:11px;color:var(--text-dim);margin-top:8px;">あなたの人生プランを<span style="color:var(--accent);">2,000通り</span>試算します</div>
+          <div id="first-run-guide">
+            <div class="frg-emoji">📊</div>
+            <div class="frg-title">シミュレーションの準備ができています</div>
+            <div class="frg-desc">
+              左パネルで設定を確認したら、<br>
+              下の<b style="color:var(--accent);">「▶ シミュレーション実行」</b>ボタンを押してください。<br><br>
+              あなたの人生プランを<b style="color:var(--accent);">2,000通り</b>試算し、<br>
+              <b>FIRE達成確率・老後資金・破綻リスク</b>を可視化します。
+            </div>
+            <div class="frg-arrow">←</div>
+            <button onclick="runSimulation()" style="padding:12px 28px;background:linear-gradient(135deg,#00e5ff,#0088cc);border:none;border-radius:10px;color:#000;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);letter-spacing:1px;box-shadow:0 4px 20px rgba(0,212,255,.4);">
+              ▶ 今すぐシミュレーション
+            </button>
           </div>
         </div>
         <!-- チャートのテキストサマリー（スクリーンリーダー用・WCAG 1.1.1 非テキストコンテンツ対応）
@@ -1768,5 +1841,80 @@
 <script src="./wizard.js"></script>
 <script src="./pwa.js"></script>
 <script src="sharecard.js"></script>
+<script>
+// ── 初回ユーザー向けウェルカムUI表示制御 ──────────────────────────
+(function() {
+  // ウェルカムバナー（localStorage に保存履歴がない && バナーを閉じていない場合のみ表示）
+  const hasData    = !!localStorage.getItem('FIRE_SIM_V4_SETTINGS');
+  const dismissed  = !!localStorage.getItem('wb_dismissed');
+  const wizDone    = localStorage.getItem('wizard_completed') === 'true';
+
+  if (!hasData && !dismissed && !wizDone) {
+    const wb = document.getElementById('welcome-banner');
+    const qs = document.getElementById('quickstart-card');
+    if (wb) wb.style.display = 'flex';
+    if (qs) qs.style.display = 'block';
+  }
+
+  // スライダーホバーで吹き出しバリューバブルを表示
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.param-control input[type="range"]').forEach(function(sl) {
+      var wrap = sl.parentElement;
+      if (!wrap) return;
+      wrap.style.position = 'relative';
+
+      var bubble = document.createElement('div');
+      bubble.className = 'slider-value-bubble';
+      wrap.appendChild(bubble);
+
+      function updateBubble() {
+        var min = parseFloat(sl.min) || 0;
+        var max = parseFloat(sl.max) || 100;
+        var val = parseFloat(sl.value);
+        var pct = (val - min) / (max - min);
+        bubble.style.left = (pct * 100).toFixed(1) + '%';
+        bubble.textContent = val;
+      }
+
+      sl.addEventListener('mouseenter', function() {
+        updateBubble();
+        bubble.classList.add('show');
+      });
+      sl.addEventListener('mousemove', updateBubble);
+      sl.addEventListener('input', function() {
+        if (bubble.classList.contains('show')) updateBubble();
+      });
+      sl.addEventListener('mouseleave', function() {
+        bubble.classList.remove('show');
+      });
+    });
+
+    // KPIカードにツールチップ（読み方ガイド）を動的追加
+    var kpiTips = {
+      'kpi-success':        '100% = 絶対安全。
+80%以上: 概ね良好
+70%未満: 要改善
+50%未満: 計画の見直しが必要',
+      'kpi-bankrupt':       'この確率が10%以下なら安心。
+20%超は危険信号です。',
+      'kpi-fire-age':       'FIRE達成が見込まれる年齢の中央値。
+2,000通りの人生の真ん中の値です。',
+      'kpi-age65':          '65歳時点で手元に残っている資産の
+統計的な中央値（目安値）です。',
+      'kpi-monthly-retire': '老後に毎月使えるお金の目安。
+年金 + 資産取り崩しの合計です。',
+    };
+    Object.keys(kpiTips).forEach(function(id) {
+      var el = document.getElementById(id);
+      var card = el && el.closest('.kpi-card');
+      if (card) card.setAttribute('data-tip', kpiTips[id]);
+    });
+
+    // 「普通」難易度ボタンが初期選択状態を示すよう aria ラベルを追加
+    var normalBtn = document.getElementById('diff-normal');
+    if (normalBtn) normalBtn.setAttribute('aria-label', '普通モード（おすすめ）：歴史的平均に基づく標準設定');
+  });
+})();
+</script>
 </body>
 </html>

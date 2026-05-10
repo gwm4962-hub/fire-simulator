@@ -1661,3 +1661,482 @@ button, [role="button"], input[type="submit"] {
   border: 1px solid rgba(0,229,255,.2);
   border-radius: 6px;
 }
+
+/* ============================================================
+   UX IMPROVEMENTS v21 — 初心者フレンドリー強化
+   ============================================================ */
+
+/* ── 1. ウェルカムバナー（初回ユーザー向け説明帯）──────────── */
+#welcome-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, rgba(0,212,255,.08) 0%, rgba(168,255,120,.05) 100%);
+  border: 1px solid rgba(0,212,255,.25);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+#welcome-banner::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(0,212,255,.03), transparent 40%);
+  pointer-events: none;
+}
+#welcome-banner .wb-icon { font-size: 28px; flex-shrink: 0; }
+#welcome-banner .wb-body { flex: 1; min-width: 0; }
+#welcome-banner .wb-title {
+  font-size: 14px; font-weight: 700; color: var(--text);
+  margin-bottom: 4px;
+}
+#welcome-banner .wb-desc {
+  font-size: 12px; color: var(--text-mid); line-height: 1.7;
+}
+#welcome-banner .wb-close {
+  background: none; border: none; color: var(--text-dim);
+  font-size: 18px; cursor: pointer; padding: 4px 6px;
+  border-radius: 4px; flex-shrink: 0; transition: color .2s;
+  min-height: 32px; min-width: 32px;
+}
+#welcome-banner .wb-close:hover { color: var(--text); }
+
+/* ── 2. インプットヒントバブル（平均値・目安） ─────────────── */
+.input-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: rgba(255,209,102,.05);
+  border: 1px solid rgba(255,209,102,.18);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-top: 4px;
+}
+.input-context .ic-icon { font-size: 13px; flex-shrink: 0; }
+.input-context b { color: var(--warning); }
+
+/* ── 3. ステップバッジ（「今ここです」表示）─────────────────── */
+.step-now-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+  color: var(--accent);
+  background: rgba(0,212,255,.08);
+  border: 1px solid rgba(0,212,255,.25);
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-bottom: 8px;
+}
+.step-now-badge::before {
+  content: '▶';
+  font-size: 8px;
+  opacity: .7;
+}
+
+/* ── 4. 結果カードの解説ラベル（良い・注意・危険バッジ）─── */
+.result-quality-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-top: 6px;
+  font-weight: 700;
+}
+.rqb-good {
+  background: rgba(168,255,120,.12);
+  border: 1px solid rgba(168,255,120,.3);
+  color: #a8ff78;
+}
+.rqb-warn {
+  background: rgba(255,209,102,.12);
+  border: 1px solid rgba(255,209,102,.3);
+  color: #ffd166;
+}
+.rqb-bad {
+  background: rgba(255,71,87,.12);
+  border: 1px solid rgba(255,71,87,.3);
+  color: #ff4757;
+}
+
+/* ── 5. プレースホルダーのビフォーアフター強化 ──────────────── */
+.placeholder-enhanced {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px 20px;
+  text-align: center;
+}
+.placeholder-enhanced .pe-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+  text-align: left;
+}
+.placeholder-enhanced .pe-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  transition: border-color .2s;
+}
+.placeholder-enhanced .pe-step:hover { border-color: var(--border-bright); }
+.placeholder-enhanced .pe-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(0,212,255,.1);
+  border: 1px solid rgba(0,212,255,.3);
+  color: var(--accent);
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+}
+.placeholder-enhanced .pe-cta {
+  margin-top: 4px;
+  padding: 10px 24px;
+  background: rgba(0,212,255,.1);
+  border: 1px dashed rgba(0,212,255,.4);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+  animation: peCta 2s ease-in-out infinite;
+}
+@keyframes peCta {
+  0%,100% { opacity: .7; }
+  50% { opacity: 1; box-shadow: 0 0 16px rgba(0,212,255,.2); }
+}
+
+/* ── 6. 難易度選択の解説ポップオーバー ─────────────────────── */
+.diff-btn-wrap {
+  position: relative;
+}
+.diff-recommended-badge {
+  position: absolute;
+  top: -8px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  background: var(--accent);
+  color: #000;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0,212,255,.4);
+}
+
+/* ── 7. 入力フィールドのライブフィードバック ────────────────── */
+.slider-feedback {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  min-height: 16px;
+  transition: color .2s;
+}
+.slider-feedback.sf-ok    { color: var(--success); }
+.slider-feedback.sf-warn  { color: var(--warning); }
+.slider-feedback.sf-info  { color: var(--accent); }
+
+/* ── 8. 「まず何をすればいい？」クイックスタートカード ──────── */
+#quickstart-card {
+  background: linear-gradient(135deg, rgba(0,212,255,.06), rgba(168,255,120,.04));
+  border: 1px solid rgba(0,212,255,.2);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+#quickstart-card .qs-title {
+  font-size: 13px; font-weight: 700; color: var(--accent);
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+#quickstart-card .qs-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+#quickstart-card .qs-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 11px;
+  color: var(--text-mid);
+  text-decoration: none;
+  transition: all .2s;
+  cursor: pointer;
+}
+#quickstart-card .qs-step:hover {
+  border-color: var(--accent);
+  background: rgba(0,212,255,.06);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+#quickstart-card .qs-step .qs-num {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(0,212,255,.15);
+  border: 1px solid rgba(0,212,255,.3);
+  color: var(--accent);
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+}
+#quickstart-card .qs-step .qs-text {
+  font-size: 11px; line-height: 1.4;
+}
+
+/* ── 9. スライダー「全国平均」マーカー ────────────────────── */
+.avg-marker-wrap {
+  position: relative;
+  height: 10px;
+  margin-top: -6px;
+  margin-bottom: 2px;
+}
+.avg-marker {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.avg-marker-line {
+  width: 1px;
+  height: 8px;
+  background: rgba(255,209,102,.5);
+}
+.avg-marker-label {
+  font-size: 8px;
+  color: rgba(255,209,102,.7);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  margin-top: 1px;
+}
+
+/* ── 10. 結果エリアの「最初の1回」ガイド ──────────────────── */
+#first-run-guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 28px 20px;
+  text-align: center;
+  border: 2px dashed rgba(0,212,255,.2);
+  border-radius: 10px;
+  background: radial-gradient(ellipse at center, rgba(0,212,255,.03), transparent 70%);
+}
+#first-run-guide .frg-emoji { font-size: 44px; opacity: .6; }
+#first-run-guide .frg-title {
+  font-size: 16px; font-weight: 700; color: var(--text);
+}
+#first-run-guide .frg-desc {
+  font-size: 12px; color: var(--text-dim); line-height: 1.8;
+  max-width: 320px;
+}
+#first-run-guide .frg-arrow {
+  font-size: 24px; color: var(--accent);
+  animation: frArrow 1.5s ease-in-out infinite;
+}
+@keyframes frArrow {
+  0%,100% { transform: translateX(0); opacity: .7; }
+  50% { transform: translateX(-6px); opacity: 1; }
+}
+
+/* ── 11. 入力パネル進捗インジケーター（強化）──────────────── */
+#setup-progress-wrap {
+  background: rgba(0,212,255,.04);
+  border: 1px solid rgba(0,212,255,.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+#setup-progress-label {
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+#setup-progress-track {
+  height: 5px !important;
+  border-radius: 3px;
+}
+#setup-progress-bar-fill {
+  height: 5px !important;
+}
+#setup-pct {
+  font-size: 12px !important;
+  font-weight: 700;
+}
+
+/* ── 12. KPIカードの「読み方ガイド」ツールチップ強化 ─────── */
+.kpi-card[data-tip]:hover::before {
+  max-width: 240px;
+  text-align: left;
+  font-size: 11px;
+  line-height: 1.7;
+  padding: 8px 12px;
+  z-index: 200;
+}
+
+/* ── 13. モバイル：フォームコントロールのタップ領域拡張 ─────── */
+@media (max-width: 600px) {
+  #quickstart-card .qs-steps { grid-template-columns: 1fr; }
+  .welcome-banner-text { font-size: 12px; }
+  .input-context { font-size: 12px; }
+  .diff-recommended-badge { font-size: 10px; }
+  #welcome-banner { flex-direction: column; text-align: center; }
+  #welcome-banner .wb-close { position: absolute; top: 10px; right: 10px; }
+  .slider-feedback { font-size: 11px; }
+}
+
+/* ── 14. アニメーション：パネルの登場 ──────────────────────── */
+@keyframes panelEntrance {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.panel-entrance {
+  animation: panelEntrance .4s cubic-bezier(.4,0,.2,1) both;
+}
+
+/* ── 15. 「FIRE目標」フィールドの特別強調 ──────────────────── */
+#fire-goal-explainer {
+  padding: 10px 12px;
+  background: rgba(255,209,102,.05);
+  border: 1px solid rgba(255,209,102,.2);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.7;
+  margin-top: 6px;
+}
+#fire-goal-explainer .fge-calc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(0,0,0,.2);
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+#fire-goal-explainer .fge-calc .fge-result {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--warning);
+  margin-left: auto;
+}
+
+/* ── 16. 結果パネル：成功率の色分けグラデーション文字 ─────── */
+.success-rate-display {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+}
+.success-rate-display.grade-s  { color: #a8ff78; text-shadow: 0 0 24px rgba(168,255,120,.5); }
+.success-rate-display.grade-a  { color: #00d4ff; text-shadow: 0 0 24px rgba(0,212,255,.5); }
+.success-rate-display.grade-b  { color: #ffd166; text-shadow: 0 0 20px rgba(255,209,102,.4); }
+.success-rate-display.grade-c  { color: #ff9a3c; text-shadow: 0 0 20px rgba(255,154,60,.4); }
+.success-rate-display.grade-d  { color: #ff4757; text-shadow: 0 0 20px rgba(255,71,87,.4); }
+
+/* ── 17. インタラクティブ：スライダーホバー時のツールチップ ── */
+.slider-value-bubble {
+  position: absolute;
+  top: -32px;
+  background: rgba(10,16,30,.95);
+  border: 1px solid rgba(0,212,255,.4);
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+  z-index: 50;
+  box-shadow: 0 2px 10px rgba(0,0,0,.4);
+  opacity: 0;
+  transition: opacity .15s;
+}
+.slider-value-bubble.show { opacity: 1; }
+.slider-value-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: rgba(0,212,255,.4);
+}
+
+/* ── 18. 難易度ボタン：より分かりやすいラベル ──────────────── */
+.diff-btn .diff-effect-hint {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 3px;
+  line-height: 1.4;
+  display: none;
+}
+@media (min-width: 400px) {
+  .diff-btn .diff-effect-hint { display: block; }
+}
+
+/* ── 19. ガイドパネル：閉じた状態でも内容を示すプレビュー ─── */
+#guide-panel .guide-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 18px 14px;
+}
+#guide-panel .guide-tag {
+  font-size: 10px;
+  padding: 3px 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-dim);
+}
+
+/* ── 20. 初回完了後のお祝い表示 ──────────────────────────── */
+@keyframes celebrationPop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.celebration-badge {
+  animation: celebrationPop .5s cubic-bezier(.17,.67,.41,1.27) both;
+  display: inline-block;
+}
+
