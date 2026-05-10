@@ -482,7 +482,25 @@ function renderStages() {
   }
 
   renderTimeline();
+
+  // 初心者ステージパネルを同期
+  syncBeginnerStagePanel();
 }
+
+// 初心者用ステージパネルと expStages を同期（読み取り）
+function syncBeginnerStagePanel() {
+  const wrap = document.getElementById('beginner-stages-wrap');
+  if (!wrap || !wrap.children.length) return;
+  const normal = expStages.filter(s => !s._autoEdu);
+  const inputs = wrap.querySelectorAll('input[type="number"]');
+  inputs.forEach((inp, i) => {
+    if (normal[i] !== undefined) {
+      inp.value = normal[i].exp;
+    }
+  });
+}
+window.syncBeginnerStagePanel = syncBeginnerStagePanel;
+
 
 function updateStage(id, field, val) {
   const s = expStages.find(s=>s.id===id);

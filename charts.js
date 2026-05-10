@@ -98,9 +98,9 @@ function updateBeginnerSummary({ med, assets65, expAt65, pensionAnnual, successR
 // ---- 1. MODE SWITCHER ----
 let currentMode = 'beginner';
 const MODE_DESCS = {
-  beginner: '🌱 初心者：ウィザードで簡単設定、主要グラフと成功率のみ表示',
-  normal:   '📊 通常：グラフ＋主要指標＋ライフステージ設定が利用可能',
-  pro:      '🔬 プロ：全機能解放（感度分析・遷移行列・t分布・詳細設定）'
+  beginner: '🌱 初心者モード：難しい設定は自動。老後の安全度だけ確認できます。',
+  normal:   '📊 通常モード：グラフ＋主要指標＋ライフステージを自由に設定できます。',
+  pro:      '🔬 プロモード：感度分析・遷移行列・t分布など全機能が使えます。'
 };
 
 function setMode(mode) {
@@ -122,6 +122,13 @@ function setMode(mode) {
   }
   if (bSumm) {
     bSumm.style.display = mode === 'beginner' && hasResult ? 'block' : 'none';
+  }
+
+  // 初心者ステージパネルの表示切り替え
+  const bStagePanel = document.getElementById('beginner-stage-panel');
+  if (bStagePanel) {
+    const wizCompleted = localStorage.getItem('wizard_completed') === 'true';
+    bStagePanel.style.display = (mode === 'beginner' && wizCompleted) ? 'block' : 'none';
   }
 
   // pro モードに切り替わった時にグラフを初期化／リサイズ

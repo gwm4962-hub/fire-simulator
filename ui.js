@@ -574,12 +574,33 @@ let currentHousehold = 'single';
 
 function setHousehold(type) {
   currentHousehold = type;
-  const isDual = type === 'dual';
+  const isDual = (type === 'dual');
   document.getElementById('income-section-b').style.display = isDual ? '' : 'none';
   document.getElementById('income-a-label').textContent = isDual ? '─ 本人収入' : '─ 収入';
-  ['single','dual'].forEach(t => {
-    document.getElementById(`hh-${t}`).classList.toggle('diff-btn-active', t === type);
+  ['single','single-spouse','dual'].forEach(t => {
+    const el = document.getElementById(`hh-${t}`);
+    if (el) el.classList.toggle('diff-btn-active', t === type);
   });
+  // 初心者モード: 年金を世帯タイプ別の中央値に自動設定
+  const isBeginner = document.body.getAttribute('data-mode') === 'beginner';
+  if (isBeginner) {
+    const pensionByType = { 'single': 16, 'single-spouse': 23, 'dual': 28 };
+    const pensionVal = pensionByType[type] || 16;
+    const pensionEl = document.getElementById('pension');
+    if (pensionEl) {
+      pensionEl.value = pensionVal;
+      pensionEl.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    const hintEl = document.getElementById('pension-type-hint');
+    if (hintEl) {
+      const labels = {
+        'single':        '🔒 おひとりさま：月約16万円（厚労省2024年度）',
+        'single-spouse': '🔒 夫婦（片働き）：月約23万円（厚労省2024年度）',
+        'dual':          '🔒 夫婦（共働き）：月約28万円（二人合算）',
+      };
+      hintEl.textContent = labels[type] || '';
+    }
+  }
   updateTaxDisplay();
   updateChildBenefitSummary();
 }
