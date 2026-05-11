@@ -582,14 +582,18 @@
             <!-- 世帯タイプ切り替え -->
             <div style="margin-bottom:14px;">
               <div style="font-size:11px;color:var(--text-mid);margin-bottom:8px;">世帯タイプ</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;" id="household-btns">
-                <button class="diff-btn diff-btn-active" id="hh-single" onclick="setHousehold('single')">
-                  <div class="diff-icon">👤</div>
-                  <div class="diff-label">単身</div>
+              <div id="household-btns" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                <button class="diff-btn diff-btn-active" id="hh-single" onclick="setHousehold('single')" style="flex-direction:column;min-height:70px;padding:10px 4px;">
+                  <div class="diff-icon">🧑</div>
+                  <div class="diff-label" style="font-size:10px;">おひとり</div>
                 </button>
-                <button class="diff-btn" id="hh-dual" onclick="setHousehold('dual')">
+                <button class="diff-btn" id="hh-single-spouse" onclick="setHousehold('single-spouse')" style="flex-direction:column;min-height:70px;padding:10px 4px;">
                   <div class="diff-icon">👫</div>
-                  <div class="diff-label">共働き</div>
+                  <div class="diff-label" style="font-size:10px;">夫婦<br>片働き</div>
+                </button>
+                <button class="diff-btn" id="hh-dual" onclick="setHousehold('dual')" style="flex-direction:column;min-height:70px;padding:10px 4px;">
+                  <div class="diff-icon">👫💼</div>
+                  <div class="diff-label" style="font-size:10px;">夫婦<br>共働き</div>
                 </button>
               </div>
             </div>
@@ -1213,7 +1217,7 @@
       </div>
 
       <!-- ⑥ レジーム設定カード -->
-      <div class="panel">
+      <div class="panel beginner-hide">
         <div class="panel-header">⚙️ レジーム別リターン設定</div>
         <div class="panel-body">
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
@@ -1651,7 +1655,7 @@
     </div>
   </div>
 </div>
-<div class="panel sensitivity-section" style="margin-top:0;margin-bottom:24px;">
+<div class="panel sensitivity-section beginner-hide" style="margin-top:0;margin-bottom:24px;">
   <div class="panel-header">📊 市場レジーム別 リターン表</div>
   <div class="panel-body">
 

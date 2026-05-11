@@ -261,27 +261,37 @@ const STAGE_COLORS = [
 let expStages = [];
 let stageIdCounter = 0;
 
+// EXP_PRESETS: 額面年収の75%をベースに計算した現実的な値
+// 実際の applyExpPreset() は収入スライダーを読んで動的に計算する
 const EXP_PRESETS = {
   single: [
-    { label:'一人暮らし（20代）', from:22, to:29, exp:300 },
-    { label:'一人暮らし（30代）', from:30, to:39, exp:360 },
-    { label:'一人暮らし（40〜50代）', from:40, to:59, exp:400 },
-    { label:'老後（単身）',        from:60, to:90, exp:280 },
+    { label:'一人暮らし（20〜30代）', from:22, to:39, exp:300 },
+    { label:'一人暮らし（40〜50代）', from:40, to:59, exp:350 },
+    { label:'老後（単身）',            from:60, to:90, exp:250 },
   ],
   couple: [
-    { label:'夫婦ふたり（初期）', from:25, to:34, exp:420 },
-    { label:'夫婦ふたり（充実期）',from:35, to:49, exp:540 },
-    { label:'夫婦プレ老後',       from:50, to:64, exp:460 },
-    { label:'老後（夫婦）',       from:65, to:90, exp:380 },
+    { label:'夫婦ふたり（現役期）', from:25, to:59, exp:500 },
+    { label:'老後（夫婦）',         from:60, to:90, exp:360 },
   ],
   family: [
-    { label:'夫婦2人',            from:25, to:29, exp:420 },
-    { label:'子育て初期',         from:30, to:39, exp:600 },
-    { label:'子育て＋住宅ローン', from:32, to:51, exp:780 },
-    { label:'ローン完済後',       from:52, to:59, exp:500 },
-    { label:'老後（夫婦）',       from:60, to:90, exp:380 },
+    { label:'夫婦＋子育て',         from:25, to:51, exp:650 },
+    { label:'ローン完済後',         from:52, to:59, exp:480 },
+    { label:'老後（夫婦）',         from:60, to:90, exp:360 },
   ],
 };
+
+/**
+ * 収入に基づいた支出を計算（額面年収の75%を年間支出の基準に）
+ * @returns {number} 推奨年間支出（万円）
+ */
+function calcIncomeBasedExpense(ratio) {
+  const income  = parseInt(document.getElementById('income')?.value  || 450);
+  const incomeB = parseInt(document.getElementById('income-b')?.value || 0);
+  const isDual  = document.getElementById('hh-dual')?.classList.contains('diff-btn-active') || false;
+  const total   = income + (isDual ? incomeB : 0);
+  // 額面年収の約75%（手取り換算80% × 生活費94%）
+  return Math.round(total * (ratio ?? 0.75) / 10) * 10;
+}
 
 function getStartAge() {
   return parseInt(document.getElementById('start-age').value) || 30;
@@ -511,13 +521,26 @@ function addExpStage(label="", start="", end="", exp="") {
 function applyExpPreset(key) {
   const preset = EXP_PRESETS[key];
   if (!preset) return;
-  const base = getStartAge();
+  const startAge = getStartAge();
+
+  // 収入ベースで支出を計算（額面年収の75%が現役期の目安）
+  const baseExp     = calcIncomeBasedExpense(0.75);
+  const retireExp   = Math.round(baseExp * 0.68 / 10) * 10;
+  const preRetireExp= Math.round(baseExp * 0.82 / 10) * 10;
+
+  function scaleExp(origExp) {
+    if (origExp >= 600) return Math.round(baseExp * 1.15 / 10) * 10;
+    if (origExp >= 450) return baseExp;
+    if (origExp >= 350) return preRetireExp;
+    return retireExp;
+  }
+
   expStages = preset.map(p => ({
     id: ++stageIdCounter,
     label: p.label,
-    from: p.from,
+    from: Math.max(p.from, startAge),
     to:   p.to,
-    exp:  p.exp,
+    exp:  scaleExp(p.exp),
   }));
   renderStages();
 }
@@ -539,6 +562,28 @@ function getExpenseForAge(age) {
 
 // 開始年齢変更時にタイムライン再描画
 document.getElementById('start-age').addEventListener('input', renderTimeline);
+
+// 収入変更時に支出プリセットを動的更新（75%ルール）
+(function() {
+  function refreshExpIfDefault() {
+    // ユーザーが手動編集していない場合のみ再計算
+    const mode = document.body.getAttribute('data-mode');
+    if (mode === 'pro') return; // プロモードはスキップ
+    const activePreset = document.querySelector('.preset-btn.active-preset');
+    if (activePreset) {
+      const type = activePreset.getAttribute('onclick')?.match(/'(\w+)'/)?.[1];
+      if (type && EXP_PRESETS[type]) {
+        _isLoading = true;
+        applyExpPreset(type);
+        _isLoading = false;
+      }
+    }
+  }
+  const incEl = document.getElementById('income');
+  const incBEl = document.getElementById('income-b');
+  if (incEl) incEl.addEventListener('change', refreshExpIfDefault);
+  if (incBEl) incBEl.addEventListener('change', refreshExpIfDefault);
+})();
 
 // 初期プリセット適用（初期化なのでscheduleSaveさせない）
 _isLoading = true;
@@ -2021,6 +2066,12 @@ if(dead[i]) continue; // skip financials if died this step
       if(!retired[i]&&age<60) {
         income += annualIncome * takeHomeA * Math.pow(1+raiseRate, t);
         if (isDual) income += annualIncomeB * takeHomeB * Math.pow(1+raiseRateB, t);
+      }
+      // 再雇用期間（60〜64歳）：年収は現役時の50%（給与水準が大きく下がる実態を反映）
+      if (!retired[i] && age >= 60 && age < 65) {
+        const reEmpRate = 0.50; // 再雇用の賃金水準（平均的に現役の50%程度）
+        income += annualIncome * takeHomeA * Math.pow(1+raiseRate, t) * reEmpRate;
+        if (isDual) income += annualIncomeB * takeHomeB * Math.pow(1+raiseRateB, t) * reEmpRate;
       }
       if(age>=65) income+=(monthlyPension*12)*0.85*Math.pow(1.005,age-65);
       if(age===inheritA[i*2])   income+=inheritAmt;

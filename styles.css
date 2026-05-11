@@ -2507,3 +2507,87 @@ body[data-mode="normal"] #advice-engine-panel { display: block !important; }
   #share-image-modal { padding: 12px !important; }
   #share-image-card-wrap { max-width: 100% !important; }
 }
+
+
+/* ══════════════════════════════════════════════════════
+   バリデーションToast + UX改善 v4
+   ══════════════════════════════════════════════════════ */
+
+/* バリデーションToast アニメーション */
+#validation-toast {
+  will-change: transform;
+}
+#validation-toast > div {
+  font-family: 'Noto Sans JP', sans-serif;
+}
+
+/* 初心者モードでレジーム・数理モデルを完全非表示 */
+body[data-mode="beginner"] .panel.beginner-hide,
+body[data-mode="beginner"] .adv-section.beginner-hide,
+body[data-mode="beginner"] #viz-panel,
+body[data-mode="beginner"] .sensitivity-section.beginner-hide { 
+  display: none !important; 
+}
+
+/* 初心者: 左パネルをよりシンプルに */
+body[data-mode="beginner"] #step3-panel .adv-section,
+body[data-mode="beginner"] #step3-panel .adv-longevity-section { display: none !important; }
+
+/* 実行ボタン: 診断コンセプト */
+body[data-mode="beginner"] .run-btn,
+body[data-mode="normal"] .run-btn {
+  background: linear-gradient(135deg, #0066dd, #004499, #002f77);
+  font-size: 16px; letter-spacing: .5px;
+  box-shadow: 0 4px 24px rgba(0,102,221,.45);
+  transition: all .25s cubic-bezier(.4,0,.2,1);
+}
+body[data-mode="beginner"] .run-btn:hover,
+body[data-mode="normal"] .run-btn:hover {
+  box-shadow: 0 6px 32px rgba(0,102,221,.65);
+  transform: translateY(-2px);
+}
+
+/* 株式比率比較ボタン */
+.compare-trigger-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-left: 6px; padding: 2px 8px;
+  background: rgba(0,212,255,.1); border: 1px solid rgba(0,212,255,.3);
+  border-radius: 6px; color: var(--accent); font-size: 10px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+  font-family: 'Noto Sans JP', sans-serif; vertical-align: middle;
+}
+.compare-trigger-btn:hover { background: rgba(0,212,255,.22); }
+
+/* 世帯タイプ: 3列グリッド統一 */
+#household-btns {
+  grid-template-columns: repeat(3,1fr) !important;
+  gap: 8px !important;
+}
+#hh-single, #hh-single-spouse, #hh-dual {
+  flex-direction: column !important;
+  min-height: 70px !important;
+  padding: 10px 4px !important;
+  gap: 4px !important;
+}
+
+/* 初心者 年金ヒント */
+.pension-type-hint {
+  font-size: 11px; color: var(--accent);
+  padding: 4px 8px; background: rgba(0,212,255,.06);
+  border-radius: 4px; border-left: 2px solid var(--accent);
+  margin-top: 4px;
+}
+body[data-mode="normal"] .pension-type-hint,
+body[data-mode="pro"] .pension-type-hint { display: none; }
+
+/* 診断パネル表示制御 */
+body[data-mode="beginner"] #diagnosis-panel,
+body[data-mode="normal"] #diagnosis-panel { display: block !important; }
+body[data-mode="pro"] #diagnosis-panel    { display: none !important; }
+
+/* スマホ対応 */
+@media (max-width: 480px) {
+  #hh-single .diff-label, #hh-single-spouse .diff-label, #hh-dual .diff-label {
+    font-size: 9px !important;
+  }
+}

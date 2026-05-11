@@ -31,7 +31,7 @@
   const LIFE_CARDS = [
     { id:'nisa',   icon:'💹', title:'NISA積立を月3万円増やす', sub:'新NISAの非課税枠を活用', effect:'+12年', boost:0.12, color:'#a8ff78' },
     { id:'exp',    icon:'✂️', title:'固定費を月1万円削減',     sub:'サブスク・通信費を見直す', effect:'+5年',  boost:0.06, color:'#00d4ff' },
-    { id:'retire', icon:'🕐', title:'定年を2年延ばす',         sub:'65歳まで現役で収入延長',   effect:'+5年',  boost:0.07, color:'#b388ff' },
+    { id:'retire', icon:'🕐', title:'65歳まで働く（再雇用含む）', sub:'60〜65歳は収入50%で試算', effect:'+8年',  boost:0.09, color:'#b388ff' },
     { id:'side',   icon:'💻', title:'副業で月3万円追加',       sub:'スキル活用・フリーランス', effect:'+8年',  boost:0.09, color:'#ffd166' },
     { id:'ideco',  icon:'🏛️', title:'iDeCoを満額拠出',       sub:'所得控除で節税しながら積立', effect:'+7年', boost:0.08, color:'#ff6eb4' },
   ];

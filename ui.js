@@ -573,7 +573,7 @@ function updateTaxDisplay() {
 let currentHousehold = 'single';
 
 function setHousehold(type) {
-  if (type !== 'single' && type !== 'single-spouse' && type !== 'dual') type = 'single';
+  if (!['single','single-spouse','dual'].includes(type)) type = 'single';
   currentHousehold = type;
   const isDual = (type === 'dual');
   document.getElementById('income-section-b').style.display = isDual ? '' : 'none';
@@ -582,21 +582,19 @@ function setHousehold(type) {
     const el = document.getElementById(`hh-${t}`);
     if (el) el.classList.toggle('diff-btn-active', t === type);
   });
-  // 初心者/通常モード: 年金を世帯タイプ別の中央値に自動セット
-  const isBegOrNormal = ['beginner','normal'].includes(document.body.getAttribute('data-mode'));
-  if (isBegOrNormal) {
+  // 初心者/通常モード: 年金を世帯タイプ別中央値に自動セット
+  if (['beginner','normal'].includes(document.body.getAttribute('data-mode'))) {
     const pensionMap = { 'single': 16, 'single-spouse': 23, 'dual': 28 };
-    const pv = pensionMap[type] || 16;
     const pEl = document.getElementById('pension');
-    if (pEl) { pEl.value = pv; pEl.dispatchEvent(new Event('input', { bubbles: true })); }
-    const hintEl = document.getElementById('pension-type-hint');
-    if (hintEl) {
+    if (pEl) { pEl.value = pensionMap[type]||16; pEl.dispatchEvent(new Event('input',{bubbles:true})); }
+    const hEl = document.getElementById('pension-type-hint');
+    if (hEl) {
       const lbl = {
         'single':        '🔒 おひとりさま：月約16万円（厚労省2024年度）',
         'single-spouse': '🔒 夫婦（片働き）：月約23万円（厚労省2024年度）',
         'dual':          '🔒 夫婦（共働き）：月約28万円（二人合算）',
       };
-      hintEl.textContent = lbl[type] || '';
+      hEl.textContent = lbl[type]||'';
     }
   }
   updateTaxDisplay();

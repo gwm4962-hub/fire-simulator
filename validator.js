@@ -373,20 +373,14 @@ var UIValidator = (() => {
    * id="validation-banner" が存在すれば使う。なければ動的生成。
    */
   function showValidationBanner(errors, warnings) {
+    // ── インラインバナー（通常モード・プロモード）──────────────────────
     let banner = document.getElementById('validation-banner');
     if (!banner) {
       banner = document.createElement('div');
       banner.id = 'validation-banner';
       banner.setAttribute('role', 'status');
       banner.setAttribute('aria-live', 'polite');
-      banner.style.cssText = [
-        'margin:12px 0',
-        'border-radius:6px',
-        'overflow:hidden',
-        'font-size:12px',
-        'line-height:1.8',
-      ].join(';');
-      // run-btn の直前に挿入
+      banner.style.cssText = 'margin:12px 0;border-radius:6px;overflow:hidden;font-size:12px;line-height:1.8;';
       const runBtn = document.getElementById('run-btn');
       if (runBtn) runBtn.parentNode?.insertBefore(banner, runBtn);
     }
@@ -394,29 +388,85 @@ var UIValidator = (() => {
     if (errors.length === 0 && warnings.length === 0) {
       banner.innerHTML = '';
       banner.style.display = 'none';
+      _hideValidationToast();
       return;
     }
 
+    // ── トーストポップアップ（全モード共通・目立つ）──────────────────────
+    if (errors.length > 0) {
+      _showValidationToast(errors, warnings);
+    }
+
+    // インラインバナーも維持（プロモードの詳細表示用）
     banner.style.display = 'block';
     let html = '';
-
     if (errors.length > 0) {
-      html += `
-        <div style="padding:10px 14px;background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.3);border-radius:6px;margin-bottom:6px;">
-          <div style="font-size:11px;color:#ff4757;font-family:var(--font-mono);letter-spacing:1px;margin-bottom:4px;">⛔ 設定エラー</div>
-          ${errors.map(e => `<div style="color:var(--danger,#ff4757);">• ${e}</div>`).join('')}
-        </div>`;
+      html += `<div style="padding:10px 14px;background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.3);border-radius:6px;margin-bottom:6px;">
+        <div style="font-size:11px;color:#ff4757;font-family:var(--font-mono);letter-spacing:1px;margin-bottom:4px;">⛔ 設定エラー</div>
+        ${errors.map(e => `<div style="color:var(--danger,#ff4757);">• ${e}</div>`).join('')}
+      </div>`;
     }
-
     if (warnings.length > 0) {
-      html += `
-        <div style="padding:10px 14px;background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.25);border-radius:6px;">
-          <div style="font-size:11px;color:#ffd166;font-family:var(--font-mono);letter-spacing:1px;margin-bottom:4px;">⚠️ 注意事項</div>
-          ${warnings.map(w => `<div style="color:var(--warning,#ffd166);">• ${w}</div>`).join('')}
-        </div>`;
+      html += `<div style="padding:10px 14px;background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.25);border-radius:6px;">
+        <div style="font-size:11px;color:#ffd166;font-family:var(--font-mono);letter-spacing:1px;margin-bottom:4px;">⚠️ 注意事項</div>
+        ${warnings.map(w => `<div style="color:var(--warning,#ffd166);">• ${w}</div>`).join('')}
+      </div>`;
+    }
+    banner.innerHTML = html;
+  }
+
+  /** トーストポップアップを表示 */
+  let _toastTimer = null;
+  function _showValidationToast(errors, warnings) {
+    let toast = document.getElementById('validation-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'validation-toast';
+      toast.style.cssText = [
+        'position:fixed','top:0','left:0','right:0','z-index:9999',
+        'transform:translateY(-100%)','transition:transform .35s cubic-bezier(.4,0,.2,1)',
+        'pointer-events:auto',
+      ].join(';');
+      document.body.appendChild(toast);
     }
 
-    banner.innerHTML = html;
+    const errCount = errors.length;
+    const mainMsg  = errors[0] || '';
+    const extraCount = errCount - 1;
+
+    toast.innerHTML = `
+      <div style="
+        background:linear-gradient(135deg,#1a0a0a,#2d0f0f);
+        border-bottom:2px solid #ff4757;
+        padding:14px 16px;
+        display:flex;align-items:flex-start;gap:12px;
+        box-shadow:0 4px 30px rgba(255,71,87,.4);
+        font-family:'Noto Sans JP',sans-serif;
+      ">
+        <span style="font-size:22px;flex-shrink:0;margin-top:1px;">⛔</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:#ff4757;margin-bottom:4px;">設定エラーがあります</div>
+          <div style="font-size:13px;color:rgba(255,200,200,.85);line-height:1.6;">${mainMsg}</div>
+          ${extraCount > 0 ? `<div style="font-size:11px;color:rgba(255,200,200,.5);margin-top:4px;">他 ${extraCount} 件のエラーがあります</div>` : ''}
+          ${warnings.length > 0 ? `<div style="font-size:11px;color:#ffd166;margin-top:4px;">⚠️ 警告: ${warnings[0]}</div>` : ''}
+        </div>
+        <button onclick="document.getElementById('validation-toast') && (document.getElementById('validation-toast').style.transform='translateY(-100%)')"
+          style="background:none;border:none;color:rgba(255,200,200,.5);font-size:20px;cursor:pointer;flex-shrink:0;padding:0 4px;line-height:1;">×</button>
+      </div>`;
+
+    // アニメーションで下に出す
+    requestAnimationFrame(() => {
+      toast.style.transform = 'translateY(0)';
+    });
+
+    // 6秒後に自動で消す
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => _hideValidationToast(), 6000);
+  }
+
+  function _hideValidationToast() {
+    const toast = document.getElementById('validation-toast');
+    if (toast) toast.style.transform = 'translateY(-100%)';
   }
 
   /**
