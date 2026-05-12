@@ -92,7 +92,9 @@ async def diagnosis(data: DiagnosisRequest):
 
         return {"analysis": response.text}
 
-    except Exception as e:
-        print("!!! CRITICAL ERROR !!!")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+   except Exception as e:
+    print("!!! CRITICAL ERROR !!!")
+    print(f"ERROR TYPE: {type(e).__name__}")
+    print(f"ERROR MESSAGE: {str(e)}")
+    traceback.print_exc()
+    raise HTTPException(status_code=500, detail=str(e))
