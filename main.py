@@ -27,14 +27,19 @@ class DiagnosisRequest(BaseModel):
 
 @app.post("/api/diagnosis")
 async def analyze_life_plan(data: DiagnosisRequest):
+    print(f"DEBUG: Received data - success_rate: {data.success_rate}, assets: {data.assets_65man}")
     if not API_KEY:
+        print("ERROR: API_KEY is missing from environment variables!")
         raise HTTPException(status_code=500, detail="API Key not configured")
+    
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = f"成功率{data.success_rate * 100}%、65歳資産{data.assets_65man}万円の計画を、エンジニア視点で100文字以内で分析して。"
+        prompt = f"成功率{data.success_rate * 100}%、65歳資産{data.assets_65man}万円の計画を分析して。"
         response = model.generate_content(prompt)
         return {"analysis": response.text}
     except Exception as e:
+        # ここが重要！エラーの詳細をRenderのログに出力させる
+        print(f"CRITICAL ERROR: {str(e)}") 
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
