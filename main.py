@@ -54,12 +54,7 @@ class DiagnosisRequest(BaseModel):
 # =========================
 @app.get("/")
 def root():
-    try:
-        models = client.models.list()
-        names = [m.name for m in models]
-        return {"status": "ok", "models": names}
-    except Exception as e:
-        return {"status": "error", "detail": str(e)}
+    return {"status": "ok"}
 
 # =========================
 # Diagnosis API
@@ -88,7 +83,7 @@ async def diagnosis(data: DiagnosisRequest):
         print("DEBUG: Calling Gemini API...")
 
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.0-flash-001",
             contents=prompt
         )
 
