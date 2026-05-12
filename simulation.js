@@ -1024,7 +1024,10 @@ let chartInstance=null;
 let lastMedianFireAge=null; // runSimulation完了後にFIRE年齢中央値を保持
 let lastFinalAssets=null;   // runSimulation完了後の死亡時最終資産（昇順ソート済み、円単位）
 function getAgeAtSurvivalRate(targetPercent, params, currentAge, medicalAdv) {
-    if (!params||typeof params.alpha==='undefined') params=MORTALITY['male'];
+    // paramsがundefined/null、またはalphaプロパティがない場合はデフォルトにフォールバック
+    if (!params || typeof params !== 'object' || typeof params.alpha === 'undefined') {
+        params = MORTALITY['male'];
+    }
     const { alpha, beta, gamma } = params;
     let low = currentAge;
     let high = 130;
@@ -2392,7 +2395,8 @@ if(dead[i]) continue; // skip financials if died this step
 
 // --- ここから入れ替え ---
   // 表示する年齢（x軸の右端）までのデータだけを取り出し、その範囲の最大値をy軸の基準にする
-  const displayLimit = getAgeAtSurvivalRate(0.1, MORTALITY[selectedGender], parseInt(document.getElementById('start-age').value), parseFloat(document.getElementById('med-adv').value)) - parseInt(document.getElementById('start-age').value);
+  const _mortParams1 = MORTALITY[selectedGender] || MORTALITY['male'];
+  const displayLimit = getAgeAtSurvivalRate(0.1, _mortParams1, parseInt(document.getElementById('start-age').value), parseFloat(document.getElementById('med-adv').value)) - parseInt(document.getElementById('start-age').value);
 
   // yMax: P90ではなく「中央値のピーク × 2.0」を上限にして中央値が潰れないようにする
   // P90が極端に大きい（外れ値パス由来）場合でも中央値が読みやすい縦軸を維持
@@ -2504,7 +2508,7 @@ if(dead[i]) continue; // skip financials if died this step
       },
       scales:{
         x:{
-max: getAgeAtSurvivalRate(0.1, MORTALITY[selectedGender], parseInt(document.getElementById('start-age').value), parseFloat(document.getElementById('med-adv').value)),
+max: getAgeAtSurvivalRate(0.1, MORTALITY[selectedGender] || MORTALITY['male'], parseInt(document.getElementById('start-age').value), parseFloat(document.getElementById('med-adv').value)),
 grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:10},maxTicksLimit:12},
            title:{display:true,text:'年齢',color:'#6b7a99',font:{size:11}}},
         y:{min:0,max:yMaxFinal,grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},

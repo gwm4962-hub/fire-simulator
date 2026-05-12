@@ -330,4 +330,31 @@
   }
 
   injectStyles();
+
+  window.addEventListener('sim:done', async (e) => {
+    const result = e.detail;
+    const aiTarget = document.getElementById('ai-response');
+    if (!aiTarget) return;
+
+    aiTarget.style.display = 'block';
+    aiTarget.innerHTML = '<div style="color:var(--text-mid);">AIが分析中...</div>';
+
+    try {
+        const response = await fetch("http://localhost:8080/api/diagnosis", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type_id: result.type_id || 'unknown',
+                success_rate: result.successRate,
+                assets_65man: result.assets65Man,
+                monthly_retire: result.monthlyRetire
+            })
+        });
+        const data = await response.json();
+        aiTarget.innerHTML = `<h4>AI深層診断</h4><p>${data.analysis}</p>`;
+    } catch (err) {
+        aiTarget.innerHTML = '<p style="color:orange;">バックエンドに接続できませんでした。uvicornが動いているか確認してください。</p>';
+    }
+});
+
 })();
