@@ -344,11 +344,12 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                // バックエンドの DiagnosisRequest クラスの定義に厳密に合わせる
-                success_rate: result.successRate, // 0.95 のような形式で送る
-                assets_65man: result.assets65Man,
-                fire_age: result.fireAge,
-                monthly_expense: result.monthlyExpense
+              success_rate:    result.successRate,
+              assets_65man:    result.assets65Man,
+              fire_age:        result.fireAge,
+              monthly_expense: result.monthlyExpense,
+              surplus_65man:   result.surplus65Man,  // 追加
+              need_at_65man:   result.needAt65Man,   // 追加
             })
         });
 

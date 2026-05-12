@@ -2553,6 +2553,17 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
     startAge, T, baseInfl, monthlyRetire
   });
 
+  window.dispatchEvent(new CustomEvent('sim:done', {
+  detail: {
+    successRate:    nS / N,
+    assets65Man:    Math.round(assets65 / 1e4),   // 円→万円
+    fireAge:        fireAgeMed ?? null,
+    monthlyExpense: monthlyRetire,
+    surplus65Man:   Math.round(surplus65 / 1e4),  // 診断精度向上用
+    needAt65Man:    Math.round(needAt65 / 1e4),   // 診断精度向上用
+  }
+}));
+
   // チャートのアクセシブルテキストサマリーを更新（charts.js）
   if (typeof updateChartA11ySummary === 'function') {
     const age65idx = Math.max(0, 65 - startAge);

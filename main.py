@@ -38,8 +38,10 @@ client = genai.Client(api_key=API_KEY)
 class DiagnosisRequest(BaseModel):
     success_rate: float
     assets_65man: float
-    fire_age: int        # ← FIRE予定年齢
-    monthly_expense: float  # ← 月支出（万円）
+    fire_age: int | None = None
+    monthly_expense: float | None = None
+    surplus_65man: float | None = None  # 追加
+    need_at_65man: float | None = None  # 追加
 # =========================
 # Health Check
 # =========================
@@ -61,15 +63,13 @@ async def diagnosis(data: DiagnosisRequest):
         prompt = f"""
 FIRE計画を診断。80字以内で日本語回答。
 
-# データ
-成功率:{success_percent}% 65歳資産:{data.assets_65man}万円 FIRE年齢:{data.fire_age}歳 月支出:{data.monthly_expense}万円
+成功率:{success_percent}% 65歳資産:{data.assets_65man}万円 必要額:{data.need_at_65man}万円 過不足:{data.surplus_65man}万円 FIRE年齢:{data.fire_age}歳 月支出:{data.monthly_expense}万円
 
-
-# ルール
-- 資産0以下 → 成功率に関わらず「破綻リスク大」と必ず指摘
+ルール:
+- surplus_65man<0 → 成功率問わず「老後資金{abs(surplus_65man)}万円不足」を必ず指摘
 - 成功率<80% → 要改善
-- 成功率≧95% かつ 資産>0 → 合格
-- 数値を根拠に1文で核心を突く
+- 成功率≧95% かつ surplus>0 → 合格
+- 数値根拠で1文、核心を突く
 """
 
         print("DEBUG: Calling Gemini API...")
