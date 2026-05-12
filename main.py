@@ -7,7 +7,7 @@ import traceback
 
 app = FastAPI()
 
-# CORS設定（あなたのVercelドメインを許可）
+# CORS設定
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://fire-simulator-rho-swart.vercel.app"],
@@ -15,7 +15,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# RenderのEnvironmentタブで設定した名前と一致させる
 API_KEY = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=API_KEY)
 
@@ -29,7 +28,6 @@ def read_root():
 
 @app.post("/api/diagnosis")
 async def analyze_life_plan(data: DiagnosisRequest):
-    # 1. ログ出力（RenderのLogsで確認するため）
     print(f"--- Received Request ---")
     print(f"Success Rate: {data.success_rate}, Assets: {data.assets_65man}")
     
@@ -37,20 +35,20 @@ async def analyze_life_plan(data: DiagnosisRequest):
         print("ERROR: GEMINI_API_KEY is not set!")
         raise HTTPException(status_code=500, detail="API Key Missing")
 
+    # ここから下のインデントが関数の内側に入っている必要があります
     try:
-        # 2. 最新のモデル名を指定
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # モデル名を明示的に指定
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
         
         prompt = f"成功率{data.success_rate * 100}%、65歳資産{data.assets_65man}万円のFIRE計画を、エンジニア視点で100文字以内で分析して。"
         
-        # 3. AIに送信
+        print("DEBUG: Attempting to generate content...")
         response = model.generate_content(prompt)
         
         print("DEBUG: Gemini API Response Success")
         return {"analysis": response.text}
 
     except Exception as e:
-        # 4. エラーの正体をログに叩き出す
         print(f"!!! CRITICAL ERROR !!!")
         print(str(e))
         traceback.print_exc()
