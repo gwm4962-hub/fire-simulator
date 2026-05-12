@@ -340,7 +340,7 @@
     aiTarget.innerHTML = '<div style="color:var(--text-mid);">AIが分析中...</div>';
 
     try {
-        const response = await fetch("http://localhost:8080/api/diagnosis", {
+        const response = await fetch("https://fire-simulator-mv3a.onrender.com/api/diagnosis", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
