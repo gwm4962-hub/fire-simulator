@@ -54,7 +54,12 @@ class DiagnosisRequest(BaseModel):
 # =========================
 @app.get("/")
 def root():
-    return {"status": "ok"}
+    try:
+        models = client.models.list()
+        names = [m.name for m in models]
+        return {"status": "ok", "models": names}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
 
 # =========================
 # Diagnosis API
