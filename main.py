@@ -92,8 +92,8 @@ async def diagnosis(data: DiagnosisRequest):
 
         return {"analysis": response.text}
 
-   except Exception as e:
-    print("!!! CRITICAL ERROR !!!")
+    except Exception as e:
+     print("!!! CRITICAL ERROR !!!")
     print(f"ERROR TYPE: {type(e).__name__}")
     print(f"ERROR MESSAGE: {str(e)}")
     traceback.print_exc()
