@@ -346,7 +346,9 @@
             body: JSON.stringify({
                 // バックエンドの DiagnosisRequest クラスの定義に厳密に合わせる
                 success_rate: result.successRate, // 0.95 のような形式で送る
-                assets_65man: result.assets65Man
+                assets_65man: result.assets65Man,
+                fire_age: result.fireAge,
+                monthly_expense: result.monthlyExpense
             })
         });
 

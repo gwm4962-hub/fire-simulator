@@ -38,7 +38,8 @@ client = genai.Client(api_key=API_KEY)
 class DiagnosisRequest(BaseModel):
     success_rate: float
     assets_65man: float
-
+    fire_age: int        # ← FIRE予定年齢
+    monthly_expense: float  # ← 月支出（万円）
 # =========================
 # Health Check
 # =========================
@@ -58,16 +59,17 @@ async def diagnosis(data: DiagnosisRequest):
         success_percent = round(data.success_rate * 100, 1)
 
         prompt = f"""
-あなたは冷静な資産アドバイザーです。
+FIRE計画を診断。80字以内で日本語回答。
 
-成功率:
-{success_percent}%
+# データ
+成功率:{success_percent}% 65歳資産:{data.assets_65man}万円 FIRE年齢:{data.fire_age}歳 月支出:{data.monthly_expense}万円
 
-65歳時点資産:
-{data.assets_65man}万円
 
-このFIRE計画を100文字以内で分析してください。
-短く、具体的に。
+# ルール
+- 資産0以下 → 成功率に関わらず「破綻リスク大」と必ず指摘
+- 成功率<80% → 要改善
+- 成功率≧95% かつ 資産>0 → 合格
+- 数値を根拠に1文で核心を突く
 """
 
         print("DEBUG: Calling Gemini API...")
