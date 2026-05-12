@@ -59,17 +59,20 @@ async def diagnosis(data: DiagnosisRequest):
         print(data)
 
         success_percent = round(data.success_rate * 100, 1)
+surplus = data.surplus_65man if data.surplus_65man is not None else 0
+shortage_text = f"老後資金{abs(int(surplus))}万円不足" if surplus < 0 else "老後資金は黒字"
 
         prompt = f"""
-FIRE計画を診断。80字以内で日本語回答。
-
-成功率:{success_percent}% 65歳資産:{data.assets_65man}万円 必要額:{data.need_at_65man}万円 過不足:{data.surplus_65man}万円 FIRE年齢:{data.fire_age}歳 月支出:{data.monthly_expense}万円
+        
+        FIRE計画を診断。80字以内で日本語回答。
+成功率:{success_percent}% 65歳資産:{data.assets_65man}万円 必要額:{data.need_at_65man}万円 過不足:{surplus}万円 FIRE年齢:{data.fire_age}歳 月支出:{data.monthly_expense}万円
 
 ルール:
-- surplus_65man<0 → 成功率問わず「老後資金{abs(surplus_65man)}万円不足」を必ず指摘
+- 過不足がマイナス → 成功率問わず「{shortage_text}」を必ず冒頭に指摘
 - 成功率<80% → 要改善
-- 成功率≧95% かつ surplus>0 → 合格
-- 数値根拠で1文、核心を突く
+- 成功率≧95% かつ 過不足>0 → 合格
+- 数値根拠で1文、核心を突く"""
+FIRE計画を診断。80字以内で日本語回答。
 """
 
         print("DEBUG: Calling Gemini API...")
