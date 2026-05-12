@@ -38,7 +38,7 @@ async def analyze_life_plan(data: DiagnosisRequest):
     # ここから下のインデントが関数の内側に入っている必要があります
     try:
         # モデル名を明示的に指定
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
         
         prompt = f"成功率{data.success_rate * 100}%、65歳資産{data.assets_65man}万円のFIRE計画を、エンジニア視点で100文字以内で分析して。"
         
