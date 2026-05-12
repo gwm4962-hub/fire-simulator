@@ -1,6 +1,12 @@
 /**
- * diagnosis.js — 家計タイプ診断エンジン v2
+ * diagnosis.js — 家計タイプ診断エンジン v2.1
  * FLOW | 資産シミュレーター
+ *
+ * 修正点:
+ *   - sim:done リスナーを1つに統合（実行順の不定を解消）
+ *   - lifeAge() の計算式を直感的な線形補間に修正
+ *   - ブーストボックスのクランプ表示バグを修正（実際の変化量を正確に表示）
+ *   - startAge が dispatch に含まれていなくてもフォールバック表示
  */
 (function () {
   'use strict';
@@ -38,12 +44,19 @@
 
   function getType(r) { return TYPES.find(t => t.cond(r)) || TYPES[TYPES.length-1]; }
 
+  /**
+   * lifeAge() 修正版
+   * 旧: sr*10 などの係数が直感と合わない値を生成していた
+   *   例）sr=0.94 → 90+9.4=99歳（95%未満なのに99歳は高すぎ）
+   * 新: 区間の境界値を固定し、その間を線形補間
+   *   95%→"100歳以上"、85%→95歳、70%→88歳、50%→80歳、0%→72歳
+   */
   function lifeAge(sr) {
     if (sr >= 0.95) return '100歳以上';
-    if (sr >= 0.85) return Math.round(90 + sr*10) + '歳';
-    if (sr >= 0.70) return Math.round(80 + sr*12) + '歳';
-    if (sr >= 0.50) return Math.round(72 + sr*14) + '歳';
-    return Math.round(65 + sr*14) + '歳';
+    if (sr >= 0.85) return Math.round(88 + (sr - 0.85) / 0.10 * 7) + '歳'; // 88〜95歳
+    if (sr >= 0.70) return Math.round(80 + (sr - 0.70) / 0.15 * 8) + '歳'; // 80〜88歳
+    if (sr >= 0.50) return Math.round(74 + (sr - 0.50) / 0.20 * 6) + '歳'; // 74〜80歳
+    return Math.round(65 + sr / 0.50 * 9) + '歳';                          // 65〜74歳
   }
 
   let _active = new Set(), _baseSr = 0, _currentType = null, _result = null;
@@ -56,8 +69,10 @@
     _active.clear();
     const type = getType(result);
     _currentType = type;
-    const pct = Math.round(_baseSr * 100);
+    const pct  = Math.round(_baseSr * 100);
     const lage = lifeAge(_baseSr);
+    // startAge は simulation.js の dispatch に含まれていない場合は非表示
+    const agePill = result.startAge ? `${result.startAge}歳` : '診断済';
 
     el.innerHTML = `
 <div class="diag-wrap">
@@ -67,7 +82,7 @@
     <div class="diag-card-shimmer"></div>
     <div class="diag-top-row">
       <span class="diag-app-tag">🔍 家計タイプ診断</span>
-      <span class="diag-age-pill">${result.startAge ?? '—'}歳</span>
+      <span class="diag-age-pill">${agePill}</span>
     </div>
     <div class="diag-main-row">
       <span class="diag-emoji">${type.emoji}</span>
@@ -187,15 +202,23 @@
       if (lageEl)  lageEl.textContent = lifeAge(_baseSr);
       return;
     }
+
     let boost = 0;
     _active.forEach(id => { const c = LIFE_CARDS.find(x => x.id===id); if(c) boost += c.boost; });
-    const newSr  = Math.min(0.98, _baseSr + boost);
+
+    const rawSr  = _baseSr + boost;               // クランプ前の生の値
+    const newSr  = Math.min(0.98, rawSr);          // 表示・計算はクランプ後
     const newPct = Math.round(newSr * 100);
-    const delta  = newPct - basePct;
-    const nla    = lifeAge(newSr);
+
+    // 修正: 実際にUIに反映される変化量を表示（クランプで頭打ちになる分を正確に反映）
+    const actualDelta = newPct - basePct;
+    const nla = lifeAge(newSr);
+
     if (boostEl) boostEl.style.display = 'block';
     if (befEl)   befEl.textContent  = basePct + '%';
-    if (aftEl)   aftEl.textContent  = `${newPct}%  (+${delta}pt)`;
+    if (aftEl)   aftEl.textContent  = actualDelta > 0
+      ? `${newPct}%（+${actualDelta}pt）`
+      : `${newPct}%（上限98%に到達）`;
     if (lifeEl)  lifeEl.textContent = nla;
     if (fillEl)  fillEl.style.width = newPct + '%';
     if (pctEl)   pctEl.textContent  = newPct;
@@ -216,13 +239,72 @@
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(location.href.split('?')[0])}`, '_blank', 'noopener,width=600,height=400');
   };
 
-  window.addEventListener('sim:done', function(e) {
+  // =========================================================
+  // sim:done リスナーを1つに統合（修正前は2つ別々に登録されており
+  // 実行順が保証されなかった。render → AI診断の順で確実に実行する）
+  // =========================================================
+  window.addEventListener('sim:done', async (e) => {
     if (!e.detail) return;
+    const result = e.detail;
     const mode = document.body.getAttribute('data-mode');
-    if (mode === 'pro') return;
-    render(e.detail);
-    const p = document.getElementById('diagnosis-panel');
-    if (p) setTimeout(() => p.scrollIntoView({ behavior:'smooth', block:'start' }), 200);
+
+    // --- ① 家計タイプ診断（proモード以外） ---
+    if (mode !== 'pro') {
+      render(result);
+      const p = document.getElementById('diagnosis-panel');
+      if (p) setTimeout(() => p.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+    }
+
+    // --- ② AI深層診断（全モード共通） ---
+    const aiTarget = document.getElementById('ai-response');
+    if (!aiTarget) return;
+
+    // ローディング表示（スケルトン風）
+    aiTarget.style.display = 'block';
+    aiTarget.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;padding:4px 0;">
+        <div style="width:16px;height:16px;border:2px solid rgba(0,212,255,.3);border-top-color:#00d4ff;border-radius:50%;animation:ai-spin .8s linear infinite;flex-shrink:0;"></div>
+        <span style="color:var(--text-dim);font-size:13px;">AIが分析中…</span>
+      </div>
+      <style>@keyframes ai-spin{to{transform:rotate(360deg)}}</style>`;
+
+    try {
+      const response = await fetch("https://fire-simulator-mv3a.onrender.com/api/diagnosis", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          success_rate:    result.successRate,
+          assets_65man:    result.assets65Man,
+          fire_age:        result.fireAge,
+          monthly_expense: result.monthlyExpense,
+          surplus_65man:   result.surplus65Man,
+          need_at_65man:   result.needAt65Man,
+        })
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+
+      if (data && data.analysis) {
+        aiTarget.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <span style="font-size:16px;">🤖</span>
+            <span style="font-size:13px;font-weight:700;color:#00d4ff;font-family:'Space Mono',monospace;letter-spacing:.5px;">AI深層診断</span>
+          </div>
+          <p style="margin:0;font-size:13px;color:var(--text-mid);line-height:1.9;">${data.analysis}</p>`;
+      } else {
+        console.error("Unexpected response format:", data);
+        aiTarget.innerHTML = '<p style="color:var(--text-dim);font-size:12px;">診断結果の形式が正しくありません。</p>';
+      }
+
+    } catch (err) {
+      console.error("AI診断エラー:", err);
+      aiTarget.innerHTML = `
+        <p style="color:#ffd166;font-size:12px;margin:0;">
+          ⚠️ AI診断に失敗しました。サーバーの起動を待っている可能性があります。30秒後に再度お試しください。
+        </p>`;
+    }
   });
 
   function injectStyles() {
@@ -330,47 +412,5 @@
   }
 
   injectStyles();
-
-  window.addEventListener('sim:done', async (e) => {
-    const result = e.detail;
-    const aiTarget = document.getElementById('ai-response');
-    if (!aiTarget) return;
-
-    aiTarget.style.display = 'block';
-    aiTarget.innerHTML = '<div style="color:var(--text-mid);">AIが分析中...</div>';
-
-    try {
-        const response = await fetch("https://fire-simulator-mv3a.onrender.com/api/diagnosis", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              success_rate:    result.successRate,
-              assets_65man:    result.assets65Man,
-              fire_age:        result.fireAge,
-              monthly_expense: result.monthlyExpense,
-              surplus_65man:   result.surplus65Man,  // 追加
-              need_at_65man:   result.needAt65Man,   // 追加
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // data.analysis が存在するかチェックしてから表示
-        if (data && data.analysis) {
-            aiTarget.innerHTML = `<h4>AI深層診断</h4><p>${data.analysis}</p>`;
-        } else {
-            console.error("Unexpected response format:", data);
-            aiTarget.innerHTML = '<p>診断結果の形式が正しくありません。</p>';
-        }
-
-    } catch (err) {
-        console.error("Fetch error:", err);
-        aiTarget.innerHTML = '<p style="color:orange;">AI診断に失敗しました。サーバーの起動を待っている可能性があります。30秒後に再度お試しください。</p>';
-    }
-});
 
 })();

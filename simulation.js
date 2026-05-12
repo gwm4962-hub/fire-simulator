@@ -2561,6 +2561,7 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
     monthlyExpense: monthlyRetire,
     surplus65Man:   Math.round(surplus65 / 1e4),  // 診断精度向上用
     needAt65Man:    Math.round(needAt65 / 1e4),   // 診断精度向上用
+    startAge:       startAge,                     // 追加: diag-age-pill表示用
   }
 }));
 
