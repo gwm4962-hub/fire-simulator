@@ -344,16 +344,29 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                type_id: result.type_id || 'unknown',
-                success_rate: result.successRate,
-                assets_65man: result.assets65Man,
-                monthly_retire: result.monthlyRetire
+                // バックエンドの DiagnosisRequest クラスの定義に厳密に合わせる
+                success_rate: result.successRate / 100, // 0.95 のような形式で送る
+                assets_65man: result.assets65Man
             })
         });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
-        aiTarget.innerHTML = `<h4>AI深層診断</h4><p>${data.analysis}</p>`;
+        
+        // data.analysis が存在するかチェックしてから表示
+        if (data && data.analysis) {
+            aiTarget.innerHTML = `<h4>AI深層診断</h4><p>${data.analysis}</p>`;
+        } else {
+            console.error("Unexpected response format:", data);
+            aiTarget.innerHTML = '<p>診断結果の形式が正しくありません。</p>';
+        }
+
     } catch (err) {
-        aiTarget.innerHTML = '<p style="color:orange;">バックエンドに接続できませんでした。uvicornが動いているか確認してください。</p>';
+        console.error("Fetch error:", err);
+        aiTarget.innerHTML = '<p style="color:orange;">AI診断に失敗しました。サーバーの起動を待っている可能性があります。30秒後に再度お試しください。</p>';
     }
 });
 
