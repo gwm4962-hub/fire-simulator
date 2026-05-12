@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+# 新SDK: google-genai==1.15.0 の正しいインポート
 from google import genai
 
 app = FastAPI()
@@ -32,6 +33,15 @@ if not API_KEY:
 
 client = genai.Client(api_key=API_KEY)
 
+# 起動時に使えるモデルを確認（Renderのログに出力される）
+try:
+    models = client.models.list()
+    print("===== AVAILABLE MODELS =====")
+    for m in models:
+        print(m.name)
+except Exception as e:
+    print(f"Could not list models: {e}")
+
 # =========================
 # Request Model
 # =========================
@@ -44,18 +54,14 @@ class DiagnosisRequest(BaseModel):
 # =========================
 @app.get("/")
 def root():
-    return {
-        "status": "ok"
-    }
+    return {"status": "ok"}
 
 # =========================
 # Diagnosis API
 # =========================
 @app.post("/api/diagnosis")
 async def diagnosis(data: DiagnosisRequest):
-
     try:
-
         print("===== REQUEST =====")
         print(data)
 
@@ -74,23 +80,19 @@ async def diagnosis(data: DiagnosisRequest):
 短く、具体的に。
 """
 
+        print("DEBUG: Calling Gemini API...")
+
         response = client.models.generate_content(
-            model="gemini-2.0-flash-001",
+            model="gemini-2.0-flash",
             contents=prompt
         )
 
         print("===== GEMINI SUCCESS =====")
+        print(response.text)
 
-        return {
-            "analysis": response.text
-        }
+        return {"analysis": response.text}
 
     except Exception as e:
-
-        print("===== ERROR =====")
+        print("!!! CRITICAL ERROR !!!")
         traceback.print_exc()
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))
