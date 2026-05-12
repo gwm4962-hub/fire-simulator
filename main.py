@@ -52,6 +52,9 @@ def root():
 # =========================
 # Diagnosis API
 # =========================
+# =========================
+# Diagnosis API
+# =========================
 @app.post("/api/diagnosis")
 async def diagnosis(data: DiagnosisRequest):
     try:
@@ -59,12 +62,12 @@ async def diagnosis(data: DiagnosisRequest):
         print(data)
 
         success_percent = round(data.success_rate * 100, 1)
-surplus = data.surplus_65man if data.surplus_65man is not None else 0
-shortage_text = f"老後資金{abs(int(surplus))}万円不足" if surplus < 0 else "老後資金は黒字"
+        surplus = data.surplus_65man if data.surplus_65man is not None else 0
+        shortage_text = f"老後資金{abs(int(surplus))}万円不足" if surplus < 0 else "老後資金は黒字"
 
+        # 指摘1: ここをtryの配下（半角スペース8つ分）に揃える
         prompt = f"""
-        
-        FIRE計画を診断。80字以内で日本語回答。
+FIRE計画を診断。80字以内で日本語回答。
 成功率:{success_percent}% 65歳資産:{data.assets_65man}万円 必要額:{data.need_at_65man}万円 過不足:{surplus}万円 FIRE年齢:{data.fire_age}歳 月支出:{data.monthly_expense}万円
 
 ルール:
@@ -72,13 +75,12 @@ shortage_text = f"老後資金{abs(int(surplus))}万円不足" if surplus < 0 el
 - 成功率<80% → 要改善
 - 成功率≧95% かつ 過不足>0 → 合格
 - 数値根拠で1文、核心を突く"""
-FIRE計画を診断。80字以内で日本語回答。
-"""
 
+        # 指摘2: ここも同じ深さに揃える
         print("DEBUG: Calling Gemini API...")
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.5-flash", # 画像に基づき修正
             contents=prompt
         )
 
@@ -87,7 +89,7 @@ FIRE計画を診断。80字以内で日本語回答。
 
         return {"analysis": response.text}
 
-    except Exception as e:
+    except Exception as e: # 指摘3: tryと縦のラインを完全に合わせる
         err_type = type(e).__name__
         err_msg = str(e)
         print(f"ERROR TYPE: {err_type}")
