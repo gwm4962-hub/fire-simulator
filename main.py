@@ -168,9 +168,9 @@ async def diagnosis(request: Request, data: DiagnosisRequest):
         print(data)
 
         pct      = round(data.success_rate * 100, 1)
-        assets   = int(data.assets_65man)
-        surplus  = int(data.surplus_65man or 0)
-        need     = int(data.need_at_65man or 0)
+        assets   = int(data.assets_65man)   if data.assets_65man   else None
+        surplus  = int(data.surplus_65man)  if data.surplus_65man  else None
+        need     = int(data.need_at_65man)  if data.need_at_65man  else None
         monthly  = data.monthly_expense
         fire_age = data.fire_age
 
@@ -180,14 +180,15 @@ async def diagnosis(request: Request, data: DiagnosisRequest):
         else:           sr_label = "深刻・早急な対策が必要"
 
         surplus_label = (
-            f"黒字{surplus:,}万（インフレ未考慮）" if surplus > 0
+            f"黒字{surplus:,}万（インフレ未考慮）" if surplus is not None and surplus > 0
             else "収支ゼロ（バッファなし）"          if surplus == 0
-            else f"赤字{abs(surplus):,}万（不足確定）"
+            else f"赤字{abs(surplus):,}万（不足確定）" if surplus is not None
+            else "過不足：データなし"
         )
 
         fire_str  = f"{fire_age}歳FIRE" if fire_age else "FIRE未達成（65歳まで就労前提）"
-        exp_str   = f"老後月支出{monthly}万円" if monthly else "老後月支出不明"
-        cover_str = f"必要額カバー率{round(assets/need*100)}%" if need > 0 else ""
+        exp_str   = f"老後月支出{monthly}万円" if monthly else "老後月支出：未入力"
+        cover_str = f"必要額カバー率{round(assets/need*100)}%" if (assets and need) else ""
 
         infl_rate    = data.inflation_rate if data.inflation_rate is not None else 0.015
         infl_pct     = round(infl_rate * 100, 1)
@@ -200,7 +201,7 @@ async def diagnosis(request: Request, data: DiagnosisRequest):
 
         longevity_str = (
             f"95歳まで生存した場合さらに{round(monthly*12*10):,}万円必要"
-            if monthly and need > 0 else ""
+            if (monthly and need) else ""
         )
 
         sw   = data.stock_ratio_work
@@ -221,10 +222,10 @@ async def diagnosis(request: Request, data: DiagnosisRequest):
         lines = [
             "【シミュレーション結果】",
             f"成功率: {pct}%（{sr_label}）",
-            f"65歳時点の資産: {assets:,}万円",
-            f"老後必要総額: {need:,}万円",
-            f"過不足: {surplus_label}",
         ]
+        if assets is not None: lines.append(f"65歳時点の資産: {assets:,}万円")
+        if need   is not None: lines.append(f"老後必要総額: {need:,}万円")
+        lines.append(f"過不足: {surplus_label}")
         if cover_str:      lines.append(cover_str)
         lines += [f"FIRE: {fire_str}", exp_str, infl_str]
         if longevity_str:  lines.append(longevity_str)

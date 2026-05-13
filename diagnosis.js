@@ -343,19 +343,11 @@
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      // JSON structured output: { diagnosis, blind_spot, action } を期待
-      // main.py がフォールバック時は { analysis } を返す場合もある
-      const sections = [
-        { key: 'diagnosis',  icon: '📊', label: '診断',            color: '#00d4ff' },
-        { key: 'blind_spot', icon: '⚠️', label: '盲点・リスク',    color: '#ffd166' },
-        { key: 'action',     icon: '🎯', label: '最優先アクション', color: '#a8ff78' },
-      ];
-      // --- 修正版ロジック ---
-      // 1. データの正規化（入れ子構造の解消）
-      let finalData = data;
-      if (data.analysis && typeof data.analysis === 'object') {
-        finalData = data.analysis;
-      }
+      // main.py は { analysis: { diagnosis, blind_spot, action }, used_model } を返す
+      // data.analysis の中身を取り出して使う
+      let finalData = (data.analysis && typeof data.analysis === 'object')
+        ? data.analysis
+        : data;
 
       const sections = [
         { key: 'diagnosis',  icon: '📊', label: '診断',            color: '#00d4ff' },
