@@ -328,6 +328,13 @@
   const COOLDOWN_MS = 30_000;
   let _lastDiagAt   = 0;
 
+  // ── 値を必ず文字列として返すヘルパー（モジュールスコープ） ──
+  function safeStr(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'string') return v;
+    try { return JSON.stringify(v); } catch(_) { return String(v); }
+  }
+
   window.addEventListener('sim:done', async (e) => {
     if (!e.detail) return;
     const result = e.detail;
@@ -335,7 +342,13 @@
 
     // ── ① 家計タイプ診断（pro モード以外）──
     if (mode !== 'pro') {
-      render(result);
+      render(result);  // ← この時点で #diag-ai-body がDOMに追加される
+      // render()直後に#diag-ai-bodyへスピナーを上書き（render内のデフォルトHTMLを上書き）
+      const inlineAfterRender = document.getElementById('diag-ai-body');
+      if (inlineAfterRender) {
+        inlineAfterRender.className = 'diag-ai-loading';
+        inlineAfterRender.innerHTML = '<div class="diag-ai-spinner" aria-hidden="true"></div><span>分析中…</span>';
+      }
       // 初心者・通常モードは diagnosis-panel へスクロール
       const p = document.getElementById('diagnosis-panel');
       if (p) requestAnimationFrame(() => p.scrollIntoView({ behavior:'smooth', block:'start' }));
@@ -356,9 +369,12 @@
     const inlineBody     = document.getElementById('diag-ai-body');
     const standaloneBody = document.getElementById('ai-diag-body');
 
-    // どちらも取得して両方に書き込む（モードを問わず確実に表示）
+    // ── render()後にDOMが再構築されるため、毎回getElementByIdで取得する ──
     function writeToAiBodies(html, className) {
-      [inlineBody, standaloneBody].forEach(el => {
+      // render()でinnerHTMLが書き換わった後の最新DOM要素を取得
+      const ids = ['diag-ai-body', 'ai-diag-body'];
+      ids.forEach(function(id) {
+        const el = document.getElementById(id);
         if (!el) return;
         el.className = className || '';
         el.innerHTML = html;
@@ -366,6 +382,8 @@
     }
 
     // ローディング表示（スピナー）を先に出す
+    // ※render()実行前なので#diag-ai-bodyはまだDOMにない可能性があるが問題なし
+    //   render()完了後にfetch結果でwriteToAiBodiesが呼ばれた時点で両方存在する
     const spinnerHtml = '<div class="diag-ai-spinner" aria-hidden="true"></div><span>分析中…</span>';
     writeToAiBodies(spinnerHtml, 'diag-ai-loading');
 
@@ -374,10 +392,8 @@
       requestAnimationFrame(() => standalonePanel.scrollIntoView({ behavior:'smooth', block:'start' }));
     }
 
-    // aiBody は後続処理で使う（両方に書くためのラッパーとして writeToAiBodies を使う）
-    // 後方互換のため aiBody 変数も残す
-    const aiBody = inlineBody || standaloneBody;
-    if (!aiBody && !standaloneBody) return;
+    // どちらかのbodyが存在すれば続行（render後に#diag-ai-bodyが生成される）
+    if (!document.getElementById('diag-ai-body') && !document.getElementById('ai-diag-body')) return;
 
     // ── クールタイムチェック ──────────────────────────────
     const now = Date.now();
@@ -430,12 +446,7 @@
         return;
       }
 
-      // ── 値を文字列として安全に取り出す ──
-      function safeStr(v) {
-        if (v === null || v === undefined) return '';
-        if (typeof v === 'string') return v;
-        return JSON.stringify(v, null, 2);
-      }
+      // safeStr はモジュールスコープで定義済み（下記参照）
 
       // ── analysis を取り出す（3パターン対応） ──
       // パターン1: { analysis: { diagnosis, blind_spot, action }, used_model }  ← main.py 正規形
