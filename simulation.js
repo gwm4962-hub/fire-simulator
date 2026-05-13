@@ -2585,19 +2585,26 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
     });
   }
 
-  // 結果エリアへスムーズスクロール（スマホで特に有効）
+  // 結果エリアへスムーズスクロール（シミュレーション条件パネルを最初に表示）
   setTimeout(() => {
-    const isBeginner = document.body.getAttribute('data-mode') === 'beginner';
-    const target = isBeginner
-      ? (document.getElementById('beginner-summary') || document.getElementById('chart-container'))
-      : (document.getElementById('kpi-section') || document.getElementById('goal-panel'));
-    if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+    // まず「シミュレーション条件」パネルへスクロール（常に最優先）
+    const condPanel = document.getElementById('sim-condition-panel');
+    if (condPanel && condPanel.style.display !== 'none') {
+      condPanel.scrollIntoView({ behavior:'smooth', block:'start' });
+    } else {
+      // フォールバック: モード別のメインコンテンツへ
+      const isBeginner = document.body.getAttribute('data-mode') === 'beginner';
+      const target = isBeginner
+        ? (document.getElementById('beginner-summary') || document.getElementById('chart-container'))
+        : (document.getElementById('kpi-section') || document.getElementById('goal-panel'));
+      if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+    }
     // KPIカードにアニメーション付与
     document.querySelectorAll('.kpi-card').forEach((c,i) => {
       c.classList.remove('revealed');
       setTimeout(() => c.classList.add('revealed'), i * 60);
     });
-  }, 100);
+  }, 150);
 
   } catch(err) {
     console.error('[FLOW] シミュレーションエラー:', err);

@@ -35,12 +35,16 @@
   ];
 
   const LIFE_CARDS = [
-    { id:'nisa',   icon:'💹', title:'NISA積立を月3万円増やす', sub:'新NISAの非課税枠を活用', effect:'+12年', boost:0.12, color:'#a8ff78' },
-    { id:'exp',    icon:'✂️', title:'固定費を月1万円削減',     sub:'サブスク・通信費を見直す', effect:'+5年',  boost:0.06, color:'#00d4ff' },
-    { id:'retire', icon:'🕐', title:'65歳まで働く（再雇用含む）', sub:'60〜65歳は収入50%で試算', effect:'+8年',  boost:0.09, color:'#b388ff' },
-    { id:'side',   icon:'💻', title:'副業で月3万円追加',       sub:'スキル活用・フリーランス', effect:'+8年',  boost:0.09, color:'#ffd166' },
-    { id:'ideco',  icon:'🏛️', title:'iDeCoを満額拠出',        sub:'所得控除で節税しながら積立', effect:'+7年', boost:0.08, color:'#ff6eb4' },
+    { id:'nisa',   icon:'💹', title:'NISA積立を月3万円増やす', sub:'新NISAの非課税枠を活用', effect:'+12年', boost:0.12, color:'#a8ff78', rarity:'SSR', cost:'月3万円' },
+    { id:'exp',    icon:'✂️', title:'固定費を月1万円削減',     sub:'サブスク・通信費を見直す', effect:'+5年',  boost:0.06, color:'#00d4ff', rarity:'R',   cost:'0円' },
+    { id:'retire', icon:'🕐', title:'65歳まで働く（再雇用含む）', sub:'60〜65歳は収入50%で試算', effect:'+8年', boost:0.09, color:'#b388ff', rarity:'SR',  cost:'5年の労働' },
+    { id:'side',   icon:'💻', title:'副業で月3万円追加',       sub:'スキル活用・フリーランス', effect:'+8年',  boost:0.09, color:'#ffd166', rarity:'SR',  cost:'月3万円' },
+    { id:'ideco',  icon:'🏛️', title:'iDeCoを満額拠出',        sub:'所得控除で節税しながら積立', effect:'+7年', boost:0.08, color:'#ff6eb4', rarity:'SR',  cost:'月2.3万円' },
   ];
+
+  // レアリティ色マップ
+  const RARITY_COLOR = { SSR: '#ffd700', SR: '#c586f0', R: '#00d4ff' };
+  const RARITY_GLOW  = { SSR: 'rgba(255,215,0,.35)', SR: 'rgba(197,134,240,.3)', R: 'rgba(0,212,255,.2)' };
 
   function getType(r) { return TYPES.find(t => t.cond(r)) || TYPES[TYPES.length-1]; }
 
@@ -77,25 +81,35 @@
     const lage = lifeAge(_baseSr);
     const agePill = result.startAge ? `${result.startAge}歳` : '診断済';
 
-    // ⑫ ライフカード: role="checkbox" + tabindex="0" でキーボード対応
-    const lcItems = LIFE_CARDS.map(c => `
-      <div class="diag-lc"
+    // ⑫ ライフカード: role="checkbox" + tabindex="0" でキーボード対応（ゲームカードUI）
+    const lcItems = LIFE_CARDS.map(c => {
+      const rc = RARITY_COLOR[c.rarity] || c.color;
+      const rg = RARITY_GLOW[c.rarity]  || 'rgba(0,0,0,0)';
+      return `
+      <div class="diag-lc diag-lc-game"
            id="lc-${c.id}"
            role="checkbox"
            aria-checked="false"
            aria-label="${c.title}"
            tabindex="0"
+           style="--lc-rc:${rc};--lc-rg:${rg};"
            onclick="toggleLC('${c.id}')"
            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleLC('${c.id}');}">
+        <div class="diag-lc-shimmer"></div>
+        <div class="diag-lc-rarity" style="color:${rc}">${c.rarity}</div>
         <div class="diag-lc-check" id="lc-chk-${c.id}" aria-hidden="true">✓</div>
         <div class="diag-lc-icon" aria-hidden="true">${c.icon}</div>
         <div class="diag-lc-body">
           <div class="diag-lc-title">${c.title}</div>
           <div class="diag-lc-sub">${c.sub}</div>
+          <div class="diag-lc-cost">コスト：${c.cost}</div>
         </div>
-        <div class="diag-lc-eff" style="color:${c.color}" aria-hidden="true">${c.effect}</div>
+        <div class="diag-lc-eff" style="color:${c.color}" aria-hidden="true">
+          <span class="diag-lc-eff-num">${c.effect}</span>
+          <span class="diag-lc-eff-lbl">延命</span>
+        </div>
       </div>
-    `).join('');
+    `;}).join('');
 
     el.innerHTML = `
 <div class="diag-wrap">
@@ -146,22 +160,33 @@
   </div>
 
   <!-- ━ 寿命延長カード ━ -->
-  <div class="diag-section">
+  <div class="diag-section diag-lifegame-sec">
     <div class="diag-section-hd">
-      <span>🃏 寿命延長カードを装備しよう</span>
-      <span class="diag-hint-blink">タップ / Enter → 資産寿命がのびる</span>
+      <span>🃏 延命アイテムを装備しよう</span>
+      <div class="diag-lc-counter-wrap">
+        <span class="diag-lc-counter" id="lc-counter">0 / ${LIFE_CARDS.length}</span>
+        <span class="diag-hint-blink">タップで装備</span>
+      </div>
     </div>
-    <div class="diag-lc-grid" role="group" aria-label="寿命延長カード">
+    <div class="diag-lifebar-wrap" aria-label="現在の資産寿命ゲージ">
+      <div class="diag-lifebar-track">
+        <div class="diag-lifebar-fill" id="d-lifebar" style="width:${Math.min(100,pct)}%;background:${type.color};"></div>
+        <div class="diag-lifebar-label" id="d-lifebar-label">${lage}</div>
+      </div>
+      <div class="diag-lifebar-max">💀 破産</div>
+    </div>
+    <div class="diag-lc-grid" role="group" aria-label="延命アイテムカード">
       ${lcItems}
     </div>
     <div class="diag-boost-box" id="d-boost" style="display:none" aria-live="polite">
-      <div class="dbb-lbl">カード装備後の推定スコア</div>
+      <div class="dbb-lbl">✨ 装備効果：推定スコア変化</div>
       <div class="dbb-row">
         <span class="dbb-before" id="dbb-bef">${pct}%</span>
-        <span class="dbb-arr" aria-hidden="true">→</span>
+        <span class="dbb-arr" aria-hidden="true">⟶</span>
         <span class="dbb-after" id="dbb-aft" style="color:${type.color}">—</span>
       </div>
-      <div class="dbb-life">📅 資産寿命：<span id="dbb-life" style="color:${type.color};font-weight:700">—</span></div>
+      <div class="dbb-life">💰 資産寿命：<span id="dbb-life" style="color:${type.color};font-weight:700">—</span></div>
+      <div class="dbb-msg" id="dbb-msg"></div>
     </div>
   </div>
 
@@ -221,20 +246,30 @@
   };
 
   function _refreshBoost() {
-    const boostEl = document.getElementById('d-boost');
-    const aftEl   = document.getElementById('dbb-aft');
-    const lifeEl  = document.getElementById('dbb-life');
-    const fillEl  = document.getElementById('d-fill');
-    const pctEl   = document.getElementById('d-pct');
-    const lageEl  = document.getElementById('d-life');
-    const befEl   = document.getElementById('dbb-bef');
-    const basePct = Math.round(_baseSr * 100);
+    const boostEl    = document.getElementById('d-boost');
+    const aftEl      = document.getElementById('dbb-aft');
+    const lifeEl     = document.getElementById('dbb-life');
+    const fillEl     = document.getElementById('d-fill');
+    const pctEl      = document.getElementById('d-pct');
+    const lageEl     = document.getElementById('d-life');
+    const befEl      = document.getElementById('dbb-bef');
+    const lbarFill   = document.getElementById('d-lifebar');
+    const lbarLabel  = document.getElementById('d-lifebar-label');
+    const msgEl      = document.getElementById('dbb-msg');
+    const counterEl  = document.getElementById('lc-counter');
+    const basePct    = Math.round(_baseSr * 100);
+
+    // カウンター更新
+    if (counterEl) counterEl.textContent = _active.size + ' / ' + LIFE_CARDS.length;
 
     if (_active.size === 0) {
-      if (boostEl) boostEl.style.display = 'none';
-      if (fillEl)  fillEl.style.width = basePct + '%';
-      if (pctEl)   pctEl.textContent  = basePct;
-      if (lageEl)  lageEl.textContent = lifeAge(_baseSr);
+      if (boostEl)   boostEl.style.display = 'none';
+      if (fillEl)    fillEl.style.width = Math.min(100, basePct) + '%';
+      if (pctEl)     pctEl.textContent  = basePct;
+      const la = lifeAge(_baseSr);
+      if (lageEl)    lageEl.textContent = la;
+      if (lbarFill)  lbarFill.style.width = Math.min(100, basePct) + '%';
+      if (lbarLabel) lbarLabel.textContent = la;
       return;
     }
 
@@ -244,19 +279,29 @@
     const rawSr  = _baseSr + boost;
     const newSr  = Math.min(0.98, rawSr);
     const newPct = Math.round(newSr * 100);
-    // ⑬ クランプ後の実際の変化量を正確に表示（全カードONで+1ptなのに+52ptと表示されるバグ修正済）
     const actualDelta = newPct - basePct;
     const nla = lifeAge(newSr);
+
+    // ゲームっぽいメッセージ
+    let gameMsg = '';
+    if (_active.size === 1) gameMsg = '💡 アイテム装備！資産寿命が延びています';
+    else if (_active.size === 2) gameMsg = '⚡ コンボ！複数装備で相乗効果';
+    else if (_active.size === 3) gameMsg = '🔥 トリプルコンボ！かなりの延命効果';
+    else if (_active.size >= LIFE_CARDS.length) gameMsg = '👑 フルコンプ！最大延命モード突入';
+    else gameMsg = `✨ ${_active.size}アイテム装備中`;
 
     if (boostEl) boostEl.style.display = 'block';
     if (befEl)   befEl.textContent  = basePct + '%';
     if (aftEl)   aftEl.textContent  = actualDelta > 0
-      ? `${newPct}%（+${actualDelta}pt）`
-      : `${newPct}%（上限98%に到達）`;
+      ? `${newPct}%（+${actualDelta}pt 🆙）`
+      : `${newPct}%（上限98%に到達 👑）`;
     if (lifeEl)  lifeEl.textContent = nla;
-    if (fillEl)  fillEl.style.width = newPct + '%';
+    if (fillEl)  { fillEl.style.width = Math.min(100, newPct) + '%'; }
     if (pctEl)   pctEl.textContent  = newPct;
     if (lageEl)  lageEl.textContent = nla;
+    if (lbarFill)  { lbarFill.style.width = Math.min(100, newPct) + '%'; }
+    if (lbarLabel) lbarLabel.textContent = nla;
+    if (msgEl)   msgEl.textContent = gameMsg;
   }
 
   window.shareDiagToX = function() {
@@ -340,14 +385,34 @@
         }),
       });
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        // レート制限エラーの場合は詳細なメッセージを取得
+        let errBody = null;
+        try { errBody = await res.json(); } catch(_) {}
+        if (res.status === 429) {
+          const waitSec = errBody?.retry_after ?? 30;
+          const errMsg = errBody?.message ?? `診断は${waitSec}秒後に再実行できます。`;
+          aiBody.className = '';
+          aiBody.innerHTML = `<p class="diag-ai-error">⏳ ${errMsg}</p>`;
+          return;
+        }
+        throw new Error(`HTTP ${res.status}`);
+      }
       const data = await res.json();
 
       // main.py は { analysis: { diagnosis, blind_spot, action }, used_model } を返す
-      // data.analysis の中身を取り出して使う
-      let finalData = (data.analysis && typeof data.analysis === 'object')
-        ? data.analysis
-        : data;
+      // data.analysis が文字列の場合（JSONパース前）も考慮して取り出す
+      let finalData = null;
+      if (data.analysis && typeof data.analysis === 'object') {
+        finalData = data.analysis;
+      } else if (data.analysis && typeof data.analysis === 'string') {
+        try { finalData = JSON.parse(data.analysis); } catch(_) { finalData = { diagnosis: data.analysis, blind_spot: '', action: '' }; }
+      } else if (data.diagnosis) {
+        finalData = data;
+      } else {
+        // 未知の形式 → 文字列化せずそのまま使う
+        finalData = data;
+      }
 
       const sections = [
         { key: 'diagnosis',  icon: '📊', label: '診断',            color: '#00d4ff' },
@@ -355,8 +420,11 @@
         { key: 'action',     icon: '🎯', label: '最優先アクション', color: '#a8ff78' },
       ];
 
-      // 構造化データを持っているかチェック
-      const isStructured = finalData?.diagnosis && finalData?.blind_spot && finalData?.action;
+      // 構造化データを持っているかチェック（値が文字列であることを確認）
+      const isStructured = finalData
+        && typeof finalData.diagnosis  === 'string'
+        && typeof finalData.blind_spot === 'string'
+        && typeof finalData.action     === 'string';
 
       if (isStructured) {
         const html = sections.map(s => `
@@ -369,8 +437,16 @@
         aiBody.className = '';
         aiBody.innerHTML = html;
       } else {
-        // 文字列の場合、または未知の形式の場合のフォールバック
-        const fallbackText = typeof finalData === 'string' ? finalData : (finalData?.analysis || JSON.stringify(finalData));
+        // フォールバック: 文字列として安全に表示（[object Object]を防ぐ）
+        let fallbackText;
+        if (typeof finalData === 'string') {
+          fallbackText = finalData;
+        } else if (finalData && typeof finalData === 'object') {
+          // オブジェクトの場合はJSON.stringifyで文字列化
+          fallbackText = JSON.stringify(finalData, null, 2);
+        } else {
+          fallbackText = '診断データを取得できませんでした。';
+        }
         aiBody.className = '';
         aiBody.innerHTML = `<p class="diag-ai-text">${fallbackText}</p>`;
       }
@@ -472,45 +548,84 @@
 }
 .diag-ai-block .diag-ai-text { font-size:13px;color:var(--text,#c8d8e8);line-height:1.85; }
 
-/* ─ ライフカード（⑫ キーボード対応） ─ */
-.diag-lc-grid { display:flex;flex-direction:column;gap:6px;margin-bottom:10px; }
+/* ─ ライフカードゲームUI ─ */
+.diag-lifegame-sec { border-color:rgba(168,255,120,.15); }
+.diag-lc-counter-wrap { display:flex;align-items:center;gap:8px; }
+.diag-lc-counter { font-size:11px;font-family:'Space Mono',monospace;color:#a8ff78;background:rgba(168,255,120,.1);border:1px solid rgba(168,255,120,.25);padding:2px 8px;border-radius:4px; }
+/* ライフバー */
+.diag-lifebar-wrap { display:flex;align-items:center;gap:8px;margin-bottom:10px; }
+.diag-lifebar-track { flex:1;height:22px;background:rgba(0,0,0,.35);border-radius:11px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08); }
+.diag-lifebar-fill { height:100%;border-radius:11px;transition:width .8s cubic-bezier(.4,0,.2,1);background:#a8ff78;box-shadow:0 0 12px rgba(168,255,120,.4); }
+.diag-lifebar-label { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Space Mono',monospace;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);mix-blend-mode:normal; }
+.diag-lifebar-max { font-size:10px;color:var(--text-dim);white-space:nowrap; }
+/* カードグリッド */
+.diag-lc-grid { display:flex;flex-direction:column;gap:7px;margin-bottom:10px; }
 .diag-lc {
-  display:flex;align-items:center;gap:10px;padding:10px 12px;
-  background:var(--surface2,#0f1a2c);border:1px solid var(--border,#1c3050);border-radius:10px;
-  cursor:pointer;transition:all .2s;position:relative;-webkit-tap-highlight-color:transparent;
-  outline:none;
+  display:flex;align-items:center;gap:10px;padding:11px 12px;
+  background:var(--surface2,#0f1a2c);
+  border:1px solid var(--lc-rc,var(--border,#1c3050));
+  border-radius:12px;
+  cursor:pointer;transition:all .22s cubic-bezier(.4,0,.2,1);
+  position:relative;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;outline:none;
+  box-shadow:0 0 0 0 var(--lc-rg,transparent);
 }
+.diag-lc-shimmer {
+  position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse 70% 50% at 80% 20%,var(--lc-rg,rgba(255,255,255,.08)) 0%,transparent 70%);
+  transition:opacity .3s;
+}
+.diag-lc:hover .diag-lc-shimmer,
+.diag-lc:focus-visible .diag-lc-shimmer { opacity:1; }
 .diag-lc:hover,
-.diag-lc:focus-visible { border-color:var(--accent,#00d4ff);transform:translateX(3px); }
+.diag-lc:focus-visible { border-color:var(--lc-rc,var(--accent,#00d4ff));transform:translateX(4px);box-shadow:0 0 12px var(--lc-rg,transparent); }
 .diag-lc:focus-visible { box-shadow:0 0 0 2px rgba(0,212,255,.4); }
-.diag-lc.lc-on { border-color:#a8ff78;background:rgba(168,255,120,.07);box-shadow:0 0 14px rgba(168,255,120,.15); }
-.diag-lc-check {
-  display:none;position:absolute;top:6px;right:6px;
-  font-size:11px;font-weight:700;color:#a8ff78;
-  background:rgba(168,255,120,.15);border-radius:50%;width:18px;height:18px;
-  align-items:center;justify-content:center;
+.diag-lc.lc-on {
+  background:linear-gradient(135deg,rgba(168,255,120,.06),rgba(0,0,0,.1));
+  border-color:var(--lc-rc,#a8ff78);
+  box-shadow:0 0 18px var(--lc-rg,rgba(168,255,120,.2));
+  transform:translateX(2px);
 }
+.diag-lc.lc-on .diag-lc-shimmer { opacity:1; }
+/* レアリティバッジ */
+.diag-lc-rarity {
+  position:absolute;top:5px;left:10px;
+  font-size:9px;font-weight:800;font-family:'Space Mono',monospace;
+  letter-spacing:1px;opacity:.85;
+}
+.diag-lc-check {
+  display:none;position:absolute;top:5px;right:8px;
+  font-size:10px;font-weight:900;color:#a8ff78;
+  background:rgba(168,255,120,.2);border:1px solid rgba(168,255,120,.4);
+  border-radius:50%;width:20px;height:20px;
+  align-items:center;justify-content:center;
+  animation:lcCheckIn .25s cubic-bezier(.4,0,.2,1);
+}
+@keyframes lcCheckIn{from{transform:scale(0) rotate(-90deg)}to{transform:scale(1) rotate(0)}}
 .lc-on .diag-lc-check { display:flex; }
-.diag-lc-icon  { font-size:20px;flex-shrink:0; }
-.diag-lc-body  { flex:1;min-width:0; }
+.diag-lc-icon  { font-size:22px;flex-shrink:0;margin-top:6px; }
+.diag-lc-body  { flex:1;min-width:0;padding-top:8px; }
 .diag-lc-title { font-size:12px;font-weight:700;color:var(--text);line-height:1.3; }
 .diag-lc-sub   { font-size:10px;color:var(--text-dim);margin-top:1px; }
-.diag-lc-eff   { font-size:14px;font-weight:800;font-family:'Space Mono',monospace;flex-shrink:0;opacity:.65; }
+.diag-lc-cost  { font-size:9px;color:var(--text-dim);margin-top:3px;font-family:'Space Mono',monospace;opacity:.7; }
+.diag-lc-eff   { display:flex;flex-direction:column;align-items:center;flex-shrink:0;opacity:.6;transition:opacity .2s; }
+.diag-lc-eff-num { font-size:16px;font-weight:800;font-family:'Space Mono',monospace; }
+.diag-lc-eff-lbl { font-size:9px;font-family:'Space Mono',monospace;opacity:.7; }
 .lc-on .diag-lc-eff { opacity:1; }
-
-/* ─ ブーストボックス ─ */
+/* ブーストボックス（ゲームライク） */
 .diag-boost-box {
-  background:linear-gradient(135deg,rgba(168,255,120,.08),rgba(0,212,255,.06));
-  border:1px solid rgba(168,255,120,.2);border-radius:10px;padding:12px;
-  animation:boostIn .4s ease-out;
+  background:linear-gradient(135deg,rgba(168,255,120,.09),rgba(0,212,255,.06));
+  border:1px solid rgba(168,255,120,.25);border-radius:12px;padding:14px;
+  animation:boostIn .35s cubic-bezier(.4,0,.2,1);
 }
-@keyframes boostIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.dbb-lbl    { font-size:10px;color:var(--text-dim);margin-bottom:6px; }
-.dbb-row    { display:flex;align-items:center;gap:10px;margin-bottom:6px; }
-.dbb-before { font-size:18px;font-family:'Space Mono',monospace;color:var(--text-dim); }
-.dbb-arr    { color:#a8ff78;font-size:16px; }
-.dbb-after  { font-size:24px;font-weight:800;font-family:'Space Mono',monospace;transition:all .4s; }
-.dbb-life   { font-size:12px;color:var(--text-mid); }
+@keyframes boostIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+.dbb-lbl    { font-size:10px;color:var(--text-dim);margin-bottom:8px;letter-spacing:.3px; }
+.dbb-row    { display:flex;align-items:center;gap:10px;margin-bottom:8px; }
+.dbb-before { font-size:18px;font-family:'Space Mono',monospace;color:var(--text-dim);text-decoration:line-through; }
+.dbb-arr    { color:#a8ff78;font-size:18px; }
+.dbb-after  { font-size:26px;font-weight:800;font-family:'Space Mono',monospace;transition:all .4s; }
+.dbb-life   { font-size:12px;color:var(--text-mid);margin-bottom:6px; }
+.dbb-msg    { font-size:11px;color:#a8ff78;font-weight:700;margin-top:4px;min-height:16px; }
 
 /* ─ シェア ─ */
 .diag-share-preview { background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:12px;margin-bottom:10px; }
