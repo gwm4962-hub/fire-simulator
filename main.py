@@ -1,8 +1,10 @@
 import os
+import json
 import traceback
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from google import genai
@@ -15,9 +17,7 @@ app = FastAPI()
 # =========================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://fire-simulator-rho-swart.vercel.app"
-    ],
+    allow_origins=["https://fire-simulator-rho-swart.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,33 +32,46 @@ if not API_KEY:
 
 client = genai.Client(api_key=API_KEY)
 
+# ① プライマリ → フォールバックモデル
+PRIMARY_MODEL  = "gemini-2.5-flash"
+FALLBACK_MODEL = "gemini-2.0-flash"
+
 # =========================
-# システムプロンプト（役割定義を分離）
-# contentsに混ぜず system_instruction に置くことで
-# ・データと役割の混同を防ぎ診断精度が上がる
-# ・temperature低めで金融診断の出力を安定させる
+# ② システムプロンプト
+#    response_mime_type="application/json" と組み合わせて
+#    マークダウン混入をプロトコルレベルで防止
 # =========================
-SYSTEM_PROMPT = """あなたはFIREプランナーAI「FLOW診断」。
-モンテカルロ法で試算した資産シミュレーション結果を読み取り、
-日本語で核心的な2〜3文の診断コメントを返す専門家。
-出力ルール：
-- マークダウン・箇条書き・見出し禁止。文章のみ。
-- 数字を必ず使って根拠を示す。
-- 老後資金が赤字なら必ず冒頭で不足額と深刻度を指摘。
-- 成功率と過不足に矛盾がある場合（例：高成功率なのに赤字）はその理由を推察。
-- 最後に最優先アクションを1つだけ具体的に提案。
-- 120字以内に収める。"""
+SYSTEM_PROMPT = """\
+あなたは元・金融庁検査官で現在はFIREコンサルタントとして活動する辛口の資産審査の専門家。
+モンテカルロ法による老後シミュレーション結果と、ユーザーの実際のポートフォリオ設定を受け取り、
+以下のJSON形式のみで回答せよ。前置き・後書き・コードブロックは一切不要。
+
+{
+  "diagnosis": "現状の断定（1〜2文、必ず数字を含む）",
+  "blind_spot": "ユーザーが気づいていない潜在リスク（1〜2文）。ポートフォリオ構成・インフレ・長寿・税制変更のいずれかに必ず言及",
+  "action":    "今すぐ着手すべき具体的な行動を1つ（数値を使って指示）"
+}
+
+厳守ルール：
+- 「素晴らしい」「安心」「このまま継続」などの肯定的表現は禁止。
+- すべての文に数字を含める。「十分」「余裕」などの根拠なき抽象語は禁止。
+- JSON以外の文字列を出力するな。\
+"""
 
 # =========================
 # Request Model
+# ⑤ ポートフォリオ構成・実際のインフレ率を追加
 # =========================
 class DiagnosisRequest(BaseModel):
-    success_rate: float
-    assets_65man: float
-    fire_age: int | None = None
-    monthly_expense: float | None = None   # 老後の月支出見込み（万円）
-    surplus_65man: float | None = None
-    need_at_65man: float | None = None
+    success_rate:       float
+    assets_65man:       float
+    fire_age:           int   | None = None
+    monthly_expense:    float | None = None
+    surplus_65man:      float | None = None
+    need_at_65man:      float | None = None
+    inflation_rate:     float | None = None  # ユーザー設定値 例:0.015
+    stock_ratio_work:   float | None = None  # 現役時株式比率 0〜100
+    stock_ratio_retire: float | None = None  # FIRE後株式比率 0〜100
 
 # =========================
 # Health Check
@@ -66,6 +79,37 @@ class DiagnosisRequest(BaseModel):
 @app.get("/")
 def root():
     return {"status": "ok"}
+
+# =========================
+# ④ エラー種別の分類
+# =========================
+def classify_error(e: Exception) -> tuple[int, str, str]:
+    msg = str(e).lower()
+    if any(k in msg for k in ("quota", "rate", "429", "overloaded")):
+        return 429, "RATE_LIMIT",    "審査官が対応中です。しばらく待ってから再試行してください。"
+    if any(k in msg for k in ("api_key", "401", "403")):
+        return 503, "AUTH_ERROR",    "診断サービスに接続できません。"
+    if any(k in msg for k in ("timeout", "deadline")):
+        return 504, "TIMEOUT",       "分析に時間がかかりすぎました。再試行してください。"
+    if any(k in msg for k in ("content", "safety", "blocked")):
+        return 422, "CONTENT_BLOCK", "この入力に対して診断を生成できませんでした。"
+    return 500,  "INTERNAL_ERROR",   "診断サービスで予期しないエラーが発生しました。"
+
+# =========================
+# Gemini呼び出しヘルパー
+# =========================
+def call_gemini(prompt: str, model: str) -> str:
+    response = client.models.generate_content(
+        model=model,
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            max_output_tokens=400,
+            temperature=0.3,
+            response_mime_type="application/json",  # ② JSON出力をプロトコル強制
+        ),
+        contents=prompt,
+    )
+    return response.text
 
 # =========================
 # Diagnosis API
@@ -76,63 +120,117 @@ async def diagnosis(data: DiagnosisRequest):
         print("===== REQUEST =====")
         print(data)
 
-        # --- 数値の整形 ---
-        pct     = round(data.success_rate * 100, 1)
-        assets  = int(data.assets_65man)
-        surplus = int(data.surplus_65man or 0)   # 負=不足
-        need    = int(data.need_at_65man or 0)
-        monthly = data.monthly_expense           # 老後の月支出見込み（万円）
-        fire_age = data.fire_age                 # 歳 or None
+        # ─ 数値の整形 ─
+        pct      = round(data.success_rate * 100, 1)
+        assets   = int(data.assets_65man)
+        surplus  = int(data.surplus_65man or 0)
+        need     = int(data.need_at_65man or 0)
+        monthly  = data.monthly_expense
+        fire_age = data.fire_age
 
-        # --- 文脈ラベル（Geminiの判断材料を前処理で補強） ---
-        if pct >= 95:   sr_label = "優秀"
-        elif pct >= 85: sr_label = "良好"
-        elif pct >= 70: sr_label = "要改善"
-        else:           sr_label = "危険"
+        # ─ 文脈ラベル ─
+        if pct >= 95:   sr_label = "一見合格圏だが油断は禁物"
+        elif pct >= 85: sr_label = "合格水準だが改善余地あり"
+        elif pct >= 70: sr_label = "要改善・現状維持では危険"
+        else:           sr_label = "深刻・早急な対策が必要"
 
         surplus_label = (
-            f"黒字{surplus:,}万"
-            if surplus >= 0
-            else f"赤字{abs(surplus):,}万（要対策）"
+            f"黒字{surplus:,}万（インフレ未考慮）" if surplus > 0
+            else "収支ゼロ（バッファなし）"          if surplus == 0
+            else f"赤字{abs(surplus):,}万（不足確定）"
         )
 
-        fire_str = f"{fire_age}歳でFIRE達成" if fire_age else "FIRE未達成"
-        exp_str  = f"老後月支出{monthly}万" if monthly else ""
+        fire_str  = f"{fire_age}歳FIRE" if fire_age else "FIRE未達成（65歳まで就労前提）"
+        exp_str   = f"老後月支出{monthly}万円" if monthly else "老後月支出不明"
+        cover_str = f"必要額カバー率{round(assets/need*100)}%" if need > 0 else ""
 
-        # カバー率（資産/必要額）：高成功率なのに赤字などの矛盾検出に有効
-        cover_str = (
-            f"カバー率{round(assets / need * 100)}%"
-            if need > 0 else ""
+        # ③ ユーザーの実際のインフレ率で動的計算（固定2%を排除）
+        infl_rate    = data.inflation_rate if data.inflation_rate is not None else 0.015
+        infl_pct     = round(infl_rate * 100, 1)
+        years_to_85  = max(0, 85 - (fire_age or 65))
+        real_monthly = round(monthly * (1 + infl_rate) ** years_to_85, 1) if monthly else None
+        infl_str = (
+            f"設定インフレ率{infl_pct}%／85歳時の月支出は{real_monthly}万円相当"
+            if real_monthly else f"設定インフレ率{infl_pct}%"
         )
 
-        # --- データのみをcontentsに渡す（役割定義はsystem_instructionで分離済み） ---
-        prompt = (
-            f"成功率:{pct}%({sr_label})|"
-            f"65歳資産:{assets:,}万|必要額:{need:,}万|過不足:{surplus_label}|"
-            f"{fire_str}|{exp_str}|{cover_str}"
+        # 長寿リスク
+        longevity_str = (
+            f"95歳まで生存した場合さらに{round(monthly*12*10):,}万円必要"
+            if monthly and need > 0 else ""
         )
 
+        # ⑤ ポートフォリオ構成をプロンプトに含める
+        sw = data.stock_ratio_work
+        sr_r = data.stock_ratio_retire
+        if sw is not None and sr_r is not None:
+            portfolio_str = (
+                f"ポートフォリオ：現役時 株式{int(sw)}%／現金{100-int(sw)}%、"
+                f"FIRE後 株式{int(sr_r)}%／現金{100-int(sr_r)}%"
+            )
+            if   int(sr_r) == 0:   portfolio_risk = "⚠️ FIRE後全額現金→インフレ耐性ゼロ"
+            elif int(sr_r) >= 90:  portfolio_risk = "⚠️ FIRE後株式集中→暴落時の配列リスクが極めて高い"
+            elif int(sw)   == 0:   portfolio_risk = "⚠️ 現役時も全額現金→資産形成が極めて非効率"
+            else:                  portfolio_risk = ""
+        else:
+            portfolio_str = "ポートフォリオ構成：不明"
+            portfolio_risk = ""
+
+        # ─ プロンプト構築 ─
+        lines = [
+            "【シミュレーション結果】",
+            f"成功率: {pct}%（{sr_label}）",
+            f"65歳時点の資産: {assets:,}万円",
+            f"老後必要総額: {need:,}万円",
+            f"過不足: {surplus_label}",
+        ]
+        if cover_str:      lines.append(cover_str)
+        lines += [f"FIRE: {fire_str}", exp_str, infl_str]
+        if longevity_str:  lines.append(longevity_str)
+        lines.append(portfolio_str)
+        if portfolio_risk: lines.append(portfolio_risk)
+
+        prompt = "\n".join(lines)
         print(f"DEBUG: prompt chars={len(prompt)}")
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
-                max_output_tokens=200,   # 120字 ≒ 200トークン以内で抑制
-                temperature=0.4,         # 金融診断は低めで安定させる
-            ),
-            contents=prompt,
+        # ① プライマリ → フォールバック
+        raw_text   = None
+        used_model = PRIMARY_MODEL
+        try:
+            raw_text = call_gemini(prompt, PRIMARY_MODEL)
+            print(f"===== GEMINI SUCCESS ({PRIMARY_MODEL}) =====")
+        except Exception as primary_err:
+            if any(k in str(primary_err).lower() for k in ("quota","rate","429","overloaded","unavailable")):
+                print(f"WARN: primary failed, falling back to {FALLBACK_MODEL}: {primary_err}")
+                used_model = FALLBACK_MODEL
+                raw_text   = call_gemini(prompt, FALLBACK_MODEL)
+                print(f"===== GEMINI SUCCESS ({FALLBACK_MODEL}) =====")
+            else:
+                raise
+
+        print(raw_text)
+
+        # ② JSONパース（フェンス除去 → パース → キー補完）
+        cleaned = (
+            raw_text.strip()
+            .removeprefix("```json").removeprefix("```")
+            .removesuffix("```").strip()
         )
+        try:
+            parsed = json.loads(cleaned)
+        except json.JSONDecodeError:
+            parsed = {"diagnosis": cleaned, "blind_spot": "", "action": ""}
 
-        print("===== GEMINI SUCCESS =====")
-        print(response.text)
+        for key in ("diagnosis", "blind_spot", "action"):
+            parsed.setdefault(key, "")
 
-        return {"analysis": response.text}
+        return {"analysis": parsed, "used_model": used_model}
 
     except Exception as e:
-        err_type = type(e).__name__
-        err_msg  = str(e)
-        print(f"ERROR TYPE: {err_type}")
-        print(f"ERROR MSG : {err_msg}")
+        status, code, user_msg = classify_error(e)
+        print(f"ERROR [{code}] {type(e).__name__}: {e}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=err_msg)
+        return JSONResponse(
+            status_code=status,
+            content={"error_code": code, "message": user_msg},
+        )

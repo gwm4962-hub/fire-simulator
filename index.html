@@ -947,6 +947,9 @@
         </div>
       </div>
 
+      <!-- ② 家計タイプ診断パネル (初心者・通常) -->
+      <div id="diagnosis-panel" style="display:none;margin-bottom:16px;"></div>
+
       <!-- ② 家計タイプ診断パネル -->
       <div id="diagnosis-panel" style="display:none;margin-bottom:16px;"></div>
 
@@ -1764,7 +1767,7 @@
       <button onclick="openModal('privacy')" class="footer-modal-btn privacy">
         <div style="font-size:22px;margin-bottom:6px;">🔒</div>
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;">プライバシーポリシー</div>
-        <div style="font-size:11px;color:var(--text-dim);">AdSense・Cookieについて</div>
+        <div style="font-size:11px;color:var(--text-dim);">AI診断・Cookie・データ送信について</div>
       </button>
 
       <button onclick="openModal('disclaimer')" class="footer-modal-btn disclaimer">
@@ -1919,6 +1922,100 @@
 <script src="./advisor.js"></script>
 <script src="./compare.js"></script>
 <script>
+// ── プライバシーポリシー上書き（AI診断による外部送信を追記）────────
+// ui.js / app.js の openModal('privacy') を wrap して
+// AI診断サーバー送信に関する条項を追加した最新版を表示する
+(function() {
+  var _origOpenModal = null;
+  var PRIVACY_HTML = `
+<div style="color:var(--text,#c8d8e8);font-family:'Noto Sans JP',sans-serif;line-height:1.8;">
+  <h2 style="font-size:18px;font-weight:800;margin-bottom:4px;color:#00d4ff;">🔒 プライバシーポリシー</h2>
+  <p style="font-size:11px;color:var(--text-dim);margin-bottom:20px;">最終更新日：2025年6月</p>
+
+  <section style="margin-bottom:22px;">
+    <h3 style="font-size:13px;font-weight:700;color:#a8ff78;margin-bottom:8px;border-bottom:1px solid rgba(168,255,120,.2);padding-bottom:6px;">1. 基本方針</h3>
+    <p style="font-size:13px;color:var(--text-mid);">本アプリ「FLOW | 資産シミュレーター」（以下「本サービス」）は、ユーザーのプライバシーを尊重し、個人情報の適切な取り扱いに努めます。本ポリシーは、本サービスが収集・利用・送信するデータについて説明します。</p>
+  </section>
+
+  <section style="margin-bottom:22px;">
+    <h3 style="font-size:13px;font-weight:700;color:#ffd166;margin-bottom:8px;border-bottom:1px solid rgba(255,209,102,.2);padding-bottom:6px;">2. AI深層診断における外部サーバーへのデータ送信 ⚠️</h3>
+    <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;">本サービスの「AI深層診断」機能を使用した場合、以下のシミュレーション結果データが外部サーバーへ送信されます。</p>
+    <div style="background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.2);border-radius:8px;padding:12px;margin-bottom:10px;">
+      <p style="font-size:12px;font-weight:700;color:#ffd166;margin-bottom:8px;">📤 送信されるデータ</p>
+      <ul style="font-size:12px;color:var(--text-mid);padding-left:16px;margin:0;line-height:2;">
+        <li>老後資産シミュレーションの成功率</li>
+        <li>65歳時点の推定資産額（万円単位）</li>
+        <li>老後必要額・過不足額（万円単位）</li>
+        <li>FIRE達成想定年齢</li>
+        <li>老後の月支出見込み額</li>
+      </ul>
+    </div>
+    <div style="background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:8px;padding:12px;margin-bottom:10px;">
+      <p style="font-size:12px;font-weight:700;color:#00d4ff;margin-bottom:8px;">🏠 送信先サーバー</p>
+      <p style="font-size:12px;color:var(--text-mid);margin:0;">本サービスが運営する専用APIサーバー（Render.com上でホスティング）<br>
+      <code style="font-size:11px;color:#00d4ff;background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;">https://fire-simulator-mv3a.onrender.com</code></p>
+    </div>
+    <div style="background:rgba(168,255,120,.05);border:1px solid rgba(168,255,120,.15);border-radius:8px;padding:12px;">
+      <p style="font-size:12px;font-weight:700;color:#a8ff78;margin-bottom:8px;">✅ 送信されないデータ</p>
+      <ul style="font-size:12px;color:var(--text-mid);padding-left:16px;margin:0;line-height:2;">
+        <li>氏名・住所・メールアドレス等の個人を特定できる情報</li>
+        <li>実際の金融口座情報・証券情報</li>
+        <li>ユーザーIDや端末識別子</li>
+      </ul>
+    </div>
+  </section>
+
+  <section style="margin-bottom:22px;">
+    <h3 style="font-size:13px;font-weight:700;color:#b388ff;margin-bottom:8px;border-bottom:1px solid rgba(179,136,255,.2);padding-bottom:6px;">3. AI処理（Google Gemini API）</h3>
+    <p style="font-size:13px;color:var(--text-mid);">AI診断の生成には、Google LLC が提供する Gemini API を使用しています。上記の送信データは本サービスのAPIサーバーを経由してGemini APIに渡され、診断テキストの生成に使用されます。Googleのデータ処理については <a href="https://policies.google.com/privacy" target="_blank" rel="noopener" style="color:#00d4ff;">Google プライバシーポリシー</a> をご参照ください。</p>
+  </section>
+
+  <section style="margin-bottom:22px;">
+    <h3 style="font-size:13px;font-weight:700;color:#a8ff78;margin-bottom:8px;border-bottom:1px solid rgba(168,255,120,.2);padding-bottom:6px;">4. Cookie・ローカルストレージ</h3>
+    <p style="font-size:13px;color:var(--text-mid);">本サービスはシミュレーション設定の保存にブラウザのローカルストレージ（localStorage）を使用します。これらのデータは端末内にのみ保存され、外部に送信されません。</p>
+  </section>
+
+  <section style="margin-bottom:22px;">
+    <h3 style="font-size:13px;font-weight:700;color:#a8ff78;margin-bottom:8px;border-bottom:1px solid rgba(168,255,120,.2);padding-bottom:6px;">5. データの保持・削除</h3>
+    <p style="font-size:13px;color:var(--text-mid);">AI診断のために送信されたデータは、診断結果の生成後にサーバー上で保持されません。ローカルストレージのデータはブラウザの「キャッシュ・サイトデータを削除」で消去できます。</p>
+  </section>
+
+  <section style="margin-bottom:22px;">
+    <h3 style="font-size:13px;font-weight:700;color:#a8ff78;margin-bottom:8px;border-bottom:1px solid rgba(168,255,120,.2);padding-bottom:6px;">6. お問い合わせ</h3>
+    <p style="font-size:13px;color:var(--text-mid);">本ポリシーに関するご質問はフッターの「お問い合わせ」よりご連絡ください。</p>
+  </section>
+
+  <p style="font-size:11px;color:var(--text-dim);text-align:center;border-top:1px solid rgba(255,255,255,.06);padding-top:16px;">本ポリシーは予告なく改定する場合があります。重要な変更がある場合はアプリ内でお知らせします。</p>
+</div>`;
+
+  function patchOpenModal() {
+    if (typeof window.openModal !== 'function') return;
+    if (window.__privacyPatched) return;
+    _origOpenModal = window.openModal;
+    window.openModal = function(type) {
+      if (type === 'privacy') {
+        var modal   = document.getElementById('site-modal');
+        var content = document.getElementById('modal-content');
+        if (modal && content) {
+          content.innerHTML = PRIVACY_HTML;
+          modal.style.display = 'block';
+          document.body.style.overflow = 'hidden';
+        }
+        return;
+      }
+      _origOpenModal(type);
+    };
+    window.__privacyPatched = true;
+  }
+
+  // openModal が定義される前に呼ばれる可能性があるので
+  // DOMContentLoaded と即時の両方で試みる
+  patchOpenModal();
+  document.addEventListener('DOMContentLoaded', patchOpenModal);
+  // ui.js の読み込み完了を念のため待つ
+  window.addEventListener('load', patchOpenModal);
+})();
+
 // ── 初回ユーザー向けウェルカムUI表示制御 ──────────────────────────
 (function() {
   // ウェルカムバナー（localStorage に保存履歴がない && バナーを閉じていない場合のみ表示）

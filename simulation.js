@@ -2555,13 +2555,17 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
 
   window.dispatchEvent(new CustomEvent('sim:done', {
   detail: {
-    successRate:    nS / N,
-    assets65Man:    Math.round(assets65 / 1e4),   // 円→万円
-    fireAge:        fireAgeMed ?? null,
-    monthlyExpense: monthlyRetire,
-    surplus65Man:   Math.round(surplus65 / 1e4),  // 診断精度向上用
-    needAt65Man:    Math.round(needAt65 / 1e4),   // 診断精度向上用
-    startAge:       startAge,                     // 追加: diag-age-pill表示用
+    successRate:      nS / N,
+    assets65Man:      Math.round(assets65 / 1e4),
+    fireAge:          fireAgeMed ?? null,
+    monthlyExpense:   monthlyRetire,
+    surplus65Man:     Math.round(surplus65 / 1e4),
+    needAt65Man:      Math.round(needAt65 / 1e4),
+    startAge:         startAge,
+    // AI診断の精度向上用（ユーザーの実際の設定値）
+    inflationRate:    Math.round(baseInfl * 1000) / 1000,
+    stockRatioWork:   Math.round(wWork   * 100),
+    stockRatioRetire: Math.round(wRetire * 100),
   }
 }));
 

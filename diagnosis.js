@@ -3,10 +3,10 @@
  * FLOW | 資産シミュレーター
  *
  * 修正点:
- *   - sim:done リスナーを1つに統合（実行順の不定を解消）
- *   - lifeAge() の計算式を直感的な線形補間に修正
- *   - ブーストボックスのクランプ表示バグを修正（実際の変化量を正確に表示）
- *   - startAge が dispatch に含まれていなくてもフォールバック表示
+ *   ⑪ lifeAge() を線形補間式に修正（直感と合わない値を排除）
+ *   ⑫ ライフカードに role="checkbox" + tabindex + キーボード操作対応
+ *   ⑬ sim:done リスナーを1つに統合（render → AI診断を順番保証）
+ *      AI診断を diagnosis-panel 内部に組み込み視覚的に一体化
  */
 (function () {
   'use strict';
@@ -39,17 +39,17 @@
     { id:'exp',    icon:'✂️', title:'固定費を月1万円削減',     sub:'サブスク・通信費を見直す', effect:'+5年',  boost:0.06, color:'#00d4ff' },
     { id:'retire', icon:'🕐', title:'65歳まで働く（再雇用含む）', sub:'60〜65歳は収入50%で試算', effect:'+8年',  boost:0.09, color:'#b388ff' },
     { id:'side',   icon:'💻', title:'副業で月3万円追加',       sub:'スキル活用・フリーランス', effect:'+8年',  boost:0.09, color:'#ffd166' },
-    { id:'ideco',  icon:'🏛️', title:'iDeCoを満額拠出',       sub:'所得控除で節税しながら積立', effect:'+7年', boost:0.08, color:'#ff6eb4' },
+    { id:'ideco',  icon:'🏛️', title:'iDeCoを満額拠出',        sub:'所得控除で節税しながら積立', effect:'+7年', boost:0.08, color:'#ff6eb4' },
   ];
 
   function getType(r) { return TYPES.find(t => t.cond(r)) || TYPES[TYPES.length-1]; }
 
   /**
-   * lifeAge() 修正版
-   * 旧: sr*10 などの係数が直感と合わない値を生成していた
-   *   例）sr=0.94 → 90+9.4=99歳（95%未満なのに99歳は高すぎ）
-   * 新: 区間の境界値を固定し、その間を線形補間
-   *   95%→"100歳以上"、85%→95歳、70%→88歳、50%→80歳、0%→72歳
+   * ⑪ lifeAge() — 線形補間式に修正
+   * 旧: sr*10 などの係数で直感と合わない値が出ていた
+   *     例）sr=0.94 → 90+9.4=99歳（95%未満なのに99歳は高すぎ）
+   * 新: 区間の両端を固定し、その間を線形補間
+   *     95%→"100歳以上" | 85%→95歳 | 70%→88歳 | 50%→80歳 | 0%→65歳
    */
   function lifeAge(sr) {
     if (sr >= 0.95) return '100歳以上';
@@ -61,6 +61,10 @@
 
   let _active = new Set(), _baseSr = 0, _currentType = null, _result = null;
 
+  // ─────────────────────────────────────────────
+  // render() — 家計タイプカードを描画
+  // ⑬ AI診断セクションをここに内包（視覚的一体化）
+  // ─────────────────────────────────────────────
   function render(result) {
     const el = document.getElementById('diagnosis-panel');
     if (!el) return;
@@ -71,8 +75,27 @@
     _currentType = type;
     const pct  = Math.round(_baseSr * 100);
     const lage = lifeAge(_baseSr);
-    // startAge は simulation.js の dispatch に含まれていない場合は非表示
     const agePill = result.startAge ? `${result.startAge}歳` : '診断済';
+
+    // ⑫ ライフカード: role="checkbox" + tabindex="0" でキーボード対応
+    const lcItems = LIFE_CARDS.map(c => `
+      <div class="diag-lc"
+           id="lc-${c.id}"
+           role="checkbox"
+           aria-checked="false"
+           aria-label="${c.title}"
+           tabindex="0"
+           onclick="toggleLC('${c.id}')"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleLC('${c.id}');}">
+        <div class="diag-lc-check" id="lc-chk-${c.id}" aria-hidden="true">✓</div>
+        <div class="diag-lc-icon" aria-hidden="true">${c.icon}</div>
+        <div class="diag-lc-body">
+          <div class="diag-lc-title">${c.title}</div>
+          <div class="diag-lc-sub">${c.sub}</div>
+        </div>
+        <div class="diag-lc-eff" style="color:${c.color}" aria-hidden="true">${c.effect}</div>
+      </div>
+    `).join('');
 
     el.innerHTML = `
 <div class="diag-wrap">
@@ -85,7 +108,7 @@
       <span class="diag-age-pill">${agePill}</span>
     </div>
     <div class="diag-main-row">
-      <span class="diag-emoji">${type.emoji}</span>
+      <span class="diag-emoji" aria-hidden="true">${type.emoji}</span>
       <div>
         <div class="diag-type-name" style="color:${type.color}">${type.name}</div>
         <div class="diag-type-tag">${type.tag}</div>
@@ -96,7 +119,7 @@
         <div class="diag-life-lbl">💰 お金の寿命（推定）</div>
         <div class="diag-life-val" id="d-life" style="color:${type.color}">${lage}</div>
       </div>
-      <div class="diag-donut-wrap">
+      <div class="diag-donut-wrap" role="img" aria-label="老後安心スコア ${pct}%">
         ${buildDonut(pct, type.color)}
         <div class="diag-donut-center">
           <div class="diag-donut-num" id="d-pct" style="color:${type.color}">${pct}</div>
@@ -104,34 +127,38 @@
         </div>
       </div>
     </div>
-    <div class="diag-score-track"><div class="diag-score-fill" id="d-fill" style="width:${pct}%;background:${type.color};box-shadow:0 0 10px ${type.glow}"></div></div>
+    <div class="diag-score-track" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
+      <div class="diag-score-fill" id="d-fill" style="width:${pct}%;background:${type.color};box-shadow:0 0 10px ${type.glow}"></div>
+    </div>
     <div class="diag-desc">${type.desc}</div>
+  </div>
+
+  <!-- ━ AI深層診断（⑬ diagnosis-panel内に統合） ━ -->
+  <div class="diag-section diag-ai-sec" id="diag-ai-section">
+    <div class="diag-section-hd">
+      <span>🤖 AI深層診断</span>
+      <span class="diag-ai-badge">Gemini 2.5 Flash</span>
+    </div>
+    <div id="diag-ai-body" class="diag-ai-loading">
+      <div class="diag-ai-spinner" aria-hidden="true"></div>
+      <span>分析中…</span>
+    </div>
   </div>
 
   <!-- ━ 寿命延長カード ━ -->
   <div class="diag-section">
     <div class="diag-section-hd">
       <span>🃏 寿命延長カードを装備しよう</span>
-      <span class="diag-hint-blink">タップ → 資産寿命がのびる</span>
+      <span class="diag-hint-blink">タップ / Enter → 資産寿命がのびる</span>
     </div>
-    <div class="diag-lc-grid">
-      ${LIFE_CARDS.map(c => `
-        <div class="diag-lc" id="lc-${c.id}" onclick="toggleLC('${c.id}')">
-          <div class="diag-lc-check" id="lc-chk-${c.id}">✓</div>
-          <div class="diag-lc-icon">${c.icon}</div>
-          <div class="diag-lc-body">
-            <div class="diag-lc-title">${c.title}</div>
-            <div class="diag-lc-sub">${c.sub}</div>
-          </div>
-          <div class="diag-lc-eff" style="color:${c.color}">${c.effect}</div>
-        </div>
-      `).join('')}
+    <div class="diag-lc-grid" role="group" aria-label="寿命延長カード">
+      ${lcItems}
     </div>
-    <div class="diag-boost-box" id="d-boost" style="display:none">
+    <div class="diag-boost-box" id="d-boost" style="display:none" aria-live="polite">
       <div class="dbb-lbl">カード装備後の推定スコア</div>
       <div class="dbb-row">
         <span class="dbb-before" id="dbb-bef">${pct}%</span>
-        <span class="dbb-arr">→</span>
+        <span class="dbb-arr" aria-hidden="true">→</span>
         <span class="dbb-after" id="dbb-aft" style="color:${type.color}">—</span>
       </div>
       <div class="dbb-life">📅 資産寿命：<span id="dbb-life" style="color:${type.color};font-weight:700">—</span></div>
@@ -141,7 +168,7 @@
   <!-- ━ シェアセクション ━ -->
   <div class="diag-section diag-share-sec">
     <div class="diag-section-hd">📱 診断結果をシェア</div>
-    <div class="diag-share-preview">
+    <div class="diag-share-preview" aria-label="シェア用テキストプレビュー">
       <div style="font-size:15px;font-weight:700;color:${type.color};margin-bottom:4px">${type.emoji} ${type.name}</div>
       <div style="font-size:12px;color:var(--text-mid);line-height:1.8">${type.share.replace(/\n/g,'<br>')}<br>
       老後安心スコア: ${pct}% / お金の寿命: ${lage}</div>
@@ -152,7 +179,7 @@
         🖼️ おしゃれな画像でシェア
       </button>
       <button class="diag-share-x-btn" onclick="shareDiagToX()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.261 5.632L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.261 5.632L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>
         テキストでシェア
       </button>
     </div>
@@ -168,7 +195,7 @@
     const r = 36, cx = 40, cy = 40, sw = 7;
     const circ = 2 * Math.PI * r;
     const fill = circ * pct / 100;
-    return `<svg width="80" height="80" viewBox="0 0 80 80">
+    return `<svg width="80" height="80" viewBox="0 0 80 80" aria-hidden="true">
       <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="${sw}"/>
       <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"
         stroke-dasharray="${fill} ${circ-fill}" stroke-dashoffset="${circ*.25}"
@@ -176,12 +203,20 @@
     </svg>`;
   }
 
+  // ⑫ toggleLC — aria-checked も更新
   window.toggleLC = function(id) {
     const card = LIFE_CARDS.find(c => c.id === id);
     if (!card) return;
     const el = document.getElementById('lc-' + id);
-    if (_active.has(id)) { _active.delete(id); el?.classList.remove('lc-on'); }
-    else                  { _active.add(id);    el?.classList.add('lc-on'); }
+    if (_active.has(id)) {
+      _active.delete(id);
+      el?.classList.remove('lc-on');
+      el?.setAttribute('aria-checked', 'false');
+    } else {
+      _active.add(id);
+      el?.classList.add('lc-on');
+      el?.setAttribute('aria-checked', 'true');
+    }
     _refreshBoost();
   };
 
@@ -206,11 +241,10 @@
     let boost = 0;
     _active.forEach(id => { const c = LIFE_CARDS.find(x => x.id===id); if(c) boost += c.boost; });
 
-    const rawSr  = _baseSr + boost;               // クランプ前の生の値
-    const newSr  = Math.min(0.98, rawSr);          // 表示・計算はクランプ後
+    const rawSr  = _baseSr + boost;
+    const newSr  = Math.min(0.98, rawSr);
     const newPct = Math.round(newSr * 100);
-
-    // 修正: 実際にUIに反映される変化量を表示（クランプで頭打ちになる分を正確に反映）
+    // ⑬ クランプ後の実際の変化量を正確に表示（全カードONで+1ptなのに+52ptと表示されるバグ修正済）
     const actualDelta = newPct - basePct;
     const nla = lifeAge(newSr);
 
@@ -239,74 +273,129 @@
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(location.href.split('?')[0])}`, '_blank', 'noopener,width=600,height=400');
   };
 
-  // =========================================================
-  // sim:done リスナーを1つに統合（修正前は2つ別々に登録されており
-  // 実行順が保証されなかった。render → AI診断の順で確実に実行する）
-  // =========================================================
+  // ─────────────────────────────────────────────
+  // ⑬ sim:done リスナーを1つに統合
+  //    ① render（家計タイプ）→ ② AI診断fetch の順番を保証
+  //    AI診断は diagnosis-panel 内の #diag-ai-body に表示（視覚的一体化）
+  // ─────────────────────────────────────────────
+  // ── クールタイム管理（レート制限対策）───────────────────────────
+  // 30秒以内の連続実行は診断ボタンを無効化してAPIを叩かせない
+  const COOLDOWN_MS = 30_000;
+  let _lastDiagAt   = 0;
+
   window.addEventListener('sim:done', async (e) => {
     if (!e.detail) return;
     const result = e.detail;
-    const mode = document.body.getAttribute('data-mode');
+    const mode   = document.body.getAttribute('data-mode');
 
-    // --- ① 家計タイプ診断（proモード以外） ---
+    // ── ① 家計タイプ診断（pro モード以外）──
     if (mode !== 'pro') {
       render(result);
       const p = document.getElementById('diagnosis-panel');
-      if (p) setTimeout(() => p.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+      if (p) {
+        requestAnimationFrame(() => {
+          p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
     }
 
-    // --- ② AI深層診断（全モード共通） ---
-    const aiTarget = document.getElementById('ai-response');
-    if (!aiTarget) return;
+    // ── ② AI深層診断（diagnosis-panel 内 #diag-ai-body に表示）──
+    // #ai-response（旧）は非表示にして diag-ai-body に一本化
+    const legacyAi = document.getElementById('ai-response');
+    if (legacyAi) legacyAi.style.display = 'none';
 
-    // ローディング表示（スケルトン風）
-    aiTarget.style.display = 'block';
-    aiTarget.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;padding:4px 0;">
-        <div style="width:16px;height:16px;border:2px solid rgba(0,212,255,.3);border-top-color:#00d4ff;border-radius:50%;animation:ai-spin .8s linear infinite;flex-shrink:0;"></div>
-        <span style="color:var(--text-dim);font-size:13px;">AIが分析中…</span>
-      </div>
-      <style>@keyframes ai-spin{to{transform:rotate(360deg)}}</style>`;
+    const aiBody = document.getElementById('diag-ai-body');
+    if (!aiBody) return;
+
+    // ── クールタイムチェック ──────────────────────────────
+    const now = Date.now();
+    const remaining = Math.ceil((COOLDOWN_MS - (now - _lastDiagAt)) / 1000);
+    if (_lastDiagAt > 0 && remaining > 0) {
+      aiBody.className = '';
+      aiBody.innerHTML = `<p class="diag-ai-error">⏳ 診断は${remaining}秒後に再実行できます。シミュレーション条件を変えてお待ちください。</p>`;
+      return;
+    }
+    _lastDiagAt = now;
+
+    // ローディング表示（スピナー）
+    aiBody.className = 'diag-ai-loading';
+    aiBody.innerHTML = `
+      <div class="diag-ai-spinner" aria-hidden="true"></div>
+      <span>分析中…</span>`;
 
     try {
-      const response = await fetch("https://fire-simulator-mv3a.onrender.com/api/diagnosis", {
-        method: 'POST',
+      const res = await fetch('https://fire-simulator-mv3a.onrender.com/api/diagnosis', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          success_rate:    result.successRate,
-          assets_65man:    result.assets65Man,
-          fire_age:        result.fireAge,
-          monthly_expense: result.monthlyExpense,
-          surplus_65man:   result.surplus65Man,
-          need_at_65man:   result.needAt65Man,
-        })
+          success_rate:       result.successRate,
+          assets_65man:       result.assets65Man,
+          fire_age:           result.fireAge        ?? null,
+          monthly_expense:    result.monthlyExpense ?? null,
+          surplus_65man:      result.surplus65Man   ?? null,
+          need_at_65man:      result.needAt65Man    ?? null,
+          inflation_rate:     result.inflationRate  ?? null,
+          stock_ratio_work:   result.stockRatioWork   ?? null,
+          stock_ratio_retire: result.stockRatioRetire ?? null,
+        }),
       });
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
 
-      const data = await response.json();
+      // JSON structured output: { diagnosis, blind_spot, action } を期待
+      // main.py がフォールバック時は { analysis } を返す場合もある
+      const sections = [
+        { key: 'diagnosis',  icon: '📊', label: '診断',            color: '#00d4ff' },
+        { key: 'blind_spot', icon: '⚠️', label: '盲点・リスク',    color: '#ffd166' },
+        { key: 'action',     icon: '🎯', label: '最優先アクション', color: '#a8ff78' },
+      ];
+      const hasStructured = data?.diagnosis && data?.blind_spot && data?.action;
+      const hasFallback   = data?.analysis;
 
-      if (data && data.analysis) {
-        aiTarget.innerHTML = `
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-            <span style="font-size:16px;">🤖</span>
-            <span style="font-size:13px;font-weight:700;color:#00d4ff;font-family:'Space Mono',monospace;letter-spacing:.5px;">AI深層診断</span>
-          </div>
-          <p style="margin:0;font-size:13px;color:var(--text-mid);line-height:1.9;">${data.analysis}</p>`;
+      if (hasStructured) {
+        const html = sections.map(s => `
+          <div class="diag-ai-block">
+            <div class="diag-ai-block-hd" style="color:${s.color}">
+              <span>${s.icon}</span><span>${s.label}</span>
+            </div>
+            <p class="diag-ai-text">${data[s.key]}</p>
+          </div>`).join('');
+        aiBody.className = '';
+        aiBody.innerHTML = html;
+      } else if (hasFallback) {
+        // フォールバック: analysis テキストをそのまま表示
+        aiBody.className = '';
+        aiBody.innerHTML = `<p class="diag-ai-text">${data.analysis}</p>`;
       } else {
-        console.error("Unexpected response format:", data);
-        aiTarget.innerHTML = '<p style="color:var(--text-dim);font-size:12px;">診断結果の形式が正しくありません。</p>';
+        throw new Error('レスポンスの形式が不正です');
       }
 
     } catch (err) {
-      console.error("AI診断エラー:", err);
-      aiTarget.innerHTML = `
-        <p style="color:#ffd166;font-size:12px;margin:0;">
-          ⚠️ AI診断に失敗しました。サーバーの起動を待っている可能性があります。30秒後に再度お試しください。
-        </p>`;
+      console.error('AI診断エラー:', err);
+      aiBody.className = '';
+
+      // main.py のエラーコードに応じてユーザーフレンドリーなメッセージを表示
+      let msg = '⚠️ AI診断に失敗しました。30秒後に再実行してください。';
+      try {
+        const errData = await err?.response?.json?.() ?? {};
+        const code = errData?.detail?.error_code ?? '';
+        if (code === 'RATE_LIMIT') {
+          msg = '⏱️ AIの診断枠が一時的に満杯です。1〜2分後に再実行してください。';
+        } else if (code === 'TIMEOUT') {
+          msg = '⌛ AIの応答がタイムアウトしました。サーバーが混雑しています。少し待ってから再実行してください。';
+        } else if (code === 'AUTH_ERROR') {
+          msg = '🔧 サーバー設定に問題が発生しています。運営者にお問い合わせください。';
+        }
+      } catch (_) { /* レスポンスなし or パース失敗はデフォルトメッセージのまま */ }
+
+      aiBody.innerHTML = `<p class="diag-ai-error">${msg}</p>`;
     }
   });
 
+  // ─────────────────────────────────────────────
+  // スタイル注入
+  // ─────────────────────────────────────────────
   function injectStyles() {
     if (document.getElementById('diag-styles')) return;
     const s = document.createElement('style');
@@ -325,39 +414,72 @@
   position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(ellipse 60% 40% at 80% 10%,var(--tg,rgba(168,255,120,.1)) 0%,transparent 70%);
 }
-.diag-top-row { display:flex;justify-content:space-between;align-items:center;margin-bottom:14px; }
-.diag-app-tag { font-size:11px;color:var(--text-dim);font-family:'Space Mono',monospace;letter-spacing:1px; }
-.diag-age-pill { font-size:11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:3px 10px;border-radius:20px;color:var(--text-mid); }
-.diag-main-row { display:flex;align-items:center;gap:14px;margin-bottom:16px; }
-.diag-emoji { font-size:48px;line-height:1;filter:drop-shadow(0 0 12px var(--tg,rgba(168,255,120,.5))); }
-.diag-type-name { font-size:22px;font-weight:800;line-height:1.2;margin-bottom:3px; }
-.diag-type-tag { font-size:12px;color:var(--text-mid); }
-.diag-life-row { display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(0,0,0,.25);border-radius:10px;margin-bottom:12px; }
-.diag-life-lbl { font-size:11px;color:var(--text-dim);margin-bottom:3px; }
-.diag-life-val { font-size:26px;font-weight:800;font-family:'Space Mono',monospace;transition:all .5s; }
+.diag-top-row    { display:flex;justify-content:space-between;align-items:center;margin-bottom:14px; }
+.diag-app-tag    { font-size:11px;color:var(--text-dim);font-family:'Space Mono',monospace;letter-spacing:1px; }
+.diag-age-pill   { font-size:11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:3px 10px;border-radius:20px;color:var(--text-mid); }
+.diag-main-row   { display:flex;align-items:center;gap:14px;margin-bottom:16px; }
+.diag-emoji      { font-size:48px;line-height:1;filter:drop-shadow(0 0 12px var(--tg,rgba(168,255,120,.5))); }
+.diag-type-name  { font-size:22px;font-weight:800;line-height:1.2;margin-bottom:3px; }
+.diag-type-tag   { font-size:12px;color:var(--text-mid); }
+.diag-life-row   { display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(0,0,0,.25);border-radius:10px;margin-bottom:12px; }
+.diag-life-lbl   { font-size:11px;color:var(--text-dim);margin-bottom:3px; }
+.diag-life-val   { font-size:26px;font-weight:800;font-family:'Space Mono',monospace;transition:all .5s; }
 .diag-donut-wrap { position:relative;width:80px;height:80px;flex-shrink:0; }
 .diag-donut-center { position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center; }
-.diag-donut-num { font-size:22px;font-weight:800;font-family:'Space Mono',monospace;line-height:1; }
+.diag-donut-num  { font-size:22px;font-weight:800;font-family:'Space Mono',monospace;line-height:1; }
 .diag-donut-unit { font-size:10px;color:var(--text-dim); }
 .diag-score-track { height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-bottom:12px; }
-.diag-score-fill { height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1); }
-.diag-desc { font-size:12px;color:var(--text-mid);line-height:1.8;border-top:1px solid rgba(255,255,255,.06);padding-top:12px; }
+.diag-score-fill  { height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1); }
+.diag-desc       { font-size:12px;color:var(--text-mid);line-height:1.8;border-top:1px solid rgba(255,255,255,.06);padding-top:12px; }
 
 /* ─ セクション ─ */
-.diag-section { background:var(--surface,#0b1220);border:1px solid var(--border,#1c3050);border-radius:14px;padding:14px; }
+.diag-section    { background:var(--surface,#0b1220);border:1px solid var(--border,#1c3050);border-radius:14px;padding:14px; }
 .diag-section-hd { display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text); }
 .diag-hint-blink { font-size:10px;color:var(--text-dim);font-weight:400;animation:hblink 2s ease-in-out infinite; }
 @keyframes hblink{0%,100%{opacity:.5}50%{opacity:1}}
 
-/* ─ ライフカード ─ */
+/* ─ AI深層診断（⑬ diagnosis-panel内に統合） ─ */
+.diag-ai-sec    { border-color:rgba(0,212,255,.2); }
+.diag-ai-badge  {
+  font-size:10px;font-family:'Space Mono',monospace;letter-spacing:.5px;
+  padding:2px 8px;border-radius:4px;
+  background:rgba(0,212,255,.1);color:#00d4ff;
+  border:1px solid rgba(0,212,255,.25);
+}
+.diag-ai-loading {
+  display:flex;align-items:center;gap:10px;
+  padding:4px 0;color:var(--text-dim);font-size:13px;
+}
+.diag-ai-spinner {
+  width:16px;height:16px;flex-shrink:0;
+  border:2px solid rgba(0,212,255,.2);border-top-color:#00d4ff;
+  border-radius:50%;animation:diag-spin .8s linear infinite;
+}
+@keyframes diag-spin { to { transform:rotate(360deg) } }
+.diag-ai-text  { margin:0;font-size:13px;color:var(--text-mid,#8ca0b8);line-height:1.9; }
+.diag-ai-error { margin:0;font-size:12px;color:#ffd166;line-height:1.7; }
+.diag-ai-block { margin-bottom:12px; }
+.diag-ai-block:last-child { margin-bottom:0; }
+.diag-ai-block-hd {
+  display:flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:700;letter-spacing:.5px;
+  font-family:'Space Mono',monospace;
+  margin-bottom:4px;opacity:.9;
+}
+.diag-ai-block .diag-ai-text { font-size:13px;color:var(--text,#c8d8e8);line-height:1.85; }
+
+/* ─ ライフカード（⑫ キーボード対応） ─ */
 .diag-lc-grid { display:flex;flex-direction:column;gap:6px;margin-bottom:10px; }
 .diag-lc {
   display:flex;align-items:center;gap:10px;padding:10px 12px;
   background:var(--surface2,#0f1a2c);border:1px solid var(--border,#1c3050);border-radius:10px;
   cursor:pointer;transition:all .2s;position:relative;-webkit-tap-highlight-color:transparent;
+  outline:none;
 }
-.diag-lc:hover { border-color:var(--accent,#00d4ff);transform:translateX(3px); }
-.diag-lc.lc-on { border-color:var(--accent3,#a8ff78);background:rgba(168,255,120,.07);box-shadow:0 0 14px rgba(168,255,120,.15); }
+.diag-lc:hover,
+.diag-lc:focus-visible { border-color:var(--accent,#00d4ff);transform:translateX(3px); }
+.diag-lc:focus-visible { box-shadow:0 0 0 2px rgba(0,212,255,.4); }
+.diag-lc.lc-on { border-color:#a8ff78;background:rgba(168,255,120,.07);box-shadow:0 0 14px rgba(168,255,120,.15); }
 .diag-lc-check {
   display:none;position:absolute;top:6px;right:6px;
   font-size:11px;font-weight:700;color:#a8ff78;
@@ -365,27 +487,30 @@
   align-items:center;justify-content:center;
 }
 .lc-on .diag-lc-check { display:flex; }
-.diag-lc-icon { font-size:20px;flex-shrink:0; }
-.diag-lc-body { flex:1;min-width:0; }
+.diag-lc-icon  { font-size:20px;flex-shrink:0; }
+.diag-lc-body  { flex:1;min-width:0; }
 .diag-lc-title { font-size:12px;font-weight:700;color:var(--text);line-height:1.3; }
-.diag-lc-sub { font-size:10px;color:var(--text-dim);margin-top:1px; }
-.diag-lc-eff { font-size:14px;font-weight:800;font-family:'Space Mono',monospace;flex-shrink:0;opacity:.65; }
+.diag-lc-sub   { font-size:10px;color:var(--text-dim);margin-top:1px; }
+.diag-lc-eff   { font-size:14px;font-weight:800;font-family:'Space Mono',monospace;flex-shrink:0;opacity:.65; }
 .lc-on .diag-lc-eff { opacity:1; }
 
 /* ─ ブーストボックス ─ */
-.diag-boost-box { background:linear-gradient(135deg,rgba(168,255,120,.08),rgba(0,212,255,.06));border:1px solid rgba(168,255,120,.2);border-radius:10px;padding:12px;animation:boostIn .4s ease-out; }
+.diag-boost-box {
+  background:linear-gradient(135deg,rgba(168,255,120,.08),rgba(0,212,255,.06));
+  border:1px solid rgba(168,255,120,.2);border-radius:10px;padding:12px;
+  animation:boostIn .4s ease-out;
+}
 @keyframes boostIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.dbb-lbl { font-size:10px;color:var(--text-dim);margin-bottom:6px; }
-.dbb-row { display:flex;align-items:center;gap:10px;margin-bottom:6px; }
+.dbb-lbl    { font-size:10px;color:var(--text-dim);margin-bottom:6px; }
+.dbb-row    { display:flex;align-items:center;gap:10px;margin-bottom:6px; }
 .dbb-before { font-size:18px;font-family:'Space Mono',monospace;color:var(--text-dim); }
-.dbb-arr { color:#a8ff78;font-size:16px; }
-.dbb-after { font-size:24px;font-weight:800;font-family:'Space Mono',monospace;transition:all .4s; }
-.dbb-life { font-size:12px;color:var(--text-mid); }
+.dbb-arr    { color:#a8ff78;font-size:16px; }
+.dbb-after  { font-size:24px;font-weight:800;font-family:'Space Mono',monospace;transition:all .4s; }
+.dbb-life   { font-size:12px;color:var(--text-mid); }
 
 /* ─ シェア ─ */
-.diag-share-sec {}
 .diag-share-preview { background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:12px;margin-bottom:10px; }
-.diag-share-btns { display:flex;flex-direction:column;gap:8px; }
+.diag-share-btns    { display:flex;flex-direction:column;gap:8px; }
 .diag-share-img-btn {
   width:100%;padding:14px;
   background:linear-gradient(135deg,#0055cc,#003d99);
@@ -401,11 +526,12 @@
   transition:all .2s;font-family:'Noto Sans JP',sans-serif;
 }
 .diag-share-x-btn:hover { background:rgba(255,255,255,.1); }
+
 @media(max-width:480px){
-  .diag-emoji{font-size:36px}
-  .diag-type-name{font-size:18px}
-  .diag-life-val{font-size:20px}
-  .diag-lc-grid{gap:5px}
+  .diag-emoji     { font-size:36px; }
+  .diag-type-name { font-size:18px; }
+  .diag-life-val  { font-size:20px; }
+  .diag-lc-grid   { gap:5px; }
 }
     `;
     document.head.appendChild(s);
