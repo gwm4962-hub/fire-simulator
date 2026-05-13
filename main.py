@@ -116,7 +116,9 @@ def call_gemini(prompt: str, model: str) -> str:
 # JSON パース共通処理
 #   すべての value を str 型に正規化（[object Object] 対策）
 # =========================
-def parse_gemini_json(raw_text: str) -> dict:
+def parse_gemini_json(raw_text) -> dict:
+    if not isinstance(raw_text, str) or not raw_text.strip():
+        return {"diagnosis": "AI応答が空または不正でした。再実行してください。", "blind_spot": "", "action": ""}
     cleaned = (
         raw_text.strip()
         .removeprefix("```json").removeprefix("```")
@@ -168,9 +170,9 @@ async def diagnosis(request: Request, data: DiagnosisRequest):
         print(data)
 
         pct      = round(data.success_rate * 100, 1)
-        assets   = int(data.assets_65man)   if data.assets_65man   else None
-        surplus  = int(data.surplus_65man)  if data.surplus_65man  else None
-        need     = int(data.need_at_65man)  if data.need_at_65man  else None
+        assets   = int(data.assets_65man)   if data.assets_65man   is not None else None
+        surplus  = int(data.surplus_65man)  if data.surplus_65man  is not None else None
+        need     = int(data.need_at_65man)  if data.need_at_65man  is not None else None
         monthly  = data.monthly_expense
         fire_age = data.fire_age
 
