@@ -2555,17 +2555,33 @@ grid:{color:'rgba(30,45,69,.5)',lineWidth:.5},ticks:{color:'#6b7a99',font:{size:
 
   window.dispatchEvent(new CustomEvent('sim:done', {
   detail: {
+    // ── 基本成果 ──
     successRate:      nS / N,
+    bankruptRate:     nB / N,
     assets65Man:      Math.round(assets65 / 1e4),
     fireAge:          fireAgeMed ?? null,
     monthlyExpense:   monthlyRetire,
     surplus65Man:     Math.round(surplus65 / 1e4),
     needAt65Man:      Math.round(needAt65 / 1e4),
     startAge:         startAge,
-    // AI診断の精度向上用（ユーザーの実際の設定値）
+    // ── 65歳時シナリオ幅（悲観p10〜楽観p90） ──
+    p10At65Man:       age65idx < T ? Math.round(p10[age65idx] * 10000) : 0,
+    p90At65Man:       age65idx < T ? Math.round(p90[age65idx] * 10000) : 0,
+    // ── 入力パラメータ（AI診断の精度向上用） ──
     inflationRate:    Math.round(baseInfl * 1000) / 1000,
     stockRatioWork:   Math.round(wWork   * 100),
     stockRatioRetire: Math.round(wRetire * 100),
+    initAssetsMan:    Math.round(initAssets / 1e4),
+    fireThrMan:       Math.round(fireThr   / 1e4),
+    annualIncomeMan:  Math.round((annualIncome + annualIncomeB) / 1e4),
+    isDual:           isDual,
+    raiseRatePct:     Math.round(raiseRate * 1000) / 10,
+    monthlyPensionMan: Math.round(monthlyPension / 1e4),
+    inheritanceMan:   Math.round(inheritAmt / 1e4),
+    retireYears:      retireYears,
+    medDeathAge:      darr.length > 0 ? darr[Math.floor(darr.length * .5)] : null,
+    fireGapMan:       Math.round(Math.max(0, fireGap) / 1e4),
+    yearsToFire:      fireAgeMed ? fireAgeMed - startAge : null,
   }
 }));
 

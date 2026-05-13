@@ -53,33 +53,51 @@ _last_call: dict[str, float] = defaultdict(float)
 # =========================
 SYSTEM_PROMPT = """\
 あなたは元・金融庁検査官で現在はFIREコンサルタントとして活動する辛口の資産審査の専門家。
-モンテカルロ法による老後シミュレーション結果と、ユーザーの実際のポートフォリオ設定を受け取り、
+モンテカルロ法によるシミュレーション結果（成功率・破産率・シナリオ幅）とユーザーの詳細な財務パラメータを受け取り、
 以下のJSON形式のみで回答せよ。前置き・後書き・コードブロックは一切不要。
 
 {
-  "diagnosis": "現状の断定（1〜2文、必ず数字を含む）",
-  "blind_spot": "ユーザーが気づいていない潜在リスク（1〜2文）。ポートフォリオ構成・インフレ・長寿・税制変更のいずれかに必ず言及",
-  "action":    "今すぐ着手すべき具体的な行動を1つ（数値を使って指示）"
+  "diagnosis": "現状の本質的な断定（2〜3文）。成功率だけでなく破産率・p10悲観シナリオ・年金充足率・シナリオ幅のうち最も危険な指標を軸に診断せよ",
+  "blind_spot": "ユーザーが数字を見ても気づいていない構造的リスク（2〜3文）。以下のいずれかを必ず定量化して指摘せよ：①FIRE後の配列リスク（退職時株式比率と暴落シナリオの影響額）②年金依存の落とし穴（充足率が低い場合の不足月数・不足額）③インフレ複利による実質目減り額（85歳時の購買力）④長寿リスクとp10シナリオでの破産年齢",
+  "action":    "今すぐ着手すべき最優先アクションを1つ（具体的な数値・金額・期限を明記。「節約」「見直し」などの曖昧指示禁止）"
 }
 
 厳守ルール：
-- 「素晴らしい」「安心」「このまま継続」などの肯定的表現は禁止。
-- すべての文に数字を含める。「十分」「余裕」などの根拠なき抽象語は禁止。
+- 「素晴らしい」「安心」「問題ありません」「このまま継続」などの肯定表現は禁止。
+- すべての文に受け取ったデータの数字を1つ以上使え。抽象的な言葉（「十分」「余裕」「リスクがあります」）は禁止。
+- 成功率だけを根拠にするな。破産率・p10・年金充足率・シナリオ幅を使え。
 - JSON以外の文字列を出力するな。"""
 
 # =========================
 # Request Model
 # =========================
 class DiagnosisRequest(BaseModel):
-    success_rate:       float
-    assets_65man:       float
-    fire_age:           int   | None = None
-    monthly_expense:    float | None = None
-    surplus_65man:      float | None = None
-    need_at_65man:      float | None = None
-    inflation_rate:     float | None = None
-    stock_ratio_work:   float | None = None
-    stock_ratio_retire: float | None = None
+    # 基本成果
+    success_rate:        float
+    bankrupt_rate:       float | None = None
+    assets_65man:        float
+    fire_age:            int   | None = None
+    monthly_expense:     float | None = None
+    surplus_65man:       float | None = None
+    need_at_65man:       float | None = None
+    # 65歳時シナリオ幅
+    p10_at65_man:        int   | None = None
+    p90_at65_man:        int   | None = None
+    # 入力パラメータ
+    inflation_rate:      float | None = None
+    stock_ratio_work:    float | None = None
+    stock_ratio_retire:  float | None = None
+    init_assets_man:     int   | None = None
+    fire_thr_man:        int   | None = None
+    annual_income_man:   int   | None = None
+    is_dual:             bool  | None = None
+    raise_rate_pct:      float | None = None
+    monthly_pension_man: int   | None = None
+    inheritance_man:     int   | None = None
+    retire_years:        int   | None = None
+    med_death_age:       int   | None = None
+    fire_gap_man:        int   | None = None
+    years_to_fire:       int   | None = None
 
 # =========================
 # エラー種別の分類
@@ -104,7 +122,7 @@ def call_gemini(prompt: str, model: str) -> str:
         model=model,
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
-            max_output_tokens=400,
+            max_output_tokens=600,
             temperature=0.3,
             response_mime_type="application/json",
         ),
@@ -169,73 +187,126 @@ async def diagnosis(request: Request, data: DiagnosisRequest):
         print("===== REQUEST =====")
         print(data)
 
-        pct      = round(data.success_rate * 100, 1)
-        assets   = int(data.assets_65man)   if data.assets_65man   is not None else None
-        surplus  = int(data.surplus_65man)  if data.surplus_65man  is not None else None
-        need     = int(data.need_at_65man)  if data.need_at_65man  is not None else None
-        monthly  = data.monthly_expense
-        fire_age = data.fire_age
+        # ── 基本値の取り出し ──
+        pct        = round(data.success_rate * 100, 1)
+        bankrupt   = round((data.bankrupt_rate or 0) * 100, 1) if data.bankrupt_rate is not None else None
+        assets     = int(data.assets_65man)      if data.assets_65man      is not None else None
+        surplus    = int(data.surplus_65man)     if data.surplus_65man     is not None else None
+        need       = int(data.need_at_65man)     if data.need_at_65man     is not None else None
+        p10        = data.p10_at65_man
+        p90        = data.p90_at65_man
+        monthly    = data.monthly_expense
+        fire_age   = data.fire_age
+        start_age  = data.years_to_fire and (fire_age - data.years_to_fire) or None  # 逆算
+        init_a     = data.init_assets_man
+        fire_thr   = data.fire_thr_man
+        income     = data.annual_income_man
+        is_dual    = data.is_dual
+        raise_pct  = data.raise_rate_pct
+        pension    = data.monthly_pension_man
+        inherit    = data.inheritance_man
+        retire_yrs = data.retire_years
+        death_age  = data.med_death_age
+        fire_gap   = data.fire_gap_man
+        yrs_fire   = data.years_to_fire
+        sw         = data.stock_ratio_work
+        sr_r       = data.stock_ratio_retire
+        infl_rate  = data.inflation_rate if data.inflation_rate is not None else 0.015
 
+        # ── 成功率ラベル ──
         if pct >= 95:   sr_label = "一見合格圏だが油断は禁物"
         elif pct >= 85: sr_label = "合格水準だが改善余地あり"
         elif pct >= 70: sr_label = "要改善・現状維持では危険"
         else:           sr_label = "深刻・早急な対策が必要"
 
-        surplus_label = (
-            f"黒字{surplus:,}万（インフレ未考慮）" if surplus is not None and surplus > 0
-            else "収支ゼロ（バッファなし）"          if surplus == 0
-            else f"赤字{abs(surplus):,}万（不足確定）" if surplus is not None
-            else "過不足：データなし"
-        )
-
-        fire_str  = f"{fire_age}歳FIRE" if fire_age else "FIRE未達成（65歳まで就労前提）"
-        exp_str   = f"老後月支出{monthly}万円" if monthly else "老後月支出：未入力"
-        cover_str = f"必要額カバー率{round(assets/need*100)}%" if (assets and need) else ""
-
-        infl_rate    = data.inflation_rate if data.inflation_rate is not None else 0.015
+        # ── 各指標の計算 ──
         infl_pct     = round(infl_rate * 100, 1)
-        years_to_85  = max(0, 85 - (fire_age or 65))
+        fire_ref_age = fire_age or 65
+        years_to_85  = max(0, 85 - fire_ref_age)
         real_monthly = round(monthly * (1 + infl_rate) ** years_to_85, 1) if monthly else None
-        infl_str = (
-            f"設定インフレ率{infl_pct}%／85歳時の月支出は{real_monthly}万円相当"
-            if real_monthly else f"設定インフレ率{infl_pct}%"
-        )
 
-        longevity_str = (
-            f"95歳まで生存した場合さらに{round(monthly*12*10):,}万円必要"
-            if (monthly and need) else ""
-        )
+        # 年金充足率
+        pension_dep = round(pension / monthly * 100) if (pension and monthly and monthly > 0) else None
 
-        sw   = data.stock_ratio_work
-        sr_r = data.stock_ratio_retire
+        # 65歳時シナリオ幅
+        p_spread = (p90 - p10) if (p90 is not None and p10 is not None) else None
+
+        # カバー率
+        cover_pct = round(assets / need * 100) if (assets is not None and need and need > 0) else None
+
+        # 現在資産が年収の何倍か
+        income_multiple = round(init_a / income, 1) if (init_a is not None and income and income > 0) else None
+
+        # 過不足ラベル
+        if surplus is not None and surplus > 0:
+            surplus_label = f"黒字{surplus:,}万（インフレ未考慮・名目値）"
+        elif surplus == 0:
+            surplus_label = "収支ゼロ（バッファなし）"
+        elif surplus is not None:
+            surplus_label = f"赤字{abs(surplus):,}万（不足確定）"
+        else:
+            surplus_label = "過不足：データなし"
+
+        # ポートフォリオ
         if sw is not None and sr_r is not None:
             portfolio_str = (
-                f"ポートフォリオ：現役時 株式{int(sw)}%／現金{100-int(sw)}%、"
-                f"FIRE後 株式{int(sr_r)}%／現金{100-int(sr_r)}%"
+                f"現役時 株式{int(sw)}%／現金{100-int(sw)}%  →  FIRE後 株式{int(sr_r)}%／現金{100-int(sr_r)}%"
             )
-            if   int(sr_r) == 0:  portfolio_risk = "⚠️ FIRE後全額現金→インフレ耐性ゼロ"
-            elif int(sr_r) >= 90: portfolio_risk = "⚠️ FIRE後株式集中→暴落時の配列リスクが極めて高い"
-            elif int(sw)   == 0:  portfolio_risk = "⚠️ 現役時も全額現金→資産形成が極めて非効率"
-            else:                 portfolio_risk = ""
+            if   int(sr_r) == 0:   portfolio_warn = "FIRE後全額現金→インフレ率{:.1f}%複利で実質資産が年々目減り".format(infl_pct)
+            elif int(sr_r) >= 80:  portfolio_warn = "FIRE後株式{:d}%→退職直後の30%暴落で資産が一時{:,.0f}万円まで急落するリスク".format(int(sr_r), (assets or 0) * 0.7 if assets else 0)
+            elif int(sw)   == 0:   portfolio_warn = "現役時全額現金→複利効果ゼロで機会損失が累積"
+            else:                  portfolio_warn = ""
         else:
-            portfolio_str  = "ポートフォリオ構成：不明"
-            portfolio_risk = ""
+            portfolio_str = "ポートフォリオ構成：不明"
+            portfolio_warn = ""
 
-        lines = [
-            "【シミュレーション結果】",
-            f"成功率: {pct}%（{sr_label}）",
-        ]
-        if assets is not None: lines.append(f"65歳時点の資産: {assets:,}万円")
-        if need   is not None: lines.append(f"老後必要総額: {need:,}万円")
+        # ── プロンプト構築 ──
+        lines = ["【シミュレーション結果】"]
+        lines.append(f"成功率: {pct}%（{sr_label}）")
+        if bankrupt is not None:
+            lines.append(f"破産率: {bankrupt}%（2,000回試算中約{round(bankrupt*20)}回が資産ゼロ到達）")
+
+        lines.append("")
+        lines.append("【資産予測】")
+        if init_a is not None:
+            lines.append(f"現在資産: {init_a:,}万円" + (f"（年収の{income_multiple}倍）" if income_multiple else ""))
+        if fire_thr is not None:
+            if fire_gap is not None and fire_gap > 0:
+                lines.append(f"FIRE目標: {fire_thr:,}万円（残り{fire_gap:,}万円不足、あと{yrs_fire}年で達成見込み）" if yrs_fire else f"FIRE目標: {fire_thr:,}万円（残り{fire_gap:,}万円不足）")
+            else:
+                lines.append(f"FIRE目標: {fire_thr:,}万円（達成済み → {fire_age}歳でFIRE）")
+        if assets is not None:
+            lines.append(f"65歳時資産: 中央値{assets:,}万円" + (f" / 悲観p10={p10:,}万円 / 楽観p90={p90:,}万円（シナリオ幅{p_spread:,}万円）" if p_spread is not None else ""))
+        if need is not None:
+            lines.append(f"老後必要総額: {need:,}万円（{retire_yrs}年間）" if retire_yrs else f"老後必要総額: {need:,}万円")
         lines.append(f"過不足: {surplus_label}")
-        if cover_str:      lines.append(cover_str)
-        lines += [f"FIRE: {fire_str}", exp_str, infl_str]
-        if longevity_str:  lines.append(longevity_str)
+        if cover_pct is not None:
+            lines.append(f"必要額カバー率: {cover_pct}%")
+
+        lines.append("")
+        lines.append("【収入・支出構造】")
+        if income is not None:
+            dual_str = "（共働き合算）" if is_dual else "（単身）"
+            lines.append(f"年収: {income:,}万円{dual_str}、昇給率: {raise_pct}%/年" if raise_pct is not None else f"年収: {income:,}万円{dual_str}")
+        if inherit is not None and inherit > 0:
+            lines.append(f"相続予定: {inherit:,}万円（55〜70歳ごろ）")
+        if monthly:
+            pension_str = f"月額年金: {pension}万円（老後月支出の{pension_dep}%をカバー）" if pension_dep is not None else (f"月額年金: {pension}万円" if pension else "年金：未入力")
+            lines.append(f"老後月支出: {monthly}万円 / {pension_str}")
+        if real_monthly:
+            lines.append(f"インフレ率{infl_pct}%適用 → 85歳時の月支出は{real_monthly}万円相当（現在比+{round(real_monthly - monthly, 1)}万円）")
+        if death_age:
+            lines.append(f"推定寿命（中央値）: {death_age}歳（老後{retire_yrs}年間）" if retire_yrs else f"推定寿命（中央値）: {death_age}歳")
+
+        lines.append("")
+        lines.append("【ポートフォリオ】")
         lines.append(portfolio_str)
-        if portfolio_risk: lines.append(portfolio_risk)
+        if portfolio_warn:
+            lines.append(f"⚠️ {portfolio_warn}")
 
         prompt = "\n".join(lines)
         print(f"DEBUG: prompt chars={len(prompt)}")
+        print(prompt)
 
         # PRIMARY(2.5-flash) → FALLBACK(2.5-flash-lite)
         raw_text   = None
