@@ -371,13 +371,13 @@
 
     // ── render()後にDOMが再構築されるため、毎回getElementByIdで取得する ──
     function writeToAiBodies(html, className) {
-      // render()でinnerHTMLが書き換わった後の最新DOM要素を取得
+      const safeHtml = typeof html === 'string' ? html : String(html);
       const ids = ['diag-ai-body', 'ai-diag-body'];
       ids.forEach(function(id) {
         const el = document.getElementById(id);
         if (!el) return;
         el.className = className || '';
-        el.innerHTML = html;
+        el.innerHTML = safeHtml;
       });
     }
 
@@ -446,7 +446,15 @@
         return;
       }
 
-      // safeStr はモジュールスコープで定義済み（下記参照）
+      console.log('[AI診断] response:', data);
+
+      // used_model をバッジに反映
+      if (data && data.used_model) {
+        const badge1 = document.getElementById('ai-diag-badge');
+        const badge2 = document.querySelector('.diag-ai-badge');
+        if (badge1) badge1.textContent = data.used_model;
+        if (badge2) badge2.textContent = data.used_model;
+      }
 
       // ── analysis を取り出す（3パターン対応） ──
       // パターン1: { analysis: { diagnosis, blind_spot, action }, used_model }  ← main.py 正規形
@@ -460,11 +468,14 @@
           try { src = JSON.parse(data.analysis); }
           catch (_) { src = { diagnosis: data.analysis, blind_spot: '', action: '' }; }
         }
-      } else if (data && typeof data.diagnosis === 'string') {
-        src = data;
+      } else if (data && typeof data === 'object') {
+        // ラップなし形式: data 自体が diagnosis/blind_spot/action を持つ
+        if (data.diagnosis !== undefined || data.blind_spot !== undefined || data.action !== undefined) {
+          src = data;
+        }
       }
 
-      if (src && typeof src === 'object') {
+      if (src && typeof src === 'object' && !Array.isArray(src)) {
         const diag   = safeStr(src.diagnosis);
         const blind  = safeStr(src.blind_spot);
         const act    = safeStr(src.action);
