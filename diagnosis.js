@@ -336,37 +336,58 @@
     // ── ① 家計タイプ診断（pro モード以外）──
     if (mode !== 'pro') {
       render(result);
+      // 初心者・通常モードは diagnosis-panel へスクロール
       const p = document.getElementById('diagnosis-panel');
-      if (p) {
-        requestAnimationFrame(() => {
-          p.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-      }
+      if (p) requestAnimationFrame(() => p.scrollIntoView({ behavior:'smooth', block:'start' }));
     }
 
-    // ── ② AI深層診断（diagnosis-panel 内 #diag-ai-body に表示）──
-    // #ai-response（旧）は非表示にして diag-ai-body に一本化
+    // ── ② AI深層診断：全モード共通スタンドアロンパネルを表示 ──
+    // #ai-response（旧）は常に非表示
     const legacyAi = document.getElementById('ai-response');
     if (legacyAi) legacyAi.style.display = 'none';
 
-    const aiBody = document.getElementById('diag-ai-body');
-    if (!aiBody) return;
+    // スタンドアロンパネルを表示（全モード）
+    const standalonePanel = document.getElementById('ai-diagnosis-panel');
+    if (standalonePanel) standalonePanel.style.display = 'block';
+
+    // 書き込み先を決定：
+    //   beginner/normal → render()済みの #diag-ai-body（diagnosis-panel内）を優先
+    //   pro / #diag-ai-body が存在しない → スタンドアロンの #ai-diag-body に書く
+    const inlineBody     = document.getElementById('diag-ai-body');
+    const standaloneBody = document.getElementById('ai-diag-body');
+
+    // どちらも取得して両方に書き込む（モードを問わず確実に表示）
+    function writeToAiBodies(html, className) {
+      [inlineBody, standaloneBody].forEach(el => {
+        if (!el) return;
+        el.className = className || '';
+        el.innerHTML = html;
+      });
+    }
+
+    // ローディング表示（スピナー）を先に出す
+    const spinnerHtml = '<div class="diag-ai-spinner" aria-hidden="true"></div><span>分析中…</span>';
+    writeToAiBodies(spinnerHtml, 'diag-ai-loading');
+
+    // proモードはスタンドアロンパネルへスクロール
+    if (mode === 'pro' && standalonePanel) {
+      requestAnimationFrame(() => standalonePanel.scrollIntoView({ behavior:'smooth', block:'start' }));
+    }
+
+    // aiBody は後続処理で使う（両方に書くためのラッパーとして writeToAiBodies を使う）
+    // 後方互換のため aiBody 変数も残す
+    const aiBody = inlineBody || standaloneBody;
+    if (!aiBody && !standaloneBody) return;
 
     // ── クールタイムチェック ──────────────────────────────
     const now = Date.now();
     const remaining = Math.ceil((COOLDOWN_MS - (now - _lastDiagAt)) / 1000);
     if (_lastDiagAt > 0 && remaining > 0) {
-      aiBody.className = '';
-      aiBody.innerHTML = `<p class="diag-ai-error">⏳ 診断は${remaining}秒後に再実行できます。シミュレーション条件を変えてお待ちください。</p>`;
+      writeToAiBodies('<p class="diag-ai-error">⏳ 診断は' + remaining + '秒後に再実行できます。条件を変えてお待ちください。</p>', '');
       return;
     }
     _lastDiagAt = now;
-
-    // ローディング表示（スピナー）
-    aiBody.className = 'diag-ai-loading';
-    aiBody.innerHTML = `
-      <div class="diag-ai-spinner" aria-hidden="true"></div>
-      <span>分析中…</span>`;
+    // ローディングはすでに writeToAiBodies で表示済み（上部で呼び出し済み）
 
     try {
       const res = await fetch('https://fire-simulator-mv3a.onrender.com/api/diagnosis', {
@@ -386,95 +407,82 @@
       });
 
       if (!res.ok) {
-        // レート制限エラーの場合は詳細なメッセージを取得
         let errBody = null;
         try { errBody = await res.json(); } catch(_) {}
         if (res.status === 429) {
           const waitSec = errBody?.retry_after ?? 30;
-          const errMsg = errBody?.message ?? `診断は${waitSec}秒後に再実行できます。`;
-          aiBody.className = '';
-          aiBody.innerHTML = `<p class="diag-ai-error">⏳ ${errMsg}</p>`;
+          const errMsg = errBody?.message || ('診断は' + waitSec + '秒後に再実行できます。');
+          writeToAiBodies('<p class="diag-ai-error">⏳ ' + errMsg + '</p>', '');
           return;
         }
-        throw new Error(`HTTP ${res.status}`);
+        throw new Error('HTTP ' + res.status);
       }
+
       const rawText = await res.text();
-      console.log('[AI診断] raw response:', rawText);
 
       // JSON パース
       let data;
       try {
         data = JSON.parse(rawText);
       } catch (parseErr) {
-        console.error('[AI診断] JSON parse error:', parseErr);
-        aiBody.className = '';
-        aiBody.innerHTML = '<p class="diag-ai-error">⚠️ レスポンスの解析に失敗しました。</p>';
+        console.error('[AI診断] JSON parse error:', parseErr, rawText);
+        writeToAiBodies('<p class="diag-ai-error">⚠️ レスポンスの解析に失敗しました。</p>', '');
         return;
       }
 
-      console.log('[AI診断] parsed data:', data);
-      console.log('[AI診断] data.analysis type:', typeof data.analysis, data.analysis);
-
-      // ── 値を文字列として安全に取り出す共通ヘルパー ──
+      // ── 値を文字列として安全に取り出す ──
       function safeStr(v) {
         if (v === null || v === undefined) return '';
         if (typeof v === 'string') return v;
-        // オブジェクト・配列は JSON 化（[object Object] を絶対に出さない）
         return JSON.stringify(v, null, 2);
       }
 
-      // ── analysis オブジェクトを取り出す ──
-      // パターン1: { analysis: { diagnosis, blind_spot, action }, used_model }  ← main.py の正規形
-      // パターン2: { diagnosis, blind_spot, action }  ← analysis ラップなし
-      // パターン3: { analysis: "文字列" }  ← まれに文字列で来る場合
+      // ── analysis を取り出す（3パターン対応） ──
+      // パターン1: { analysis: { diagnosis, blind_spot, action }, used_model }  ← main.py 正規形
+      // パターン2: { diagnosis, blind_spot, action }  ← ラップなし
+      // パターン3: { analysis: "JSON文字列" }
       let src = null;
       if (data && data.analysis !== undefined) {
         if (typeof data.analysis === 'object' && data.analysis !== null) {
-          src = data.analysis;                          // パターン1
+          src = data.analysis;
         } else if (typeof data.analysis === 'string') {
-          try { src = JSON.parse(data.analysis); }      // パターン3: 文字列→再パース
+          try { src = JSON.parse(data.analysis); }
           catch (_) { src = { diagnosis: data.analysis, blind_spot: '', action: '' }; }
         }
       } else if (data && typeof data.diagnosis === 'string') {
-        src = data;                                     // パターン2
+        src = data;
       }
 
-      console.log('[AI診断] src:', src);
-
       if (src && typeof src === 'object') {
-        const diagnosis  = safeStr(src.diagnosis);
-        const blind_spot = safeStr(src.blind_spot);
-        const action     = safeStr(src.action);
+        const diag   = safeStr(src.diagnosis);
+        const blind  = safeStr(src.blind_spot);
+        const act    = safeStr(src.action);
 
-        if (diagnosis || blind_spot || action) {
-          const sections = [
-            { icon: '📊', label: '診断',            color: '#00d4ff', text: diagnosis  },
-            { icon: '⚠️', label: '盲点・リスク',    color: '#ffd166', text: blind_spot },
-            { icon: '🎯', label: '最優先アクション', color: '#a8ff78', text: action     },
+        if (diag || blind || act) {
+          const rows = [
+            { icon:'📊', label:'診断',            color:'#00d4ff', text: diag  },
+            { icon:'⚠️', label:'盲点・リスク',    color:'#ffd166', text: blind },
+            { icon:'🎯', label:'最優先アクション', color:'#a8ff78', text: act   },
           ];
-          const html = sections.filter(s => s.text).map(s => {
-            const escaped = s.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          const html = rows.filter(function(s){ return s.text; }).map(function(s) {
+            const esc = s.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
             return '<div class="diag-ai-block">'
               + '<div class="diag-ai-block-hd" style="color:' + s.color + '">'
               + '<span>' + s.icon + '</span><span>' + s.label + '</span></div>'
-              + '<p class="diag-ai-text">' + escaped + '</p></div>';
+              + '<p class="diag-ai-text">' + esc + '</p></div>';
           }).join('');
-          aiBody.className = '';
-          aiBody.innerHTML = html;
+          writeToAiBodies(html, '');
         } else {
-          aiBody.className = '';
-          aiBody.innerHTML = '<p class="diag-ai-error">⚠️ 診断データが空でした。再実行してください。</p>';
+          writeToAiBodies('<p class="diag-ai-error">⚠️ 診断データが空でした。再実行してください。</p>', '');
         }
       } else {
-        // どのパターンにも合致しない → 生テキストを表示
-        const safe = rawText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        aiBody.className = '';
-        aiBody.innerHTML = '<p class="diag-ai-text">' + safe + '</p>';
+        // どのパターンにも合致しない → 生テキストをそのまま表示
+        const safe = rawText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        writeToAiBodies('<p class="diag-ai-text">' + safe + '</p>', '');
       }
 
     } catch (err) {
-      console.error('AI診断エラー:', err);
-      aiBody.className = '';
+      console.error('[AI診断] fetch error:', err);
 
       // main.py のエラーコードに応じてユーザーフレンドリーなメッセージを表示
       let msg = '⚠️ AI診断に失敗しました。30秒後に再実行してください。';
@@ -490,7 +498,7 @@
         }
       } catch (_) { /* レスポンスなし or パース失敗はデフォルトメッセージのまま */ }
 
-      aiBody.innerHTML = `<p class="diag-ai-error">${msg}</p>`;
+      writeToAiBodies('<p class="diag-ai-error">' + msg + '</p>', '');
     }
   });
 
@@ -673,6 +681,10 @@
   .diag-life-val  { font-size:20px; }
   .diag-lc-grid   { gap:5px; }
 }
+
+/* ─ スタンドアロン AI 診断パネル（全モード共通） ─ */
+#ai-diag-body { min-height:40px; }
+#ai-diag-body.diag-ai-loading { display:flex;align-items:center;gap:10px;padding:4px 0;color:var(--text-dim);font-size:13px; }
     `;
     document.head.appendChild(s);
   }

@@ -947,7 +947,7 @@
         </div>
       </div>
 
-      <!-- ② 家計タイプ診断パネル（家計タイプ診断 + AI深層診断 + 延命アイテム） -->
+      <!-- ② 家計タイプ診断パネル（初心者・通常モード：家計タイプ+延命カード） -->
       <div id="diagnosis-panel" style="display:none;margin-bottom:16px;"></div>
 
       <!-- ② 初心者サマリー (legacy, hidden) -->
@@ -1008,7 +1008,21 @@
           font-size:13px; color:var(--text-mid); line-height:2;
         "></div>
       </div>
-      <div id="ai-response" style="display:none; background:rgba(255,255,255,0.05); border-radius:12px; padding:20px; margin-top:20px; border:1px solid rgba(255,255,255,0.1);"></div>
+      <!-- ★ AI深層診断パネル（全モード共通・diagnosis.jsが制御） -->
+      <div id="ai-diagnosis-panel" style="display:none;margin-bottom:16px;">
+        <div style="background:var(--surface,#0b1220);border:1px solid rgba(0,212,255,.2);border-radius:14px;padding:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text);">
+            <span>🤖 AI深層診断</span>
+            <span id="ai-diag-badge" style="font-size:10px;font-family:'Space Mono',monospace;letter-spacing:.5px;padding:2px 8px;border-radius:4px;background:rgba(0,212,255,.1);color:#00d4ff;border:1px solid rgba(0,212,255,.25);">Gemini 2.5 Flash</span>
+          </div>
+          <div id="ai-diag-body" class="diag-ai-loading">
+            <div class="diag-ai-spinner" aria-hidden="true"></div>
+            <span>シミュレーション実行後に診断します</span>
+          </div>
+        </div>
+      </div>
+      <!-- 旧ai-response（後方互換のため残す・非表示） -->
+      <div id="ai-response" style="display:none;"></div>
 
       <!-- ② KPI 2段構成 -->
       <!-- アドバイスエンジンパネル -->
