@@ -398,57 +398,78 @@
         }
         throw new Error(`HTTP ${res.status}`);
       }
-      const data = await res.json();
+      const rawText = await res.text();
+      console.log('[AI診断] raw response:', rawText);
 
-      // main.py は { analysis: { diagnosis, blind_spot, action }, used_model } を返す
-      // data.analysis が文字列の場合（JSONパース前）も考慮して取り出す
-      let finalData = null;
-      if (data.analysis && typeof data.analysis === 'object') {
-        finalData = data.analysis;
-      } else if (data.analysis && typeof data.analysis === 'string') {
-        try { finalData = JSON.parse(data.analysis); } catch(_) { finalData = { diagnosis: data.analysis, blind_spot: '', action: '' }; }
-      } else if (data.diagnosis) {
-        finalData = data;
-      } else {
-        // 未知の形式 → 文字列化せずそのまま使う
-        finalData = data;
+      // JSON パース
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseErr) {
+        console.error('[AI診断] JSON parse error:', parseErr);
+        aiBody.className = '';
+        aiBody.innerHTML = '<p class="diag-ai-error">⚠️ レスポンスの解析に失敗しました。</p>';
+        return;
       }
 
-      const sections = [
-        { key: 'diagnosis',  icon: '📊', label: '診断',            color: '#00d4ff' },
-        { key: 'blind_spot', icon: '⚠️', label: '盲点・リスク',    color: '#ffd166' },
-        { key: 'action',     icon: '🎯', label: '最優先アクション', color: '#a8ff78' },
-      ];
+      console.log('[AI診断] parsed data:', data);
+      console.log('[AI診断] data.analysis type:', typeof data.analysis, data.analysis);
 
-      // 構造化データを持っているかチェック（値が文字列であることを確認）
-      const isStructured = finalData
-        && typeof finalData.diagnosis  === 'string'
-        && typeof finalData.blind_spot === 'string'
-        && typeof finalData.action     === 'string';
+      // ── 値を文字列として安全に取り出す共通ヘルパー ──
+      function safeStr(v) {
+        if (v === null || v === undefined) return '';
+        if (typeof v === 'string') return v;
+        // オブジェクト・配列は JSON 化（[object Object] を絶対に出さない）
+        return JSON.stringify(v, null, 2);
+      }
 
-      if (isStructured) {
-        const html = sections.map(s => `
-          <div class="diag-ai-block">
-            <div class="diag-ai-block-hd" style="color:${s.color}">
-              <span>${s.icon}</span><span>${s.label}</span>
-            </div>
-            <p class="diag-ai-text">${finalData[s.key]}</p>
-          </div>`).join('');
-        aiBody.className = '';
-        aiBody.innerHTML = html;
-      } else {
-        // フォールバック: 文字列として安全に表示（[object Object]を防ぐ）
-        let fallbackText;
-        if (typeof finalData === 'string') {
-          fallbackText = finalData;
-        } else if (finalData && typeof finalData === 'object') {
-          // オブジェクトの場合はJSON.stringifyで文字列化
-          fallbackText = JSON.stringify(finalData, null, 2);
-        } else {
-          fallbackText = '診断データを取得できませんでした。';
+      // ── analysis オブジェクトを取り出す ──
+      // パターン1: { analysis: { diagnosis, blind_spot, action }, used_model }  ← main.py の正規形
+      // パターン2: { diagnosis, blind_spot, action }  ← analysis ラップなし
+      // パターン3: { analysis: "文字列" }  ← まれに文字列で来る場合
+      let src = null;
+      if (data && data.analysis !== undefined) {
+        if (typeof data.analysis === 'object' && data.analysis !== null) {
+          src = data.analysis;                          // パターン1
+        } else if (typeof data.analysis === 'string') {
+          try { src = JSON.parse(data.analysis); }      // パターン3: 文字列→再パース
+          catch (_) { src = { diagnosis: data.analysis, blind_spot: '', action: '' }; }
         }
+      } else if (data && typeof data.diagnosis === 'string') {
+        src = data;                                     // パターン2
+      }
+
+      console.log('[AI診断] src:', src);
+
+      if (src && typeof src === 'object') {
+        const diagnosis  = safeStr(src.diagnosis);
+        const blind_spot = safeStr(src.blind_spot);
+        const action     = safeStr(src.action);
+
+        if (diagnosis || blind_spot || action) {
+          const sections = [
+            { icon: '📊', label: '診断',            color: '#00d4ff', text: diagnosis  },
+            { icon: '⚠️', label: '盲点・リスク',    color: '#ffd166', text: blind_spot },
+            { icon: '🎯', label: '最優先アクション', color: '#a8ff78', text: action     },
+          ];
+          const html = sections.filter(s => s.text).map(s => {
+            const escaped = s.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return '<div class="diag-ai-block">'
+              + '<div class="diag-ai-block-hd" style="color:' + s.color + '">'
+              + '<span>' + s.icon + '</span><span>' + s.label + '</span></div>'
+              + '<p class="diag-ai-text">' + escaped + '</p></div>';
+          }).join('');
+          aiBody.className = '';
+          aiBody.innerHTML = html;
+        } else {
+          aiBody.className = '';
+          aiBody.innerHTML = '<p class="diag-ai-error">⚠️ 診断データが空でした。再実行してください。</p>';
+        }
+      } else {
+        // どのパターンにも合致しない → 生テキストを表示
+        const safe = rawText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         aiBody.className = '';
-        aiBody.innerHTML = `<p class="diag-ai-text">${fallbackText}</p>`;
+        aiBody.innerHTML = '<p class="diag-ai-text">' + safe + '</p>';
       }
 
     } catch (err) {
