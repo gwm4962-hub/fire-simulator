@@ -350,25 +350,37 @@
         { key: 'blind_spot', icon: '⚠️', label: '盲点・リスク',    color: '#ffd166' },
         { key: 'action',     icon: '🎯', label: '最優先アクション', color: '#a8ff78' },
       ];
-      const hasStructured = data?.diagnosis && data?.blind_spot && data?.action;
-      const hasFallback   = data?.analysis;
+      // --- 修正版ロジック ---
+      // 1. データの正規化（入れ子構造の解消）
+      let finalData = data;
+      if (data.analysis && typeof data.analysis === 'object') {
+        finalData = data.analysis;
+      }
 
-      if (hasStructured) {
+      const sections = [
+        { key: 'diagnosis',  icon: '📊', label: '診断',            color: '#00d4ff' },
+        { key: 'blind_spot', icon: '⚠️', label: '盲点・リスク',    color: '#ffd166' },
+        { key: 'action',     icon: '🎯', label: '最優先アクション', color: '#a8ff78' },
+      ];
+
+      // 構造化データを持っているかチェック
+      const isStructured = finalData?.diagnosis && finalData?.blind_spot && finalData?.action;
+
+      if (isStructured) {
         const html = sections.map(s => `
           <div class="diag-ai-block">
             <div class="diag-ai-block-hd" style="color:${s.color}">
               <span>${s.icon}</span><span>${s.label}</span>
             </div>
-            <p class="diag-ai-text">${data[s.key]}</p>
+            <p class="diag-ai-text">${finalData[s.key]}</p>
           </div>`).join('');
         aiBody.className = '';
         aiBody.innerHTML = html;
-      } else if (hasFallback) {
-        // フォールバック: analysis テキストをそのまま表示
-        aiBody.className = '';
-        aiBody.innerHTML = `<p class="diag-ai-text">${data.analysis}</p>`;
       } else {
-        throw new Error('レスポンスの形式が不正です');
+        // 文字列の場合、または未知の形式の場合のフォールバック
+        const fallbackText = typeof finalData === 'string' ? finalData : (finalData?.analysis || JSON.stringify(finalData));
+        aiBody.className = '';
+        aiBody.innerHTML = `<p class="diag-ai-text">${fallbackText}</p>`;
       }
 
     } catch (err) {
