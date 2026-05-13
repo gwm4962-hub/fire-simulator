@@ -32,13 +32,15 @@ if not API_KEY:
 
 client = genai.Client(api_key=API_KEY)
 
-# ① プライマリ → フォールバックモデル
-PRIMARY_MODEL  = "gemini-2.5-flash"
-FALLBACK_MODEL = "gemini-2.0-flash"
+# ① モデル優先度を逆転
+#    通常は gemini-2.0-flash（quota余裕大）を使い、
+#    失敗時のみ gemini-2.5-flash へフォールバック
+PRIMARY_MODEL  = "gemini-2.0-flash"
+FALLBACK_MODEL = "gemini-2.5-flash"
 
 # =========================
-# ② システムプロンプト
-#    response_mime_type="application/json" と組み合わせて
+# システムプロンプト
+#    response_mime_type="application/json" と組み合わせ
 #    マークダウン混入をプロトコルレベルで防止
 # =========================
 SYSTEM_PROMPT = """\
@@ -60,7 +62,6 @@ SYSTEM_PROMPT = """\
 
 # =========================
 # Request Model
-# ⑤ ポートフォリオ構成・実際のインフレ率を追加
 # =========================
 class DiagnosisRequest(BaseModel):
     success_rate:       float
@@ -69,19 +70,12 @@ class DiagnosisRequest(BaseModel):
     monthly_expense:    float | None = None
     surplus_65man:      float | None = None
     need_at_65man:      float | None = None
-    inflation_rate:     float | None = None  # ユーザー設定値 例:0.015
-    stock_ratio_work:   float | None = None  # 現役時株式比率 0〜100
-    stock_ratio_retire: float | None = None  # FIRE後株式比率 0〜100
+    inflation_rate:     float | None = None   # ユーザー設定値 例: 0.015
+    stock_ratio_work:   float | None = None   # 現役時株式比率 0〜100
+    stock_ratio_retire: float | None = None   # FIRE後株式比率 0〜100
 
 # =========================
-# Health Check
-# =========================
-@app.get("/")
-def root():
-    return {"status": "ok"}
-
-# =========================
-# ④ エラー種別の分類
+# エラー種別の分類
 # =========================
 def classify_error(e: Exception) -> tuple[int, str, str]:
     msg = str(e).lower()
@@ -105,11 +99,47 @@ def call_gemini(prompt: str, model: str) -> str:
             system_instruction=SYSTEM_PROMPT,
             max_output_tokens=400,
             temperature=0.3,
-            response_mime_type="application/json",  # ② JSON出力をプロトコル強制
+            response_mime_type="application/json",  # JSON出力をプロトコル強制
         ),
         contents=prompt,
     )
     return response.text
+
+# =========================
+# JSONパース共通処理
+#   - フェンス除去
+#   - パース
+#   - キー補完
+#   - すべてのvalueを必ずstr型に正規化  ← [object Object]対策の核心
+# =========================
+def parse_gemini_json(raw_text: str) -> dict:
+    cleaned = (
+        raw_text.strip()
+        .removeprefix("```json").removeprefix("```")
+        .removesuffix("```").strip()
+    )
+    try:
+        parsed = json.loads(cleaned)
+        # ネストしたオブジェクトが返ってきた場合もstr化して防衛
+        if not isinstance(parsed, dict):
+            parsed = {"diagnosis": cleaned, "blind_spot": "", "action": ""}
+    except json.JSONDecodeError:
+        parsed = {"diagnosis": cleaned, "blind_spot": "", "action": ""}
+
+    # 必須キーが無ければ空文字で補完、値はすべてstrに正規化
+    for key in ("diagnosis", "blind_spot", "action"):
+        val = parsed.get(key, "")
+        # dict / list など非文字列が入っていた場合は JSON 文字列化
+        parsed[key] = val if isinstance(val, str) else json.dumps(val, ensure_ascii=False)
+
+    return parsed
+
+# =========================
+# Health Check
+# =========================
+@app.get("/")
+def root():
+    return {"status": "ok"}
 
 # =========================
 # Diagnosis API
@@ -144,7 +174,7 @@ async def diagnosis(data: DiagnosisRequest):
         exp_str   = f"老後月支出{monthly}万円" if monthly else "老後月支出不明"
         cover_str = f"必要額カバー率{round(assets/need*100)}%" if need > 0 else ""
 
-        # ③ ユーザーの実際のインフレ率で動的計算（固定2%を排除）
+        # ユーザーの実際のインフレ率で動的計算
         infl_rate    = data.inflation_rate if data.inflation_rate is not None else 0.015
         infl_pct     = round(infl_rate * 100, 1)
         years_to_85  = max(0, 85 - (fire_age or 65))
@@ -160,8 +190,8 @@ async def diagnosis(data: DiagnosisRequest):
             if monthly and need > 0 else ""
         )
 
-        # ⑤ ポートフォリオ構成をプロンプトに含める
-        sw = data.stock_ratio_work
+        # ポートフォリオ構成
+        sw   = data.stock_ratio_work
         sr_r = data.stock_ratio_retire
         if sw is not None and sr_r is not None:
             portfolio_str = (
@@ -173,7 +203,7 @@ async def diagnosis(data: DiagnosisRequest):
             elif int(sw)   == 0:   portfolio_risk = "⚠️ 現役時も全額現金→資産形成が極めて非効率"
             else:                  portfolio_risk = ""
         else:
-            portfolio_str = "ポートフォリオ構成：不明"
+            portfolio_str  = "ポートフォリオ構成：不明"
             portfolio_risk = ""
 
         # ─ プロンプト構築 ─
@@ -193,14 +223,15 @@ async def diagnosis(data: DiagnosisRequest):
         prompt = "\n".join(lines)
         print(f"DEBUG: prompt chars={len(prompt)}")
 
-        # ① プライマリ → フォールバック
+        # ① PRIMARY(2.0-flash) → FALLBACK(2.5-flash) の順で試行
         raw_text   = None
         used_model = PRIMARY_MODEL
         try:
             raw_text = call_gemini(prompt, PRIMARY_MODEL)
             print(f"===== GEMINI SUCCESS ({PRIMARY_MODEL}) =====")
         except Exception as primary_err:
-            if any(k in str(primary_err).lower() for k in ("quota","rate","429","overloaded","unavailable")):
+            if any(k in str(primary_err).lower() for k in
+                   ("quota", "rate", "429", "overloaded", "unavailable")):
                 print(f"WARN: primary failed, falling back to {FALLBACK_MODEL}: {primary_err}")
                 used_model = FALLBACK_MODEL
                 raw_text   = call_gemini(prompt, FALLBACK_MODEL)
@@ -210,19 +241,8 @@ async def diagnosis(data: DiagnosisRequest):
 
         print(raw_text)
 
-        # ② JSONパース（フェンス除去 → パース → キー補完）
-        cleaned = (
-            raw_text.strip()
-            .removeprefix("```json").removeprefix("```")
-            .removesuffix("```").strip()
-        )
-        try:
-            parsed = json.loads(cleaned)
-        except json.JSONDecodeError:
-            parsed = {"diagnosis": cleaned, "blind_spot": "", "action": ""}
-
-        for key in ("diagnosis", "blind_spot", "action"):
-            parsed.setdefault(key, "")
+        # ② JSONパース（str正規化込み）
+        parsed = parse_gemini_json(raw_text)
 
         return {"analysis": parsed, "used_model": used_model}
 
